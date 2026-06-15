@@ -1,6 +1,7 @@
 <script lang="ts">
 	export let className = 'size-5';
 	export let strokeWidth = '1.5';
+	export let style = '';
 </script>
 
 <svg
@@ -11,6 +12,7 @@
 	stroke-width={strokeWidth}
 	stroke="currentColor"
 	class={className}
+	{style}
 	><rect
 		x="3"
 		y="3"

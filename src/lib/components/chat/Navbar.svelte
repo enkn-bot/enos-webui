@@ -236,7 +236,7 @@
 								aria-label="Controls"
 							>
 								<div class=" m-auto self-center">
-									<Knobs className=" size-5" strokeWidth="1" />
+									<Sidebar className=" size-5" strokeWidth="1.5" style="transform: scaleX(-1)" />
 								</div>
 							</button>
 						</Tooltip>
