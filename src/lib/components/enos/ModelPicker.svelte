@@ -1,25 +1,20 @@
 <script lang="ts">
-  import { selectedModels } from '$lib/stores/enos/surface';
-
   const MINDS = [
     { id: 'enos.subconscious', label: 'Subconscious' },
     { id: 'enos.mind',         label: 'Mind' },
     { id: 'enos.deepmind',     label: 'DeepMind' },
   ] as const;
 
-  let open = $state(false);
+  export let value: string = 'enos.mind';
+  export let onSelect: (id: string) => void = () => {};
 
-  const currentLabel = $derived(
-    MINDS.find(m => m.id === $selectedModels[0])?.label ?? $selectedModels[0] ?? 'Mind'
-  );
+  let open = false;
+
+  $: currentLabel = MINDS.find(m => m.id === value)?.label ?? value ?? 'Mind';
 
   function select(id: string) {
-    $selectedModels = [id];
+    onSelect(id);
     open = false;
-  }
-
-  function toggle() {
-    open = !open;
   }
 </script>
 
@@ -29,27 +24,27 @@
     class="enos-picker__trigger"
     aria-haspopup="listbox"
     aria-expanded={open}
-    onclick={toggle}
+    on:click={() => (open = !open)}
   >
     {currentLabel}
   </button>
 
   {#if open}
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
     <div
       class="enos-picker__backdrop"
       role="none"
-      onclick={() => (open = false)}
+      on:click={() => (open = false)}
     ></div>
     <ul class="enos-picker__menu" role="listbox">
       {#each MINDS as mind}
         <li
           role="option"
-          aria-selected={$selectedModels[0] === mind.id}
+          aria-selected={value === mind.id}
           class="enos-picker__option"
-          class:selected={$selectedModels[0] === mind.id}
-          onclick={() => select(mind.id)}
-          onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && select(mind.id)}
+          class:selected={value === mind.id}
+          on:click={() => select(mind.id)}
+          on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && select(mind.id)}
           tabindex="0"
         >
           {mind.label}

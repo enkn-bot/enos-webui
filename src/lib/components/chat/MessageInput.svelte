@@ -104,6 +104,7 @@
 	import Expand from '../icons/Expand.svelte';
 	import QueuedMessageItem from './MessageInput/QueuedMessageItem.svelte';
 	import TaskList from './Messages/ResponseMessage/TaskList.svelte';
+	import ModelPicker from '$lib/components/enos/ModelPicker.svelte';
 
 	const i18n = getContext('i18n');
 
@@ -1724,6 +1725,11 @@
 											</button>
 										</IntegrationsMenu>
 									{/if}
+
+									<ModelPicker
+										value={selectedModels[0] ?? 'enos.mind'}
+										onSelect={(id) => { selectedModels = [id]; }}
+									/>
 
 									{#if selectedModelIds.length === 1 && $models.find((m) => m.id === selectedModelIds[0])?.has_user_valves}
 										<div class="ml-1 flex gap-1.5">
