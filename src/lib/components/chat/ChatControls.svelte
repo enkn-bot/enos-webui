@@ -3,6 +3,7 @@
 </script>
 
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { SvelteFlowProvider } from '@xyflow/svelte';
 	import { slide } from 'svelte/transition';
 	import { Pane, PaneResizer } from 'paneforge';
@@ -71,11 +72,20 @@
 	$: hasMessages = history?.messages && Object.keys(history.messages).length > 0;
 
 	$: showControlsTab = $user?.role === 'admin' || ($user?.permissions?.chat?.controls ?? true);
+	$: isDeskSurface = browser && window.location.hostname === 'enosdesk.duckdns.org';
+	$: canUseDirectTerminal =
+		$user?.role === 'admin' || ($user?.permissions?.features?.direct_tool_servers ?? true);
+	$: hasConfiguredTerminal =
+		($terminalServers ?? []).length > 0 ||
+		($settings?.terminalServers ?? []).some((server) => Boolean(server?.url));
+	$: hasSelectedTerminalAccess =
+		$selectedTerminalId &&
+		(($terminalServers ?? []).some((t) => t.id && t.id === $selectedTerminalId) ||
+			canUseDirectTerminal);
+	$: showTerminalFileNav =
+		hasSelectedTerminalAccess || (isDeskSurface && hasConfiguredTerminal && canUseDirectTerminal);
 	$: showFilesTab =
-		($selectedTerminalId &&
-			(($terminalServers ?? []).some((t) => t.id && t.id === $selectedTerminalId) ||
-				$user?.role === 'admin' ||
-				($user?.permissions?.features?.direct_tool_servers ?? true))) ||
+		showTerminalFileNav ||
 		(codeInterpreterEnabled && $config?.code?.interpreter_engine !== 'jupyter');
 	$: showOverviewTab = hasMessages;
 
@@ -373,7 +383,7 @@
 									}}
 									onClose={() => showControls.set(false)}
 								/>
-							{:else if activeTab === 'files' && $selectedTerminalId}
+							{:else if activeTab === 'files' && showTerminalFileNav}
 								<FileNav onAttach={handleTerminalAttach} {chatId} />
 							{:else if activeTab === 'files' && codeInterpreterEnabled}
 								<PyodideFileNav />
@@ -524,7 +534,7 @@
 										}}
 										onClose={() => showControls.set(false)}
 									/>
-								{:else if activeTab === 'files' && $selectedTerminalId}
+								{:else if activeTab === 'files' && showTerminalFileNav}
 									<FileNav onAttach={handleTerminalAttach} overlay={dragged} {chatId} />
 								{:else if activeTab === 'files' && codeInterpreterEnabled}
 									<PyodideFileNav overlay={dragged} />
