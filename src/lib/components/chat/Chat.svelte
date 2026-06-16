@@ -1216,9 +1216,10 @@
 				selectedModels = $selectedFolder?.data?.model_ids;
 			} else {
 				if (sessionStorage.selectedModels) {
-					// Set from session storage (temporary selection)
+					// Set from session storage (temporary selection). Keep it so the next
+					// new chat on the welcome page retains the user's explicit model choice
+					// instead of falling back to $settings.models / defaultModels.
 					selectedModels = JSON.parse(sessionStorage.selectedModels);
-					sessionStorage.removeItem('selectedModels');
 				} else {
 					if ($settings?.models) {
 						// Set from user settings
