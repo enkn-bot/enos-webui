@@ -39,7 +39,7 @@
 		const _chat = chat.chat;
 		console.log('share', _chat);
 
-		toast.success($i18n.t('Redirecting you to Open WebUI Community'));
+		toast.success($i18n.t('Redirecting you to the Community'));
 		const url = 'https://openwebui.com';
 		// const url = 'http://localhost:5173';
 
