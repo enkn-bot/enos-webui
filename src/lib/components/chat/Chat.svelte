@@ -1418,6 +1418,7 @@
 					selectedModels = selectedModels.length > 0 ? [selectedModels[0]] : [''];
 				}
 
+				saveSessionSelectedModels();
 				oldSelectedModelIds = structuredClone(selectedModels);
 
 				history =

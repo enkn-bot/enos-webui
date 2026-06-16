@@ -57,6 +57,7 @@
 	import { generateAutoCompletion } from '$lib/apis';
 	import { deleteFileById } from '$lib/apis/files';
 	import { getChatById } from '$lib/apis/chats';
+	import { updateUserSettings } from '$lib/apis/users';
 	import { getSessionUser } from '$lib/apis/auths';
 	import { getTools } from '$lib/apis/tools';
 	import { getSkills } from '$lib/apis/skills';
@@ -123,6 +124,16 @@
 
 	let selectedModelIds = [];
 	$: selectedModelIds = atSelectedModel !== undefined ? [atSelectedModel.id] : selectedModels;
+
+	const persistComposerModel = async (id: string) => {
+		const nextModels = [id];
+		selectedModels = nextModels;
+		sessionStorage.selectedModels = JSON.stringify(nextModels);
+		settings.set({ ...$settings, models: nextModels });
+		await updateUserSettings(localStorage.token, { ui: $settings }).catch((error) => {
+			console.warn('Unable to persist selected ENOS model', error);
+		});
+	};
 
 	export let history;
 	export let taskIds = null;
@@ -1729,8 +1740,7 @@
 									<ModelPicker
 										value={selectedModels[0] ?? 'enos.mind'}
 										onSelect={(id) => {
-											selectedModels = [id];
-											sessionStorage.selectedModels = JSON.stringify([id]);
+											persistComposerModel(id);
 										}}
 									/>
 
