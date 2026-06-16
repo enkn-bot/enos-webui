@@ -43,3 +43,23 @@ test('Desk exposes Files tab without requiring a preselected terminal', () => {
 		'Files tab should render FileNav when selected',
 	);
 });
+
+test('Desk side pane keeps shared UI while ordering tabs as Overview, Controls, Files', () => {
+	const controls = readFileSync('src/lib/components/chat/ChatControls.svelte', 'utf8');
+
+	assert.match(
+		controls,
+		/DESK_CONTROL_TAB_ORDER\s*=\s*\[\s*'overview'\s*,\s*'controls'\s*,\s*'files'\s*\]/,
+		'Desk should order side-pane tabs as Overview, Controls, Files',
+	);
+	assert.match(
+		controls,
+		/visibleControlTabs\s*=[\s\S]*controlTabOrder[\s\S]*filter/,
+		'ChatControls should derive visible tabs from one shared tab policy',
+	);
+	assert.match(
+		controls,
+		/{#each visibleControlTabs as tab/,
+		'The tab bar should render from the shared visibleControlTabs policy, not duplicated hardcoded buttons',
+	);
+});

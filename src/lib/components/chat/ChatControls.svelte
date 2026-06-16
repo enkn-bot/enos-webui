@@ -38,6 +38,12 @@
 
 	const i18n = getContext('i18n');
 
+	type ControlTab = 'overview' | 'controls' | 'files';
+	const DESK_CONTROL_TAB_ORDER = ['overview', 'controls', 'files'] satisfies ControlTab[];
+	const DEFAULT_CONTROL_TAB_ORDER = ['controls', 'files', 'overview'] satisfies ControlTab[];
+	const controlTabLabel = (tab: ControlTab) =>
+		tab === 'overview' ? 'Overview' : tab === 'files' ? 'Files' : 'Controls';
+
 	export let history;
 	export let models = [];
 
@@ -62,8 +68,10 @@
 	let minSize = 0;
 	let paneReady = false;
 
-	// Tab state for Controls+Files panel
-	let activeTab = savedTab;
+	// Tab state for the shared surface side pane.
+	let activeTab: ControlTab = savedTab;
+	let controlTabOrder: ControlTab[] = DEFAULT_CONTROL_TAB_ORDER;
+	let visibleControlTabs: ControlTab[] = [];
 	// svelte-ignore reactive_declaration_module_script_dependency
 	$: {
 		savedTab = activeTab;
@@ -87,18 +95,21 @@
 	$: showFilesTab =
 		showTerminalFileNav ||
 		(codeInterpreterEnabled && $config?.code?.interpreter_engine !== 'jupyter');
-	$: showOverviewTab = hasMessages;
+	$: showOverviewTab = isDeskSurface || hasMessages;
+	$: controlTabOrder = isDeskSurface ? DESK_CONTROL_TAB_ORDER : DEFAULT_CONTROL_TAB_ORDER;
+	$: visibleControlTabs = controlTabOrder.filter((tab) => {
+		if (tab === 'overview') return showOverviewTab;
+		if (tab === 'files') return showFilesTab;
+		return showControlsTab;
+	});
 
-	// Tab fallback: if active tab becomes hidden, switch to next available
-	$: if (!showOverviewTab && activeTab === 'overview') activeTab = 'controls';
-	$: if (!showFilesTab && activeTab === 'files') activeTab = 'controls';
-	$: if (!showControlsTab && activeTab === 'controls') {
-		if (showFilesTab) activeTab = 'files';
-		else if (showOverviewTab) activeTab = 'overview';
+	// Tab fallback: if active tab becomes hidden, switch to the first surface tab.
+	$: if (!visibleControlTabs.includes(activeTab)) {
+		activeTab = visibleControlTabs[0] ?? 'controls';
 	}
 
 	// Auto-close if there are no visible tabs
-	$: if (!showControlsTab && !showFilesTab && !showOverviewTab) {
+	$: if (visibleControlTabs.length === 0) {
 		showControls.set(false);
 	}
 
@@ -310,44 +321,22 @@
 				{:else if $showArtifacts}
 					<Artifacts {history} />
 				{:else}
-					<!-- Controls + Files tabs -->
+					<!-- Shared surface tabs -->
 					<div class="flex flex-col h-full min-h-0">
 						<!-- Tab bar -->
 						<div class="flex items-center justify-between px-2 pt-2 pb-2 shrink-0">
 							<div class="flex gap-1 min-w-0 overflow-x-auto scrollbar-hidden">
-								{#if showControlsTab}
+								{#each visibleControlTabs as tab}
 									<button
 										class="px-2.5 py-1 text-sm rounded-lg transition whitespace-nowrap {activeTab ===
-										'controls'
+										tab
 											? 'bg-gray-100 dark:bg-gray-800 font-medium text-gray-900 dark:text-white'
 											: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
-										on:click={() => (activeTab = 'controls')}
+										on:click={() => (activeTab = tab)}
 									>
-										{$i18n.t('Controls')}
+										{$i18n.t(controlTabLabel(tab))}
 									</button>
-								{/if}
-								{#if showFilesTab}
-									<button
-										class="px-2.5 py-1 text-sm rounded-lg transition whitespace-nowrap {activeTab ===
-										'files'
-											? 'bg-gray-100 dark:bg-gray-800 font-medium text-gray-900 dark:text-white'
-											: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
-										on:click={() => (activeTab = 'files')}
-									>
-										{$i18n.t('Files')}
-									</button>
-								{/if}
-								{#if showOverviewTab}
-									<button
-										class="px-2.5 py-1 text-sm rounded-lg transition whitespace-nowrap {activeTab ===
-										'overview'
-											? 'bg-gray-100 dark:bg-gray-800 font-medium text-gray-900 dark:text-white'
-											: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
-										on:click={() => (activeTab = 'overview')}
-									>
-										{$i18n.t('Overview')}
-									</button>
-								{/if}
+								{/each}
 							</div>
 							<button
 								class="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition text-gray-500 dark:text-gray-400"
@@ -456,44 +445,22 @@
 					{:else if $showArtifacts}
 						<Artifacts {history} overlay={dragged} />
 					{:else}
-						<!-- Controls + Files tabs -->
+						<!-- Shared surface tabs -->
 						<div class="flex flex-col h-full min-h-0">
 							<!-- Tab bar -->
 							<div class="flex items-center justify-between px-2 pt-2 pb-2 shrink-0">
 								<div class="flex gap-1 min-w-0 overflow-x-auto scrollbar-hidden">
-									{#if showControlsTab}
+									{#each visibleControlTabs as tab}
 										<button
 											class="px-2.5 py-1 text-sm rounded-lg transition whitespace-nowrap {activeTab ===
-											'controls'
+											tab
 												? 'bg-gray-100 dark:bg-gray-800 font-medium text-gray-900 dark:text-white'
 												: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
-											on:click={() => (activeTab = 'controls')}
+											on:click={() => (activeTab = tab)}
 										>
-											{$i18n.t('Controls')}
+											{$i18n.t(controlTabLabel(tab))}
 										</button>
-									{/if}
-									{#if showFilesTab}
-										<button
-											class="px-2.5 py-1 text-sm rounded-lg transition whitespace-nowrap {activeTab ===
-											'files'
-												? 'bg-gray-100 dark:bg-gray-800 font-medium text-gray-900 dark:text-white'
-												: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
-											on:click={() => (activeTab = 'files')}
-										>
-											{$i18n.t('Files')}
-										</button>
-									{/if}
-									{#if showOverviewTab}
-										<button
-											class="px-2.5 py-1 text-sm rounded-lg transition whitespace-nowrap {activeTab ===
-											'overview'
-												? 'bg-gray-100 dark:bg-gray-800 font-medium text-gray-900 dark:text-white'
-												: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
-											on:click={() => (activeTab = 'overview')}
-										>
-											{$i18n.t('Overview')}
-										</button>
-									{/if}
+									{/each}
 								</div>
 								<button
 									class="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition text-gray-500 dark:text-gray-400"
