@@ -23,6 +23,7 @@
 	export let edit = false;
 	export let direct = false;
 	export let connection = null;
+	export let preset = null;
 
 	export let onSubmit: Function = () => {};
 	export let onDelete: () => void = () => {};
@@ -79,6 +80,25 @@
 			// Restore resources
 			policyCpu = p.cpu_limit ?? '1';
 			policyMemory = p.memory_limit ?? '1Gi';
+		} else if (preset) {
+			id = '';
+			url = preset.url ?? '';
+			key = preset.key ?? '';
+			name = preset.name ?? '';
+			auth_type = preset.auth_type ?? 'bearer';
+			path = preset.path ?? '/openapi.json';
+			enabled = preset.enabled ?? false;
+			accessGrants = [];
+
+			serverType = null;
+			policyId = '';
+			policyImage = '';
+			policyEnvPairs = [];
+			policyCpu = '1';
+			policyMemory = '1Gi';
+			policyStorage = 'ephemeral';
+			policyStorageSize = '5Gi';
+			policyIdleTimeout = 30;
 		} else {
 			id = '';
 			url = '';

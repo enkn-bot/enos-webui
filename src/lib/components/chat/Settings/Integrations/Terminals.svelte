@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
+	import { browser } from '$app/environment';
 	const i18n = getContext('i18n');
 
 	import Plus from '$lib/components/icons/Plus.svelte';
@@ -11,6 +12,31 @@
 	export let onChange: (servers: typeof servers) => void = () => {};
 
 	let showAddModal = false;
+	let pendingPreset = null;
+
+	const LOCAL_DESK_TERMINAL_PRESET = {
+		name: 'Local files',
+		url: 'http://127.0.0.1:9900',
+		key: '',
+		auth_type: 'bearer',
+		path: '/openapi.json',
+		enabled: true,
+		config: {
+			scope: 'local-companion'
+		}
+	};
+
+	$: isDeskSurface = browser && window.location.hostname === 'enosdesk.duckdns.org';
+
+	const openAddModal = () => {
+		pendingPreset = null;
+		showAddModal = true;
+	};
+
+	const openLocalFilesModal = () => {
+		pendingPreset = LOCAL_DESK_TERMINAL_PRESET;
+		showAddModal = true;
+	};
 
 	const addServer = (server: (typeof servers)[0]) => {
 		servers = [...servers, server];
@@ -38,7 +64,12 @@
 	};
 </script>
 
-<AddTerminalServerModal direct bind:show={showAddModal} onSubmit={(server) => addServer(server)} />
+<AddTerminalServerModal
+	direct
+	bind:show={showAddModal}
+	preset={pendingPreset}
+	onSubmit={(server) => addServer(server)}
+/>
 
 <div>
 	<div class="flex justify-between items-center mb-1">
@@ -49,16 +80,29 @@
 				>{$i18n.t('Experimental')}</span
 			>
 		</div>
-		<Tooltip content={$i18n.t('Add Connection')}>
-			<button
-				class="px-1"
-				on:click={() => (showAddModal = true)}
-				type="button"
-				aria-label={$i18n.t('Add Connection')}
-			>
-				<Plus />
-			</button>
-		</Tooltip>
+		<div class="flex items-center gap-1">
+			{#if isDeskSurface}
+				<Tooltip content={$i18n.t('Add Local Files')}>
+					<button
+						class="px-2 py-1 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+						on:click={openLocalFilesModal}
+						type="button"
+					>
+						{$i18n.t('Local Files')}
+					</button>
+				</Tooltip>
+			{/if}
+			<Tooltip content={$i18n.t('Add Connection')}>
+				<button
+					class="px-1"
+					on:click={openAddModal}
+					type="button"
+					aria-label={$i18n.t('Add Connection')}
+				>
+					<Plus />
+				</button>
+			</Tooltip>
+		</div>
 	</div>
 
 	<div class="flex flex-col gap-1.5">
