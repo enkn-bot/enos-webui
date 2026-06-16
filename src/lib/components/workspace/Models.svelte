@@ -23,6 +23,7 @@
 	} from '$lib/apis/models';
 
 	import { getModels } from '$lib/apis';
+	import { getFunctionValvesById } from '$lib/apis/functions';
 	import { getGroups } from '$lib/apis/groups';
 	import { updateUserSettings } from '$lib/apis/users';
 
@@ -72,13 +73,49 @@
 
 	let page = 1;
 	let models = null;
+	let visibleModels = [];
 	let total = null;
+	let enosRoutingLoaded = false;
+	let enosRouting = {
+		ROUTER_MODEL: 'google/gemini-2.5-flash-lite',
+		SUBCONSCIOUS_CHAIN: 'google/gemini-2.5-flash-lite,z-ai/glm-4.7-flash,qwen/qwen3-30b-a3b-instruct-2507',
+		STANDARD_CHAIN: 'deepseek/deepseek-v4-flash,qwen/qwen3.5-flash-02-23,google/gemini-2.5-flash-lite',
+		PRO_CHAIN: 'deepseek/deepseek-v4-pro,z-ai/glm-5,openrouter/auto',
+		ROUTER_TIMEOUT_S: 6
+	};
 
 	let searchDebounceTimer;
 
 	$: if (loaded && page !== undefined && selectedTag !== undefined && viewOption !== undefined) {
 		getModelList();
 	}
+
+	$: visibleModels = (models ?? []).filter((model) => model?.id !== 'enos.desk');
+
+	const chainItems = (raw) =>
+		String(raw ?? '')
+			.split(',')
+			.map((item) => item.trim())
+			.filter(Boolean);
+
+	const loadEnosRouting = async () => {
+		if (enosRoutingLoaded || $user?.role !== 'admin') return;
+		enosRoutingLoaded = true;
+
+		try {
+			const valves = await getFunctionValvesById(localStorage.token, 'enos');
+			if (valves) {
+				enosRouting = {
+					...enosRouting,
+					...Object.fromEntries(
+						Object.entries(valves).filter(([, value]) => value !== undefined && value !== null && value !== '')
+					)
+				};
+			}
+		} catch (error) {
+			console.warn('Unable to load ENOS routing valves; using shipped defaults.', error);
+		}
+	};
 
 	const getModelList = async () => {
 		if (!loaded) return;
@@ -106,6 +143,8 @@
 					toast.error(`${error}`);
 					return [];
 				});
+
+				loadEnosRouting();
 			}
 		} catch (err) {
 			console.error(err);
@@ -439,6 +478,60 @@
 	<div
 		class="py-2 bg-white dark:bg-gray-900 rounded-3xl border border-gray-100/30 dark:border-gray-850/30"
 	>
+		{#if $user?.role === 'admin'}
+			<div class="mx-3 mb-3 rounded-2xl border border-gray-100 dark:border-gray-850 bg-gray-50/70 dark:bg-gray-950/40 p-4">
+				<div class="flex flex-col gap-1 mb-3">
+					<div class="text-sm font-semibold text-gray-900 dark:text-gray-100">ENOS routing</div>
+					<div class="text-xs text-gray-500 dark:text-gray-400">
+						Subconscious, Mind, and DeepMind are product tiers. The rows under them are provider fallback chains, not extra user-facing models.
+					</div>
+				</div>
+
+				<div class="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
+						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Subconscious</div>
+						<div class="flex flex-col gap-1">
+							{#each chainItems(enosRouting.SUBCONSCIOUS_CHAIN) as model}
+								<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">{model}</div>
+							{/each}
+						</div>
+					</div>
+
+					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
+						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Mind standard</div>
+						<div class="flex flex-col gap-1">
+							{#each chainItems(enosRouting.STANDARD_CHAIN) as model}
+								<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">{model}</div>
+							{/each}
+						</div>
+					</div>
+
+					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
+						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">DeepMind / pro</div>
+						<div class="flex flex-col gap-1">
+							{#each chainItems(enosRouting.PRO_CHAIN) as model}
+								<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">{model}</div>
+							{/each}
+						</div>
+					</div>
+
+					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
+						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Router / judge</div>
+						<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">
+							{enosRouting.ROUTER_MODEL}
+						</div>
+						<div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+							Judge uses router first, then deepseek/deepseek-v4-flash fallback. Timeout: {enosRouting.ROUTER_TIMEOUT_S}s.
+						</div>
+					</div>
+				</div>
+
+				<div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
+					Desk tiers are terminal-capable bindings to <span class="font-mono">enos-m11</span>. The old <span class="font-mono">enos.desk</span> bridge is retained for compatibility but hidden from this view.
+				</div>
+			</div>
+		{/if}
+
 		<div class="px-3.5 flex flex-1 items-center w-full space-x-2 py-0.5 pb-2">
 			<div class="flex flex-1 items-center">
 				<div class=" self-center ml-1 mr-3">
@@ -573,9 +666,9 @@
 		</div>
 
 		{#if models !== null}
-			{#if (models ?? []).length !== 0}
+			{#if visibleModels.length !== 0}
 				<div class=" px-3 my-2 gap-1 lg:gap-2 grid lg:grid-cols-2" id="model-list">
-					{#each models as model (model.id)}
+					{#each visibleModels as model (model.id)}
 						<!-- svelte-ignore a11y_no_static_element_interactions -->
 						<!-- svelte-ignore a11y_click_events_have_key_events -->
 						<div
