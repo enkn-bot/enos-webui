@@ -1728,7 +1728,10 @@
 
 									<ModelPicker
 										value={selectedModels[0] ?? 'enos.mind'}
-										onSelect={(id) => { selectedModels = [id]; }}
+										onSelect={(id) => {
+											selectedModels = [id];
+											sessionStorage.selectedModels = JSON.stringify([id]);
+										}}
 									/>
 
 									{#if selectedModelIds.length === 1 && $models.find((m) => m.id === selectedModelIds[0])?.has_user_valves}
