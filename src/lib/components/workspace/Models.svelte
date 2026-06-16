@@ -78,9 +78,15 @@
 	let enosRoutingLoaded = false;
 	let enosRouting = {
 		ROUTER_MODEL: 'google/gemini-2.5-flash-lite',
-		SUBCONSCIOUS_CHAIN: 'google/gemini-2.5-flash-lite,z-ai/glm-4.7-flash,qwen/qwen3-30b-a3b-instruct-2507',
-		STANDARD_CHAIN: 'deepseek/deepseek-v4-flash,qwen/qwen3.5-flash-02-23,google/gemini-2.5-flash-lite',
-		PRO_CHAIN: 'deepseek/deepseek-v4-pro,z-ai/glm-5,openrouter/auto',
+		SUBCONSCIOUS_CHAIN: 'qwen/qwen3-30b-a3b-instruct-2507,z-ai/glm-4.7-flash,google/gemini-2.5-flash-lite',
+		SUBCONSCIOUS_TOOL_CHAIN: 'google/gemini-2.5-flash-lite,z-ai/glm-4.7-flash,qwen/qwen3-30b-a3b-instruct-2507',
+		STANDARD_CHAIN: 'deepseek/deepseek-v4-flash,inclusionai/ring-2.6-1t,qwen/qwen3.7-plus,minimax/minimax-m3,google/gemini-3.1-flash-lite',
+		TOOL_CHAIN: 'qwen/qwen3.7-plus,minimax/minimax-m3,google/gemini-3.1-flash-lite,deepseek/deepseek-v4-flash',
+		PRO_CHAIN: 'deepseek/deepseek-v4-pro,z-ai/glm-5.2,z-ai/glm-5.1,qwen/qwen3.7-max,moonshotai/kimi-k2.7-code,openrouter/auto',
+		DEEP_TOOL_CHAIN: 'qwen/qwen3.7-max,z-ai/glm-5.2,minimax/minimax-m3,deepseek/deepseek-v4-pro',
+		JUDGE_CHAIN: 'google/gemini-2.5-flash-lite,deepseek/deepseek-v4-flash',
+		DEEP_REVIEW_CHAIN: 'z-ai/glm-5.2,qwen/qwen3.7-max',
+		COUNCIL_CHAIN: 'openrouter/fusion',
 		ROUTER_TIMEOUT_S: 6
 	};
 
@@ -487,9 +493,9 @@
 					</div>
 				</div>
 
-				<div class="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+				<div class="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
 					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
-						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Subconscious</div>
+						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Subconscious text</div>
 						<div class="flex flex-col gap-1">
 							{#each chainItems(enosRouting.SUBCONSCIOUS_CHAIN) as model}
 								<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">{model}</div>
@@ -498,7 +504,16 @@
 					</div>
 
 					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
-						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Mind standard</div>
+						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Subconscious tools/RAG</div>
+						<div class="flex flex-col gap-1">
+							{#each chainItems(enosRouting.SUBCONSCIOUS_TOOL_CHAIN) as model}
+								<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">{model}</div>
+							{/each}
+						</div>
+					</div>
+
+					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
+						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Mind text</div>
 						<div class="flex flex-col gap-1">
 							{#each chainItems(enosRouting.STANDARD_CHAIN) as model}
 								<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">{model}</div>
@@ -507,7 +522,16 @@
 					</div>
 
 					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
-						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">DeepMind / pro</div>
+						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Mind tools/RAG</div>
+						<div class="flex flex-col gap-1">
+							{#each chainItems(enosRouting.TOOL_CHAIN) as model}
+								<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">{model}</div>
+							{/each}
+						</div>
+					</div>
+
+					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
+						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">DeepMind text</div>
 						<div class="flex flex-col gap-1">
 							{#each chainItems(enosRouting.PRO_CHAIN) as model}
 								<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">{model}</div>
@@ -516,12 +540,45 @@
 					</div>
 
 					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
-						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Router / judge</div>
+						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">DeepMind tools/RAG</div>
+						<div class="flex flex-col gap-1">
+							{#each chainItems(enosRouting.DEEP_TOOL_CHAIN) as model}
+								<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">{model}</div>
+							{/each}
+						</div>
+					</div>
+
+					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
+						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Router</div>
 						<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">
 							{enosRouting.ROUTER_MODEL}
 						</div>
 						<div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-							Judge uses router first, then deepseek/deepseek-v4-flash fallback. Timeout: {enosRouting.ROUTER_TIMEOUT_S}s.
+							Dispatch and lightweight classification. Timeout: {enosRouting.ROUTER_TIMEOUT_S}s.
+						</div>
+					</div>
+
+					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
+						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Judge</div>
+						<div class="flex flex-col gap-1">
+							{#each chainItems(enosRouting.JUDGE_CHAIN) as model}
+								<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">{model}</div>
+							{/each}
+						</div>
+						<div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+							Normal evidence checks.
+						</div>
+					</div>
+
+					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
+						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Deep review / council</div>
+						<div class="flex flex-col gap-1">
+							{#each [...chainItems(enosRouting.DEEP_REVIEW_CHAIN), ...chainItems(enosRouting.COUNCIL_CHAIN)] as model}
+								<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">{model}</div>
+							{/each}
+						</div>
+						<div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+							Escalation only; not normal chat routing.
 						</div>
 					</div>
 				</div>
