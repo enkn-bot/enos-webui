@@ -76,6 +76,7 @@
 	let visibleModels = [];
 	let total = null;
 	let enosRoutingLoaded = false;
+	let enosRoutingExpanded = false;
 	let enosRouting = {
 		ROUTER_MODEL: 'google/gemini-2.5-flash-lite',
 		SUBCONSCIOUS_CHAIN: 'qwen/qwen3-30b-a3b-instruct-2507,z-ai/glm-4.7-flash,google/gemini-2.5-flash-lite',
@@ -439,7 +440,7 @@
 				</div>
 
 				<div class="text-lg font-medium text-gray-500 dark:text-gray-500">
-					{total}
+					{visibleModels.length}
 				</div>
 			</div>
 
@@ -486,14 +487,27 @@
 	>
 		{#if $user?.role === 'admin'}
 			<div class="mx-3 mb-3 rounded-2xl border border-gray-100 dark:border-gray-850 bg-gray-50/70 dark:bg-gray-950/40 p-4">
-				<div class="flex flex-col gap-1 mb-3">
-					<div class="text-sm font-semibold text-gray-900 dark:text-gray-100">ENOS routing</div>
-					<div class="text-xs text-gray-500 dark:text-gray-400">
-						Subconscious, Mind, and DeepMind are product tiers. The rows under them are provider fallback chains, not extra user-facing models.
+				<button
+					class="w-full flex items-center justify-between"
+					on:click={() => (enosRoutingExpanded = !enosRoutingExpanded)}
+				>
+					<div class="flex flex-col gap-1 text-left">
+						<div class="text-sm font-semibold text-gray-900 dark:text-gray-100">ENOS routing</div>
+						<div class="text-xs text-gray-500 dark:text-gray-400">
+							Subconscious, Mind, and DeepMind are product tiers. The rows under them are provider fallback chains, not extra user-facing models.
+						</div>
 					</div>
-				</div>
+					<svg
+						class="size-5 text-gray-500 dark:text-gray-400 transition-transform duration-200 {enosRoutingExpanded ? 'rotate-180' : ''}"
+						viewBox="0 0 20 20"
+						fill="currentColor"
+					>
+						<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+					</svg>
+				</button>
 
-				<div class="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+				{#if enosRoutingExpanded}
+					<div class="grid gap-2 md:grid-cols-2 xl:grid-cols-3 mt-3">
 					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
 						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Subconscious text</div>
 						<div class="flex flex-col gap-1">
@@ -586,6 +600,7 @@
 				<div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
 					Desk tiers are terminal-capable bindings to <span class="font-mono">enos-m11</span>. The old <span class="font-mono">enos.desk</span> bridge is retained for compatibility but hidden from this view.
 				</div>
+				{/if}
 			</div>
 		{/if}
 
