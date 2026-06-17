@@ -33,8 +33,10 @@
 	import Artifacts from './Artifacts.svelte';
 	import Embeds from './ChatControls/Embeds.svelte';
 	import FileNav from './FileNav.svelte';
+	import LocalFileNav from './LocalFileNav.svelte';
 	import PyodideFileNav from './PyodideFileNav.svelte';
 	import Overview from './Overview.svelte';
+	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 
 	const i18n = getContext('i18n');
 
@@ -72,6 +74,7 @@
 	let activeTab: ControlTab = savedTab;
 	let controlTabOrder: ControlTab[] = DEFAULT_CONTROL_TAB_ORDER;
 	let visibleControlTabs: ControlTab[] = [];
+	let hasDesktopBridge = false;
 	// svelte-ignore reactive_declaration_module_script_dependency
 	$: {
 		savedTab = activeTab;
@@ -92,7 +95,9 @@
 			canUseDirectTerminal);
 	$: showTerminalFileNav =
 		hasSelectedTerminalAccess || (isDeskSurface && hasConfiguredTerminal && canUseDirectTerminal);
+	$: showLocalFileNav = isDeskSurface && hasDesktopBridge;
 	$: showFilesTab =
+		showLocalFileNav ||
 		showTerminalFileNav ||
 		(codeInterpreterEnabled && $config?.code?.interpreter_engine !== 'jupyter');
 	$: showOverviewTab = isDeskSurface || hasMessages;
@@ -217,6 +222,8 @@
 	};
 
 	onMount(() => {
+		hasDesktopBridge = Boolean(getEnosDesktopBridge());
+
 		const mediaQuery = window.matchMedia('(min-width: 1024px)');
 		mediaQuery.addEventListener('change', handleMediaQuery);
 		handleMediaQuery(mediaQuery);
@@ -372,6 +379,8 @@
 									}}
 									onClose={() => showControls.set(false)}
 								/>
+							{:else if activeTab === 'files' && showLocalFileNav}
+								<LocalFileNav onAttach={handleTerminalAttach} />
 							{:else if activeTab === 'files' && showTerminalFileNav}
 								<FileNav onAttach={handleTerminalAttach} {chatId} />
 							{:else if activeTab === 'files' && codeInterpreterEnabled}
@@ -501,6 +510,8 @@
 										}}
 										onClose={() => showControls.set(false)}
 									/>
+								{:else if activeTab === 'files' && showLocalFileNav}
+									<LocalFileNav onAttach={handleTerminalAttach} />
 								{:else if activeTab === 'files' && showTerminalFileNav}
 									<FileNav onAttach={handleTerminalAttach} overlay={dragged} {chatId} />
 								{:else if activeTab === 'files' && codeInterpreterEnabled}
