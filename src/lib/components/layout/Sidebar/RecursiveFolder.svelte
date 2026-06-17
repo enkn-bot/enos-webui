@@ -722,6 +722,7 @@
 							updatedAt={chat.updated_at}
 							lastReadAt={chat.last_read_at}
 							{shiftKey}
+							projectFolder={isDeskSurface ? folders[folderId] : null}
 							on:change={(e) => {
 								dispatch('change', e.detail);
 							}}

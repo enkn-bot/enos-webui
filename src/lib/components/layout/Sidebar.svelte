@@ -50,7 +50,12 @@
 		deleteAllChats,
 		getChatListBySearchText
 	} from '$lib/apis/chats';
-	import { createNewFolder, getFolders, updateFolderParentIdById } from '$lib/apis/folders';
+	import {
+		createNewFolder,
+		getFolders,
+		updateFolderById,
+		updateFolderParentIdById
+	} from '$lib/apis/folders';
 	import { createNewNote, getPinnedNoteList, toggleNotePinnedStatusById } from '$lib/apis/notes';
 	import { updateUserSettings } from '$lib/apis/users';
 	import { checkActiveChats } from '$lib/apis/tasks';
@@ -225,6 +230,47 @@
 		}
 	};
 
+	const saveProjectDigestForFolder = async (folderId, folder = null) => {
+		const bridge = getEnosDesktopBridge();
+		if (!bridge?.buildProjectDigest || !folderId) return null;
+
+		try {
+			const digest = await bridge.buildProjectDigest(folderId);
+			const nextData = {
+				...(folder?.data ?? {}),
+				project_context_digest: digest.text,
+				project_context_updated_at: digest.generatedAt,
+				project_context_source: {
+					rootName: digest.rootName,
+					fileCount: digest.fileCount,
+					sampledFileCount: digest.sampledFileCount,
+					skippedCount: digest.skippedCount
+				}
+			};
+
+			const updated = await updateFolderById(localStorage.token, folderId, { data: nextData });
+			const nextFolder = {
+				...(folder ?? {}),
+				...(updated ?? {}),
+				id: folderId,
+				data: nextData
+			};
+
+			await selectedFolder.set(nextFolder);
+			folders = {
+				...folders,
+				[folderId]: {
+					...(folders[folderId] ?? {}),
+					...nextFolder
+				}
+			};
+			return nextFolder;
+		} catch (error) {
+			toast.error($i18n.t('Project created. Restart ENOS Desk, then run Analyze Project.'));
+			return null;
+		}
+	};
+
 	const createFolder = async ({ name, data, parent_id, localWorkspace }) => {
 		name = name?.trim();
 		if (!name) {
@@ -272,9 +318,11 @@
 			if (localWorkspace && isDeskSurface && hasDesktopBridge) {
 				const bridge = getEnosDesktopBridge();
 				await bridge.bindWorkspaceToFolder(res.id);
+				await selectedFolder.set(res);
 				showLocalFileFolderId.set(res.id);
 				showControls.set(true);
 				showFileNavPath.set('.');
+				await saveProjectDigestForFolder(res.id, res);
 			}
 			// newFolderId = res.id;
 			await initFolders();

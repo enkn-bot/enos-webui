@@ -41,6 +41,26 @@
 
 	const displayPath = (path: string) => (path === '.' ? '/' : `/${path}`);
 
+	const friendlyDesktopError = (e: any) => {
+		const message = e?.message ?? String(e);
+		if (
+			message.includes("No handler registered") ||
+			message.includes('build-project-digest') ||
+			message.includes('list-project-files') ||
+			message.includes('read-project-file')
+		) {
+			return $i18n.t('Restart ENOS Desk to enable local project actions.');
+		}
+		if (
+			message.includes('ENOENT') ||
+			message.includes('no such file') ||
+			message.includes('No local workspace selected')
+		) {
+			return $i18n.t('This project folder is unavailable. Select the project folder again.');
+		}
+		return message;
+	};
+
 	const parentPath = (path: string) => {
 		if (path === '.') return null;
 		const parts = path.split('/').filter(Boolean);
@@ -63,10 +83,19 @@
 	const loadWorkspace = async () => {
 		if (!bridge) return;
 		loadedFolderId = folderId;
-		workspace = await bridge.getWorkspace(folderId);
-		if (workspace) {
-			await loadDir('.');
-		} else {
+		error = null;
+		try {
+			workspace = await bridge.getWorkspace(folderId);
+			if (workspace) {
+				await loadDir('.');
+			} else {
+				listing = null;
+				currentPath = '.';
+				selectedFile = null;
+			}
+		} catch (e) {
+			error = friendlyDesktopError(e);
+			workspace = null;
 			listing = null;
 			currentPath = '.';
 			selectedFile = null;
@@ -82,7 +111,7 @@
 				: await bridge.chooseWorkspace();
 			if (workspace) await loadDir('.');
 		} catch (e) {
-			error = e?.message ?? String(e);
+			error = friendlyDesktopError(e);
 		}
 	};
 
@@ -95,7 +124,10 @@
 			listing = await bridge.listDir(path, folderId);
 			currentPath = listing.path;
 		} catch (e) {
-			error = e?.message ?? String(e);
+			error = friendlyDesktopError(e);
+			listing = null;
+			currentPath = '.';
+			selectedFile = null;
 		} finally {
 			loading = false;
 		}
@@ -112,7 +144,7 @@
 		try {
 			selectedFile = await bridge.readFile(entry.path, folderId);
 		} catch (e) {
-			error = e?.message ?? String(e);
+			error = friendlyDesktopError(e);
 		} finally {
 			fileLoading = false;
 		}
@@ -132,8 +164,8 @@
 			await onProjectDigest(digest);
 			toast.success($i18n.t('Project context updated'));
 		} catch (e) {
-			error = e?.message ?? String(e);
-			toast.error($i18n.t('Failed to analyze project'));
+			error = friendlyDesktopError(e);
+			toast.error(error);
 		} finally {
 			digestLoading = false;
 		}

@@ -184,6 +184,7 @@ test('Desk new work chats are project-led and Files waits for a selected project
 		'src/lib/components/layout/Sidebar/RecursiveFolder.svelte',
 		'utf8'
 	);
+	const chatItem = readFileSync('src/lib/components/layout/Sidebar/ChatItem.svelte', 'utf8');
 	const chatControls = readFileSync('src/lib/components/chat/ChatControls.svelte', 'utf8');
 
 	assert.match(
@@ -232,6 +233,31 @@ test('Desk new work chats are project-led and Files waits for a selected project
 		'Project row new chat should retain the selected project file context'
 	);
 	assert.match(
+		recursiveFolder,
+		/projectFolder=\{isDeskSurface \? folders\[folderId\] : null\}/,
+		'Project chats should receive the parent project folder as selection context'
+	);
+	assert.match(
+		chatItem,
+		/export let projectFolder = null/,
+		'ChatItem should accept optional project folder context'
+	);
+	assert.match(
+		chatItem,
+		/showLocalFileFolderId/,
+		'ChatItem should update the selected local file folder when chats are selected'
+	);
+	assert.match(
+		chatItem,
+		/projectFolder\?\.id[\s\S]*selectedFolder\.set\(projectFolder\)[\s\S]*showLocalFileFolderId\.set\(projectFolder\.id\)/,
+		'Selecting a project chat should re-select its project and local file pane'
+	);
+	assert.match(
+		chatItem,
+		/selectedFolder\.set\(null\)[\s\S]*showLocalFileFolderId\.set\(null\)/,
+		'Selecting an unscoped chat should clear stale project file context'
+	);
+	assert.match(
 		chatControls,
 		/showDeskProjectFilesEmpty/,
 		'Desk Files tab should have an explicit no-project empty state'
@@ -258,6 +284,7 @@ test('Desk project folders can digest local files into project chat context', ()
 	const localFileNav = readFileSync('src/lib/components/chat/LocalFileNav.svelte', 'utf8');
 	const chatControls = readFileSync('src/lib/components/chat/ChatControls.svelte', 'utf8');
 	const chat = readFileSync('src/lib/components/chat/Chat.svelte', 'utf8');
+	const sidebar = readFileSync('src/lib/components/layout/Sidebar.svelte', 'utf8');
 
 	assert.match(
 		bridge,
@@ -273,6 +300,16 @@ test('Desk project folders can digest local files into project chat context', ()
 		localFileNav,
 		/buildProjectDigest\(folderId\)/,
 		'Files pane should request a digest for the selected project folder'
+	);
+	assert.match(
+		localFileNav,
+		/friendlyDesktopError/,
+		'Files pane should normalize stale desktop bridge errors'
+	);
+	assert.match(
+		localFileNav,
+		/Restart ENOS Desk to enable local project actions\./,
+		'Stale Electron bridge errors should ask the user to restart ENOS Desk'
 	);
 	assert.match(
 		localFileNav,
@@ -313,6 +350,26 @@ test('Desk project folders can digest local files into project chat context', ()
 		chatControls,
 		/<LocalFileNav[\s\S]*onProjectDigest=\{handleProjectDigest\}/,
 		'Both project file panes should wire digest persistence'
+	);
+	assert.match(
+		sidebar,
+		/const saveProjectDigestForFolder = async/,
+		'Project creation should share the same digest persistence path'
+	);
+	assert.match(
+		sidebar,
+		/buildProjectDigest\(folderId\)/,
+		'Creating a project from a Mac folder should build an initial digest'
+	);
+	assert.match(
+		sidebar,
+		/project_context_digest/,
+		'Creating a project from a Mac folder should save project context'
+	);
+	assert.match(
+		sidebar,
+		/saveProjectDigestForFolder\(res\.id, res\)/,
+		'Project creation should auto-analyze the selected Mac folder'
 	);
 	assert.match(
 		chat,

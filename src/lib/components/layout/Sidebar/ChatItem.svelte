@@ -35,6 +35,7 @@
 		currentChatPage,
 		tags,
 		selectedFolder,
+		showLocalFileFolderId,
 		activeChatIds
 	} from '$lib/stores';
 
@@ -63,6 +64,7 @@
 
 	export let selected = false;
 	export let shiftKey = false;
+	export let projectFolder = null;
 
 	export let onDragEnd = () => {};
 
@@ -290,6 +292,17 @@
 		}
 	};
 
+	const selectProjectContext = () => {
+		if (projectFolder?.id) {
+			selectedFolder.set(projectFolder);
+			showLocalFileFolderId.set(projectFolder.id);
+			return;
+		}
+
+		selectedFolder.set(null);
+		showLocalFileFolderId.set(null);
+	};
+
 	onMount(() => {
 		const el = itemElement;
 		if (!el) return;
@@ -495,10 +508,7 @@
 			href="/c/{id}"
 			on:click={() => {
 				dispatch('select');
-
-				if ($selectedFolder) {
-					selectedFolder.set(null);
-				}
+				selectProjectContext();
 
 				if ($mobile) {
 					showSidebar.set(false);
