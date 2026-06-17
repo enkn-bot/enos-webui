@@ -47,6 +47,22 @@ export type EnosDesktopProjectDigest = {
 	text: string;
 };
 
+export type EnosDesktopProjectDirectoryListing = EnosDesktopDirectoryListing & {
+	action: 'listProjectFiles';
+};
+
+export type EnosDesktopProjectFilePreview = EnosDesktopFilePreview & {
+	action: 'readProjectFile';
+};
+
+export type EnosDesktopProjectWriteRequest = {
+	action: 'writeProjectFile';
+	status: 'requires_confirmation';
+	path: string;
+	bytes: number;
+	preview: string;
+};
+
 export type EnosDesktopBridge = {
 	version: string;
 	platform: EnosDesktopPlatform;
@@ -57,6 +73,13 @@ export type EnosDesktopBridge = {
 	listDir: (path?: string, folderId?: string | null) => Promise<EnosDesktopDirectoryListing>;
 	readFile: (path: string, folderId?: string | null) => Promise<EnosDesktopFilePreview>;
 	buildProjectDigest: (folderId: string) => Promise<EnosDesktopProjectDigest>;
+	listProjectFiles: (folderId: string, path?: string) => Promise<EnosDesktopProjectDirectoryListing>;
+	readProjectFile: (folderId: string, path: string) => Promise<EnosDesktopProjectFilePreview>;
+	requestProjectFileWrite: (
+		folderId: string,
+		path: string,
+		content: string
+	) => Promise<EnosDesktopProjectWriteRequest>;
 };
 
 declare global {

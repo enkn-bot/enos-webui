@@ -335,3 +335,55 @@ test('Desk project folders can digest local files into project chat context', ()
 		'Saving model IDs should preserve existing project data such as context digests'
 	);
 });
+
+test('Desk project chats attach live local file action context before model calls', () => {
+	const bridge = readFileSync('src/lib/enos/desktopBridge.ts', 'utf8');
+	const projectActions = readFileSync('src/lib/enos/projectActions.ts', 'utf8');
+	const chat = readFileSync('src/lib/components/chat/Chat.svelte', 'utf8');
+
+	assert.match(
+		bridge,
+		/listProjectFiles/,
+		'Desktop bridge contract should expose project-scoped file listing'
+	);
+	assert.match(
+		bridge,
+		/readProjectFile/,
+		'Desktop bridge contract should expose project-scoped file reads'
+	);
+	assert.match(
+		bridge,
+		/requestProjectFileWrite/,
+		'Desktop bridge contract should expose gated project file write requests'
+	);
+	assert.match(
+		projectActions,
+		/export const buildProjectActionContext/,
+		'Project action helper should build compact local context for model calls'
+	);
+	assert.match(
+		projectActions,
+		/listProjectFiles\(folderId, '\.'\)/,
+		'Project action helper should always list the selected project root'
+	);
+	assert.match(
+		projectActions,
+		/readProjectFile\(folderId, entry\.path\)/,
+		'Project action helper should read likely summary files from the selected project'
+	);
+	assert.match(
+		projectActions,
+		/Write\/edit project file actions require explicit confirmation/,
+		'Project action helper should make write actions explicitly gated'
+	);
+	assert.match(
+		chat,
+		/buildProjectActionContext/,
+		'Chat completion should build live project action context'
+	);
+	assert.match(
+		chat,
+		/projectActionContext/,
+		'Chat completion should inject live project action context into messages'
+	);
+});

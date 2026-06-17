@@ -114,6 +114,8 @@
 	import Sidebar from '../icons/Sidebar.svelte';
 	import Image from '../common/Image.svelte';
 	import { getBanners } from '$lib/apis/configs';
+	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
+	import { buildProjectActionContext } from '$lib/enos/projectActions';
 
 	export let chatIdProp = '';
 
@@ -2376,6 +2378,24 @@
 			typeof $selectedFolder?.data?.project_context_digest === 'string'
 				? $selectedFolder.data.project_context_digest.trim()
 				: '';
+		const projectActionPrompt = String(
+			regenerationPrompt ?? userMessage?.merged?.content ?? userMessage?.content ?? ''
+		);
+		const projectActionContext = await buildProjectActionContext({
+			bridge: getEnosDesktopBridge(),
+			folderId: $selectedFolder?.id,
+			prompt: projectActionPrompt
+		});
+
+		if (projectActionContext) {
+			messages = [
+				...messages,
+				{
+					role: 'system',
+					content: projectActionContext
+				}
+			];
+		}
 
 		if (projectContextDigest) {
 			messages = [
