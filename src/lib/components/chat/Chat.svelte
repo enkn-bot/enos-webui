@@ -2411,7 +2411,7 @@
 				{
 					role: 'system',
 					content:
-						'A project is selected, but no local project context digest has been saved. If the user asks what this project, folder, or local files are about, do not guess. Tell them to open Desk Files and click Analyze Project so ENOS can read the selected folder context.'
+						'A project is selected, but local project context is still being prepared. If the user asks what this project, folder, or local files are about, use any live project file listing that is available. If live context is unavailable or insufficient, do not guess; say ENOS Desk is still preparing or needs the project folder reselected.'
 				}
 			];
 		}

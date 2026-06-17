@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
-	import { toast } from 'svelte-sonner';
 	import { formatFileSize } from '$lib/utils';
 	import {
 		getEnosDesktopBridge,
@@ -35,7 +34,7 @@
 	let selectedFile: EnosDesktopFilePreview | null = null;
 	let loading = false;
 	let fileLoading = false;
-	let digestLoading = false;
+	let syncingProjectContext = false;
 	let error: string | null = null;
 	let loadedFolderId: string | null = null;
 
@@ -88,6 +87,7 @@
 			workspace = await bridge.getWorkspace(folderId);
 			if (workspace) {
 				await loadDir('.');
+				await syncProjectContext();
 			} else {
 				listing = null;
 				currentPath = '.';
@@ -109,7 +109,10 @@
 			workspace = folderId
 				? await bridge.chooseWorkspaceForFolder(folderId)
 				: await bridge.chooseWorkspace();
-			if (workspace) await loadDir('.');
+			if (workspace) {
+				await loadDir('.');
+				await syncProjectContext();
+			}
 		} catch (e) {
 			error = friendlyDesktopError(e);
 		}
@@ -155,19 +158,20 @@
 		await onAttach(decodePreview(selectedFile), selectedFile.name, selectedFile.mime);
 	};
 
-	const analyzeProject = async () => {
-		if (!bridge || !folderId) return;
-		digestLoading = true;
+	const syncProjectContext = async () => {
+		const activeFolderId = folderId;
+		if (!bridge || !workspace || !activeFolderId || syncingProjectContext) return;
+		syncingProjectContext = true;
 		error = null;
 		try {
-			const digest = await bridge.buildProjectDigest(folderId);
-			await onProjectDigest(digest);
-			toast.success($i18n.t('Project context updated'));
+			const digest = await bridge.buildProjectDigest(activeFolderId);
+			if (folderId === activeFolderId) {
+				await onProjectDigest(digest);
+			}
 		} catch (e) {
 			error = friendlyDesktopError(e);
-			toast.error(error);
 		} finally {
-			digestLoading = false;
+			syncingProjectContext = false;
 		}
 	};
 
@@ -199,27 +203,20 @@
 				</div>
 				{#if workspace && folderId}
 					<div class="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
-						{#if hasProjectDigest}
+						{#if syncingProjectContext}
+							{$i18n.t('Updating project context...')}
+						{:else if hasProjectDigest}
 							{$i18n.t('Project context ready')}
 							{#if projectContextUpdatedAt}
 								<span>· {new Date(projectContextUpdatedAt).toLocaleString()}</span>
 							{/if}
 						{:else}
-							{$i18n.t('No project context yet')}
+							{$i18n.t('Preparing project context...')}
 						{/if}
 					</div>
 				{/if}
 			</div>
-			{#if workspace && folderId}
-				<button
-					class="shrink-0 px-2 py-1 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50"
-					disabled={digestLoading}
-					on:click={analyzeProject}
-					type="button"
-				>
-					{digestLoading ? $i18n.t('Analyzing') : $i18n.t('Analyze Project')}
-				</button>
-			{:else if !workspace || !folderId}
+			{#if !workspace || !folderId}
 				<button
 					class="shrink-0 px-2 py-1 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
 					on:click={chooseWorkspace}
@@ -264,7 +261,10 @@
 			</button>
 			<button
 				class="px-2 py-1 rounded text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-				on:click={() => loadDir(currentPath)}
+				on:click={async () => {
+					await loadDir(currentPath);
+					await syncProjectContext();
+				}}
 				type="button"
 			>
 				{$i18n.t('Refresh')}

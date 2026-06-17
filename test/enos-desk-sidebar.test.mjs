@@ -298,8 +298,18 @@ test('Desk project folders can digest local files into project chat context', ()
 	);
 	assert.match(
 		localFileNav,
-		/buildProjectDigest\(folderId\)/,
-		'Files pane should request a digest for the selected project folder'
+		/const syncProjectContext = async/,
+		'Files pane should automatically sync selected project context'
+	);
+	assert.match(
+		localFileNav,
+		/buildProjectDigest\(activeFolderId\)/,
+		'Automatic project context sync should request a digest for the selected project folder'
+	);
+	assert.match(
+		localFileNav,
+		/syncProjectContext\(\)/,
+		'Files pane should run project context sync as part of the normal folder load'
 	);
 	assert.match(
 		localFileNav,
@@ -311,10 +321,15 @@ test('Desk project folders can digest local files into project chat context', ()
 		/Restart ENOS Desk to enable local project actions\./,
 		'Stale Electron bridge errors should ask the user to restart ENOS Desk'
 	);
+	assert.doesNotMatch(
+		localFileNav,
+		/Analyze Project/,
+		'Project context should be automatic, not exposed as a user button'
+	);
 	assert.match(
 		localFileNav,
-		/\$i18n\.t\('Analyze Project'\)/,
-		'Files pane should expose a clear Analyze Project action'
+		/\$i18n\.t\('Updating project context\.\.\.'\)/,
+		'Files pane should show passive background context status'
 	);
 	assert.match(
 		localFileNav,
@@ -323,8 +338,8 @@ test('Desk project folders can digest local files into project chat context', ()
 	);
 	assert.match(
 		localFileNav,
-		/\$i18n\.t\('No project context yet'\)/,
-		'Files pane should make the missing project-context state visible'
+		/\$i18n\.t\('Preparing project context\.\.\.'\)/,
+		'Files pane should avoid asking the user to manually analyze a project'
 	);
 	assert.match(
 		localFileNav,
@@ -383,9 +398,10 @@ test('Desk project folders can digest local files into project chat context', ()
 	);
 	assert.match(
 		chat,
-		/no local project context digest has been saved/,
-		'Selected project chats without a digest should explain the missing Analyze Project step'
+		/local project context is still being prepared/,
+		'Selected project chats without a digest should explain automatic context preparation'
 	);
+	assert.doesNotMatch(chat, /Analyze Project/, 'Model fallback text should not mention a removed button');
 	assert.match(
 		chat,
 		/\.\.\.\(\$selectedFolder\?\.data \?\? \{\}\)/,
