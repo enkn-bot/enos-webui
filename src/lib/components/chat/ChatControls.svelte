@@ -21,11 +21,13 @@
 		settings,
 		showFileNavPath,
 		showLocalFileFolderId,
+		selectedFolder,
 		selectedTerminalId,
 		user
 	} from '$lib/stores';
 
 	import { uploadFile } from '$lib/apis/files';
+	import { updateFolderById } from '$lib/apis/folders';
 	import { toast } from 'svelte-sonner';
 
 	import Controls from './Controls/Controls.svelte';
@@ -37,7 +39,10 @@
 	import LocalFileNav from './LocalFileNav.svelte';
 	import PyodideFileNav from './PyodideFileNav.svelte';
 	import Overview from './Overview.svelte';
-	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
+	import {
+		getEnosDesktopBridge,
+		type EnosDesktopProjectDigest
+	} from '$lib/enos/desktopBridge';
 
 	const i18n = getContext('i18n');
 
@@ -184,6 +189,33 @@
 			files = files.filter((f) => f.itemId !== tempItemId);
 			toast.error($i18n.t('Failed to attach file'));
 		}
+	};
+
+	const handleProjectDigest = async (digest: EnosDesktopProjectDigest) => {
+		const folder = $selectedFolder;
+		if (!folder?.id) {
+			toast.error($i18n.t('Select a project first'));
+			return;
+		}
+
+		const data = {
+			...(folder?.data ?? {}),
+			project_context_digest: digest.text,
+			project_context_updated_at: digest.generatedAt,
+			project_context_source: {
+				rootName: digest.rootName,
+				fileCount: digest.fileCount,
+				sampledFileCount: digest.sampledFileCount,
+				skippedCount: digest.skippedCount
+			}
+		};
+
+		const updated = await updateFolderById(localStorage.token, folder.id, { data });
+		selectedFolder.set({
+			...folder,
+			...(updated ?? {}),
+			data
+		});
 	};
 
 	export const openPane = () => {
@@ -383,7 +415,7 @@
 									onClose={() => showControls.set(false)}
 								/>
 							{:else if activeTab === 'files' && showProjectFileNav}
-								<LocalFileNav folderId={$showLocalFileFolderId} onAttach={handleTerminalAttach} />
+								<LocalFileNav folderId={$showLocalFileFolderId} onAttach={handleTerminalAttach} onProjectDigest={handleProjectDigest} />
 							{:else if activeTab === 'files' && showDeskProjectFilesEmpty}
 								<div class="h-full flex items-center justify-center px-6 text-center">
 									<div class="max-w-xs text-sm text-gray-500 dark:text-gray-400">
@@ -520,7 +552,7 @@
 										onClose={() => showControls.set(false)}
 									/>
 								{:else if activeTab === 'files' && showProjectFileNav}
-									<LocalFileNav folderId={$showLocalFileFolderId} onAttach={handleTerminalAttach} />
+									<LocalFileNav folderId={$showLocalFileFolderId} onAttach={handleTerminalAttach} onProjectDigest={handleProjectDigest} />
 								{:else if activeTab === 'files' && showDeskProjectFilesEmpty}
 									<div class="h-full flex items-center justify-center px-6 text-center">
 										<div class="max-w-xs text-sm text-gray-500 dark:text-gray-400">

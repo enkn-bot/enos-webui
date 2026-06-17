@@ -247,3 +247,61 @@ test('Desk new work chats are project-led and Files waits for a selected project
 		'LocalFileNav should be gated by selected project state'
 	);
 });
+
+test('Desk project folders can digest local files into project chat context', () => {
+	const bridge = readFileSync('src/lib/enos/desktopBridge.ts', 'utf8');
+	const localFileNav = readFileSync('src/lib/components/chat/LocalFileNav.svelte', 'utf8');
+	const chatControls = readFileSync('src/lib/components/chat/ChatControls.svelte', 'utf8');
+	const chat = readFileSync('src/lib/components/chat/Chat.svelte', 'utf8');
+
+	assert.match(
+		bridge,
+		/buildProjectDigest/,
+		'Desktop bridge contract should expose project digest generation'
+	);
+	assert.match(
+		localFileNav,
+		/export let onProjectDigest/,
+		'LocalFileNav should report generated project digests to the chat shell'
+	);
+	assert.match(
+		localFileNav,
+		/buildProjectDigest\(folderId\)/,
+		'Files pane should request a digest for the selected project folder'
+	);
+	assert.match(
+		localFileNav,
+		/\$i18n\.t\('Analyze Project'\)/,
+		'Files pane should expose a clear Analyze Project action'
+	);
+	assert.match(
+		chatControls,
+		/const handleProjectDigest = async/,
+		'ChatControls should own saving project context onto the selected project'
+	);
+	assert.match(
+		chatControls,
+		/project_context_digest/,
+		'Project digest should be saved into folder data'
+	);
+	assert.match(
+		chatControls,
+		/<LocalFileNav folderId=\{\$showLocalFileFolderId\} onAttach=\{handleTerminalAttach\} onProjectDigest=\{handleProjectDigest\}/,
+		'Both project file panes should wire digest persistence'
+	);
+	assert.match(
+		chat,
+		/const projectContextDigest =/,
+		'Chat completion should read the selected project context digest'
+	);
+	assert.match(
+		chat,
+		/Project context from the selected ENOS Desk project/,
+		'Digest should be injected as explicit project context, not as a user message'
+	);
+	assert.match(
+		chat,
+		/\.\.\.\(\$selectedFolder\?\.data \?\? \{\}\)/,
+		'Saving model IDs should preserve existing project data such as context digests'
+	);
+});

@@ -745,6 +745,7 @@
 		) {
 			const res = await updateFolderById(localStorage.token, $selectedFolder.id, {
 				data: {
+					...($selectedFolder?.data ?? {}),
 					model_ids: selectedModels
 				}
 			});
@@ -2369,6 +2370,21 @@
 					};
 				})
 				.filter((message) => message?.role === 'user' || message?.content?.trim());
+		}
+
+		const projectContextDigest =
+			typeof $selectedFolder?.data?.project_context_digest === 'string'
+				? $selectedFolder.data.project_context_digest.trim()
+				: '';
+
+		if (projectContextDigest) {
+			messages = [
+				...messages,
+				{
+					role: 'system',
+					content: `Project context from the selected ENOS Desk project.\nUse this as read-only project context when the user asks about the project, folder, files, implementation, or next work. If the context seems stale or insufficient, say what needs to be re-analyzed or opened before making strong claims.\n\n${projectContextDigest}`
+				}
+			];
 		}
 
 		const toolIds = [];

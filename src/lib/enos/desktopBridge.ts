@@ -31,6 +31,22 @@ export type EnosDesktopFilePreview = {
 	data: string;
 };
 
+export type EnosDesktopProjectDigest = {
+	generatedAt: string;
+	rootName: string;
+	fileCount: number;
+	sampledFileCount: number;
+	skippedCount: number;
+	outline: string[];
+	snippets: {
+		path: string;
+		size: number;
+		modifiedAt: string;
+		text: string;
+	}[];
+	text: string;
+};
+
 export type EnosDesktopBridge = {
 	version: string;
 	platform: EnosDesktopPlatform;
@@ -40,6 +56,7 @@ export type EnosDesktopBridge = {
 	getWorkspace: (folderId?: string | null) => Promise<EnosDesktopWorkspace | null>;
 	listDir: (path?: string, folderId?: string | null) => Promise<EnosDesktopDirectoryListing>;
 	readFile: (path: string, folderId?: string | null) => Promise<EnosDesktopFilePreview>;
+	buildProjectDigest: (folderId: string) => Promise<EnosDesktopProjectDigest>;
 };
 
 declare global {

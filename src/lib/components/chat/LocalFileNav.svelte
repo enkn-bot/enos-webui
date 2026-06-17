@@ -8,6 +8,7 @@
 		type EnosDesktopDirectoryListing,
 		type EnosDesktopEntry,
 		type EnosDesktopFilePreview,
+		type EnosDesktopProjectDigest,
 		type EnosDesktopWorkspace
 	} from '$lib/enos/desktopBridge';
 
@@ -23,6 +24,7 @@
 		name: string,
 		contentType: string
 	) => void | Promise<void> = () => {};
+	export let onProjectDigest: (digest: EnosDesktopProjectDigest) => void | Promise<void> = () => {};
 
 	let bridge: EnosDesktopBridge | null = null;
 	let workspace: EnosDesktopWorkspace | null = null;
@@ -31,6 +33,7 @@
 	let selectedFile: EnosDesktopFilePreview | null = null;
 	let loading = false;
 	let fileLoading = false;
+	let digestLoading = false;
 	let error: string | null = null;
 	let loadedFolderId: string | null = null;
 
@@ -118,6 +121,22 @@
 		await onAttach(decodePreview(selectedFile), selectedFile.name, selectedFile.mime);
 	};
 
+	const analyzeProject = async () => {
+		if (!bridge || !folderId) return;
+		digestLoading = true;
+		error = null;
+		try {
+			const digest = await bridge.buildProjectDigest(folderId);
+			await onProjectDigest(digest);
+			toast.success($i18n.t('Project context updated'));
+		} catch (e) {
+			error = e?.message ?? String(e);
+			toast.error($i18n.t('Failed to analyze project'));
+		} finally {
+			digestLoading = false;
+		}
+	};
+
 	onMount(async () => {
 		bridge = getEnosDesktopBridge();
 		if (!bridge) {
@@ -145,7 +164,16 @@
 					{/if}
 				</div>
 			</div>
-			{#if !workspace || !folderId}
+			{#if workspace && folderId}
+				<button
+					class="shrink-0 px-2 py-1 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50"
+					disabled={digestLoading}
+					on:click={analyzeProject}
+					type="button"
+				>
+					{digestLoading ? $i18n.t('Analyzing') : $i18n.t('Analyze Project')}
+				</button>
+			{:else if !workspace || !folderId}
 				<button
 					class="shrink-0 px-2 py-1 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
 					on:click={chooseWorkspace}
