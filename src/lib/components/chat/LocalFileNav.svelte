@@ -25,6 +25,8 @@
 		contentType: string
 	) => void | Promise<void> = () => {};
 	export let onProjectDigest: (digest: EnosDesktopProjectDigest) => void | Promise<void> = () => {};
+	export let hasProjectDigest = false;
+	export let projectContextUpdatedAt: string | null = null;
 
 	let bridge: EnosDesktopBridge | null = null;
 	let workspace: EnosDesktopWorkspace | null = null;
@@ -163,6 +165,18 @@
 						{$i18n.t('Choose one Mac folder for ENOS Desk.')}
 					{/if}
 				</div>
+				{#if workspace && folderId}
+					<div class="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
+						{#if hasProjectDigest}
+							{$i18n.t('Project context ready')}
+							{#if projectContextUpdatedAt}
+								<span>· {new Date(projectContextUpdatedAt).toLocaleString()}</span>
+							{/if}
+						{:else}
+							{$i18n.t('No project context yet')}
+						{/if}
+					</div>
+				{/if}
 			</div>
 			{#if workspace && folderId}
 				<button

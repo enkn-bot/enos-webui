@@ -46,7 +46,6 @@
 
 	import FolderOpen from '$lib/components/icons/FolderOpen.svelte';
 	import EllipsisHorizontal from '$lib/components/icons/EllipsisHorizontal.svelte';
-	import PencilSquare from '$lib/components/icons/PencilSquare.svelte';
 
 	import ChatItem from './ChatItem.svelte';
 	import FolderMenu from './Folders/FolderMenu.svelte';
@@ -401,9 +400,9 @@
 		}
 	};
 
-	const startProjectChatHandler = async (e) => {
-		e.stopPropagation();
-		e.preventDefault();
+	const startProjectChatHandler = async (e = null) => {
+		e?.stopPropagation?.();
+		e?.preventDefault?.();
 
 		await selectProjectFolderHandler();
 		await goto('/');
@@ -653,18 +652,9 @@
 				<div
 					class="absolute z-10 right-2 invisible group-hover:visible self-center flex items-center gap-1 dark:text-gray-300"
 				>
-					{#if isDeskSurface}
-						<button
-							class="p-1 dark:hover:bg-gray-850 rounded-lg touch-auto"
-							aria-label={$i18n.t('New Project Chat')}
-							on:click={startProjectChatHandler}
-						>
-							<PencilSquare className="size-4" strokeWidth="2.5" />
-						</button>
-					{/if}
-
 					<FolderMenu
 						projectMode={isDeskSurface}
+						onNewProjectChat={startProjectChatHandler}
 						onEdit={() => {
 							showFolderModal = true;
 						}}

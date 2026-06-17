@@ -10,12 +10,14 @@
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import Download from '$lib/components/icons/Download.svelte';
 	import Folder from '$lib/components/icons/Folder.svelte';
+	import PencilSquare from '$lib/components/icons/PencilSquare.svelte';
 
 	export let align: 'start' | 'end' = 'start';
 	export let onEdit = () => {};
 	export let onExport = () => {};
 	export let onDelete = () => {};
 	export let onCreateSubFolder = () => {};
+	export let onNewProjectChat = () => {};
 	export let projectMode = false;
 
 	let show = false;
@@ -48,12 +50,16 @@
 			<button
 				class="flex gap-2 items-center px-3 py-1.5 text-sm select-none cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl w-full"
 				on:click={() => {
-					onCreateSubFolder();
+					projectMode ? onNewProjectChat() : onCreateSubFolder();
 				}}
 			>
-				<Folder />
+				{#if projectMode}
+					<PencilSquare />
+				{:else}
+					<Folder />
+				{/if}
 				<div class="flex items-center">
-					{$i18n.t(projectMode ? 'New Subproject' : 'Create Project')}
+					{$i18n.t(projectMode ? 'New Project Chat' : 'Create Project')}
 				</div>
 			</button>
 

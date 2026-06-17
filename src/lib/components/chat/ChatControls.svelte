@@ -415,7 +415,7 @@
 									onClose={() => showControls.set(false)}
 								/>
 							{:else if activeTab === 'files' && showProjectFileNav}
-								<LocalFileNav folderId={$showLocalFileFolderId} onAttach={handleTerminalAttach} onProjectDigest={handleProjectDigest} />
+								<LocalFileNav folderId={$showLocalFileFolderId} onAttach={handleTerminalAttach} onProjectDigest={handleProjectDigest} hasProjectDigest={Boolean($selectedFolder?.data?.project_context_digest)} projectContextUpdatedAt={$selectedFolder?.data?.project_context_updated_at ?? null} />
 							{:else if activeTab === 'files' && showDeskProjectFilesEmpty}
 								<div class="h-full flex items-center justify-center px-6 text-center">
 									<div class="max-w-xs text-sm text-gray-500 dark:text-gray-400">
@@ -552,7 +552,7 @@
 										onClose={() => showControls.set(false)}
 									/>
 								{:else if activeTab === 'files' && showProjectFileNav}
-									<LocalFileNav folderId={$showLocalFileFolderId} onAttach={handleTerminalAttach} onProjectDigest={handleProjectDigest} />
+									<LocalFileNav folderId={$showLocalFileFolderId} onAttach={handleTerminalAttach} onProjectDigest={handleProjectDigest} hasProjectDigest={Boolean($selectedFolder?.data?.project_context_digest)} projectContextUpdatedAt={$selectedFolder?.data?.project_context_updated_at ?? null} />
 								{:else if activeTab === 'files' && showDeskProjectFilesEmpty}
 									<div class="h-full flex items-center justify-center px-6 text-center">
 										<div class="max-w-xs text-sm text-gray-500 dark:text-gray-400">

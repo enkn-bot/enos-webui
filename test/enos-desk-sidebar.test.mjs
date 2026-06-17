@@ -152,8 +152,13 @@ test('Projects language replaces folder copy while Desk project menus stay work-
 	);
 	assert.match(
 		folderMenu,
-		/projectMode \? 'New Subproject' : 'Create Project'/,
-		'Nested project action should be labeled intentionally'
+		/projectMode \? 'New Project Chat' : 'Create Project'/,
+		'Desk project menu should start new project chats instead of nested subprojects'
+	);
+	assert.match(
+		folderMenu,
+		/export let onNewProjectChat/,
+		'FolderMenu should expose a dedicated project-chat action'
 	);
 	assert.match(
 		folderMenu,
@@ -206,10 +211,10 @@ test('Desk new work chats are project-led and Files waits for a selected project
 		/on:click\|preventDefault=\{startNewChatHandler\}/,
 		'The visible top-level New Chat action should use the surface-aware handler'
 	);
-	assert.match(
+	assert.doesNotMatch(
 		recursiveFolder,
 		/import PencilSquare/,
-		'Project rows should use the existing sidebar new-chat icon family'
+		'Project rows should not show a second quick new-chat icon'
 	);
 	assert.match(
 		recursiveFolder,
@@ -218,8 +223,8 @@ test('Desk new work chats are project-led and Files waits for a selected project
 	);
 	assert.match(
 		recursiveFolder,
-		/aria-label=\{\$i18n\.t\('New Project Chat'\)\}/,
-		'Project row quick action should be labeled as a project chat'
+		/onNewProjectChat=\{startProjectChatHandler\}/,
+		'Project menu should expose New Project Chat'
 	);
 	assert.match(
 		recursiveFolder,
@@ -275,6 +280,21 @@ test('Desk project folders can digest local files into project chat context', ()
 		'Files pane should expose a clear Analyze Project action'
 	);
 	assert.match(
+		localFileNav,
+		/export let hasProjectDigest/,
+		'Files pane should receive whether the selected project has saved context'
+	);
+	assert.match(
+		localFileNav,
+		/\$i18n\.t\('No project context yet'\)/,
+		'Files pane should make the missing project-context state visible'
+	);
+	assert.match(
+		localFileNav,
+		/\$i18n\.t\('Project context ready'\)/,
+		'Files pane should make saved context visible'
+	);
+	assert.match(
 		chatControls,
 		/const handleProjectDigest = async/,
 		'ChatControls should own saving project context onto the selected project'
@@ -286,7 +306,12 @@ test('Desk project folders can digest local files into project chat context', ()
 	);
 	assert.match(
 		chatControls,
-		/<LocalFileNav folderId=\{\$showLocalFileFolderId\} onAttach=\{handleTerminalAttach\} onProjectDigest=\{handleProjectDigest\}/,
+		/hasProjectDigest=\{Boolean\(\$selectedFolder\?\.data\?\.project_context_digest\)\}/,
+		'ChatControls should pass digest status into the Files pane'
+	);
+	assert.match(
+		chatControls,
+		/<LocalFileNav[\s\S]*onProjectDigest=\{handleProjectDigest\}/,
 		'Both project file panes should wire digest persistence'
 	);
 	assert.match(
@@ -298,6 +323,11 @@ test('Desk project folders can digest local files into project chat context', ()
 		chat,
 		/Project context from the selected ENOS Desk project/,
 		'Digest should be injected as explicit project context, not as a user message'
+	);
+	assert.match(
+		chat,
+		/no local project context digest has been saved/,
+		'Selected project chats without a digest should explain the missing Analyze Project step'
 	);
 	assert.match(
 		chat,

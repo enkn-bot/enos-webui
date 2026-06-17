@@ -2385,6 +2385,15 @@
 					content: `Project context from the selected ENOS Desk project.\nUse this as read-only project context when the user asks about the project, folder, files, implementation, or next work. If the context seems stale or insufficient, say what needs to be re-analyzed or opened before making strong claims.\n\n${projectContextDigest}`
 				}
 			];
+		} else if ($selectedFolder?.id) {
+			messages = [
+				...messages,
+				{
+					role: 'system',
+					content:
+						'A project is selected, but no local project context digest has been saved. If the user asks what this project, folder, or local files are about, do not guess. Tell them to open Desk Files and click Analyze Project so ENOS can read the selected folder context.'
+				}
+			];
 		}
 
 		const toolIds = [];
