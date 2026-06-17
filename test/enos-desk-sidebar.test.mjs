@@ -99,3 +99,76 @@ test('Desk sidebar suppresses top-level Chats and binds selected Mac folders to 
 		'Desktop bridge contract should include folder binding'
 	);
 });
+
+test('Projects language replaces folder copy while Desk project menus stay work-led', () => {
+	const sidebar = readFileSync('src/lib/components/layout/Sidebar.svelte', 'utf8');
+	const folderModal = readFileSync(
+		'src/lib/components/layout/Sidebar/Folders/FolderModal.svelte',
+		'utf8'
+	);
+	const folderMenu = readFileSync(
+		'src/lib/components/layout/Sidebar/Folders/FolderMenu.svelte',
+		'utf8'
+	);
+	const recursiveFolder = readFileSync(
+		'src/lib/components/layout/Sidebar/RecursiveFolder.svelte',
+		'utf8'
+	);
+	const folderTitle = readFileSync(
+		'src/lib/components/chat/Placeholder/FolderTitle.svelte',
+		'utf8'
+	);
+	const folderPlaceholder = readFileSync(
+		'src/lib/components/chat/Placeholder/FolderPlaceholder.svelte',
+		'utf8'
+	);
+
+	assert.match(
+		sidebar,
+		/name=\{\$i18n\.t\('Projects'\)\}/,
+		'Sidebar should label the section Projects'
+	);
+	assert.match(
+		sidebar,
+		/onAddLabel=\{\$i18n\.t\('New Project'\)\}/,
+		'Sidebar add action should say New Project'
+	);
+	assert.match(
+		folderModal,
+		/\$i18n\.t\('Create Project'\)/,
+		'Create modal should say Create Project'
+	);
+	assert.match(folderModal, /\$i18n\.t\('Edit Project'\)/, 'Edit modal should say Edit Project');
+	assert.match(folderModal, /\$i18n\.t\('Project Name'\)/, 'Name field should say Project Name');
+	assert.match(
+		folderModal,
+		/\$i18n\.t\('Project Knowledge'\)/,
+		'Attached context should be Project Knowledge'
+	);
+	assert.match(
+		folderMenu,
+		/export let projectMode/,
+		'FolderMenu should support project-specific copy'
+	);
+	assert.match(
+		folderMenu,
+		/projectMode \? 'New Subproject' : 'Create Project'/,
+		'Nested project action should be labeled intentionally'
+	);
+	assert.match(
+		folderMenu,
+		/{#if !projectMode}[\s\S]*\$i18n\.t\('Export'\)/,
+		'Desk project menu should hide Export in project mode'
+	);
+	assert.match(
+		recursiveFolder,
+		/projectMode=\{isDeskSurface\}/,
+		'Desk should enable project menu mode'
+	);
+	assert.match(folderTitle, /projectMode/, 'Selected project title menu should use project mode');
+	assert.match(
+		folderPlaceholder,
+		/\$i18n\.t\('Project Knowledge'\)/,
+		'Selected project view should label knowledge as project knowledge'
+	);
+});

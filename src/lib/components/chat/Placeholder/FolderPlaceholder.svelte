@@ -78,7 +78,7 @@
 				type="button"
 				on:click={() => {
 					selectedTab = 'knowledge';
-				}}>{$i18n.t('Knowledge')}</button
+				}}>{$i18n.t('Project Knowledge')}</button
 			>
 
 			<button

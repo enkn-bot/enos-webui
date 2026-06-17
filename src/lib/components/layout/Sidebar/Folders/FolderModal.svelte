@@ -127,9 +127,9 @@
 		<div class=" flex justify-between dark:text-gray-300 px-5 pt-4 pb-1">
 			<div class=" text-lg font-medium self-center">
 				{#if edit}
-					{$i18n.t('Edit Folder')}
+					{$i18n.t('Edit Project')}
 				{:else}
-					{$i18n.t('Create Folder')}
+					{$i18n.t('Create Project')}
 				{/if}
 			</div>
 			<button
@@ -151,7 +151,7 @@
 					}}
 				>
 					<div class="flex flex-col w-full mt-1">
-						<div class=" mb-1 text-xs text-gray-500">{$i18n.t('Folder Name')}</div>
+						<div class=" mb-1 text-xs text-gray-500">{$i18n.t('Project Name')}</div>
 
 						<div class="flex-1">
 							<input
@@ -252,7 +252,7 @@
 							<div slot="label">
 								<div class="flex w-full justify-between">
 									<div class=" mb-2 text-xs text-gray-500">
-										{$i18n.t('Knowledge')}
+										{$i18n.t('Project Knowledge')}
 									</div>
 								</div>
 							</div>

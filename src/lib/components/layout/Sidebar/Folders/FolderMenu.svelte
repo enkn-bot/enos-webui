@@ -16,6 +16,7 @@
 	export let onExport = () => {};
 	export let onDelete = () => {};
 	export let onCreateSubFolder = () => {};
+	export let projectMode = false;
 
 	let show = false;
 </script>
@@ -51,7 +52,9 @@
 				}}
 			>
 				<Folder />
-				<div class="flex items-center">{$i18n.t('Create Folder')}</div>
+				<div class="flex items-center">
+					{$i18n.t(projectMode ? 'New Subproject' : 'Create Project')}
+				</div>
 			</button>
 
 			<hr class="border-gray-50/30 dark:border-gray-800/30 my-1" />
@@ -66,15 +69,17 @@
 				<div class="flex items-center">{$i18n.t('Edit')}</div>
 			</button>
 
-			<button
-				class="flex gap-2 items-center px-3 py-1.5 text-sm select-none cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl w-full"
-				on:click={() => {
-					onExport();
-				}}
-			>
-				<Download />
-				<div class="flex items-center">{$i18n.t('Export')}</div>
-			</button>
+			{#if !projectMode}
+				<button
+					class="flex gap-2 items-center px-3 py-1.5 text-sm select-none cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl w-full"
+					on:click={() => {
+						onExport();
+					}}
+				>
+					<Download />
+					<div class="flex items-center">{$i18n.t('Export')}</div>
+				</button>
+			{/if}
 
 			<button
 				class="flex gap-2 items-center px-3 py-1.5 text-sm select-none cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl w-full"

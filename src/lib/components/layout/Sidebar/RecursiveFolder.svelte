@@ -84,6 +84,7 @@
 	let clickTimer = null;
 
 	let name = '';
+	$: isDeskSurface = browser && window.location.hostname === 'enosdesk.duckdns.org';
 
 	const onDragOver = (e) => {
 		e.preventDefault();
@@ -548,11 +549,7 @@
 							await selectedFolder.set(folder);
 						}
 
-						if (
-							browser &&
-							window.location.hostname === 'enosdesk.duckdns.org' &&
-							getEnosDesktopBridge()
-						) {
+						if (isDeskSurface && getEnosDesktopBridge()) {
 							showLocalFileFolderId.set(folderId);
 							showControls.set(true);
 							showFileNavPath.set('.');
@@ -638,6 +635,7 @@
 					class="absolute z-10 right-2 invisible group-hover:visible self-center flex items-center dark:text-gray-300"
 				>
 					<FolderMenu
+						projectMode={isDeskSurface}
 						onEdit={() => {
 							showFolderModal = true;
 						}}
