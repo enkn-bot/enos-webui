@@ -172,3 +172,78 @@ test('Projects language replaces folder copy while Desk project menus stay work-
 		'Selected project view should label knowledge as project knowledge'
 	);
 });
+
+test('Desk new work chats are project-led and Files waits for a selected project', () => {
+	const sidebar = readFileSync('src/lib/components/layout/Sidebar.svelte', 'utf8');
+	const recursiveFolder = readFileSync(
+		'src/lib/components/layout/Sidebar/RecursiveFolder.svelte',
+		'utf8'
+	);
+	const chatControls = readFileSync('src/lib/components/chat/ChatControls.svelte', 'utf8');
+
+	assert.match(
+		sidebar,
+		/const handleDeskProjectChat = async/,
+		'Sidebar should have a Desk-specific project chat handler'
+	);
+	assert.match(
+		sidebar,
+		/if \(!folder\?\.id\) \{[\s\S]*showCreateFolderModal = true/,
+		'Desk New Chat without a selected project should open project creation'
+	);
+	assert.match(
+		sidebar,
+		/const startNewChatHandler = async/,
+		'Top-level New Chat should route through a surface-aware handler'
+	);
+	assert.match(
+		sidebar,
+		/isDeskSurface[\s\S]*handleDeskProjectChat/,
+		'Desk New Chat should preserve or request project context'
+	);
+	assert.match(
+		sidebar,
+		/on:click\|preventDefault=\{startNewChatHandler\}/,
+		'The visible top-level New Chat action should use the surface-aware handler'
+	);
+	assert.match(
+		recursiveFolder,
+		/import PencilSquare/,
+		'Project rows should use the existing sidebar new-chat icon family'
+	);
+	assert.match(
+		recursiveFolder,
+		/const startProjectChatHandler = async/,
+		'Each project row should expose a project-scoped new chat handler'
+	);
+	assert.match(
+		recursiveFolder,
+		/aria-label=\{\$i18n\.t\('New Project Chat'\)\}/,
+		'Project row quick action should be labeled as a project chat'
+	);
+	assert.match(
+		recursiveFolder,
+		/showLocalFileFolderId\.set\(folderId\)/,
+		'Project row new chat should retain the selected project file context'
+	);
+	assert.match(
+		chatControls,
+		/showDeskProjectFilesEmpty/,
+		'Desk Files tab should have an explicit no-project empty state'
+	);
+	assert.match(
+		chatControls,
+		/showProjectFileNav = showLocalFileNav && Boolean\(\$showLocalFileFolderId\)/,
+		'Local files should render only for a selected project id'
+	);
+	assert.match(
+		chatControls,
+		/\$i18n\.t\('Select a project to browse its files\.'\)/,
+		'Files empty state should tell the user to select a project first'
+	);
+	assert.match(
+		chatControls,
+		/{#if activeTab === 'overview'}[\s\S]*{:else if activeTab === 'files' && showProjectFileNav}[\s\S]*<LocalFileNav/,
+		'LocalFileNav should be gated by selected project state'
+	);
+});

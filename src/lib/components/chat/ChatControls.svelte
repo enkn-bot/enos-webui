@@ -97,6 +97,8 @@
 	$: showTerminalFileNav =
 		hasSelectedTerminalAccess || (isDeskSurface && hasConfiguredTerminal && canUseDirectTerminal);
 	$: showLocalFileNav = isDeskSurface && hasDesktopBridge;
+	$: showProjectFileNav = showLocalFileNav && Boolean($showLocalFileFolderId);
+	$: showDeskProjectFilesEmpty = showLocalFileNav && !$showLocalFileFolderId;
 	$: showFilesTab =
 		showLocalFileNav ||
 		showTerminalFileNav ||
@@ -380,8 +382,14 @@
 									}}
 									onClose={() => showControls.set(false)}
 								/>
-							{:else if activeTab === 'files' && showLocalFileNav}
+							{:else if activeTab === 'files' && showProjectFileNav}
 								<LocalFileNav folderId={$showLocalFileFolderId} onAttach={handleTerminalAttach} />
+							{:else if activeTab === 'files' && showDeskProjectFilesEmpty}
+								<div class="h-full flex items-center justify-center px-6 text-center">
+									<div class="max-w-xs text-sm text-gray-500 dark:text-gray-400">
+										{$i18n.t('Select a project to browse its files.')}
+									</div>
+								</div>
 							{:else if activeTab === 'files' && showTerminalFileNav}
 								<FileNav onAttach={handleTerminalAttach} {chatId} />
 							{:else if activeTab === 'files' && codeInterpreterEnabled}
@@ -511,8 +519,14 @@
 										}}
 										onClose={() => showControls.set(false)}
 									/>
-								{:else if activeTab === 'files' && showLocalFileNav}
+								{:else if activeTab === 'files' && showProjectFileNav}
 									<LocalFileNav folderId={$showLocalFileFolderId} onAttach={handleTerminalAttach} />
+								{:else if activeTab === 'files' && showDeskProjectFilesEmpty}
+									<div class="h-full flex items-center justify-center px-6 text-center">
+										<div class="max-w-xs text-sm text-gray-500 dark:text-gray-400">
+											{$i18n.t('Select a project to browse its files.')}
+										</div>
+									</div>
 								{:else if activeTab === 'files' && showTerminalFileNav}
 									<FileNav onAttach={handleTerminalAttach} overlay={dragged} {chatId} />
 								{:else if activeTab === 'files' && codeInterpreterEnabled}

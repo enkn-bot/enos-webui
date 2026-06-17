@@ -680,21 +680,62 @@
 		}
 	};
 
-	const newChatHandler = async () => {
-		selectedChatId = null;
-		selectedFolder.set(null);
-
+	const applyTemporaryChatPolicy = async () => {
 		if ($user?.role !== 'admin' && $user?.permissions?.chat?.temporary_enforced) {
 			await temporaryChatEnabled.set(true);
 		} else {
 			await temporaryChatEnabled.set(false);
 		}
+	};
 
+	const closeMobileSidebar = () => {
 		setTimeout(() => {
 			if ($mobile) {
 				showSidebar.set(false);
 			}
 		}, 0);
+	};
+
+	const newChatHandler = async () => {
+		selectedChatId = null;
+		selectedFolder.set(null);
+		showLocalFileFolderId.set(null);
+
+		await applyTemporaryChatPolicy();
+		await goto('/');
+		closeMobileSidebar();
+	};
+
+	const handleDeskProjectChat = async (folder = $selectedFolder) => {
+		selectedChatId = null;
+		chatId.set('');
+
+		if (!folder?.id) {
+			showFolders = true;
+			showCreateFolderModal = true;
+			showLocalFileFolderId.set(null);
+			await applyTemporaryChatPolicy();
+			await goto('/');
+			closeMobileSidebar();
+			return;
+		}
+
+		await selectedFolder.set(folder);
+		if (hasDesktopBridge) {
+			showLocalFileFolderId.set(folder.id);
+		}
+
+		await applyTemporaryChatPolicy();
+		await goto('/');
+		closeMobileSidebar();
+	};
+
+	const startNewChatHandler = async () => {
+		if (isDeskSurface) {
+			await handleDeskProjectChat();
+			return;
+		}
+		await newChatHandler();
 	};
 
 	const itemClickHandler = async () => {
@@ -796,14 +837,7 @@
 	}}
 />
 
-<button
-	id="sidebar-new-chat-button"
-	class="hidden"
-	on:click={() => {
-		goto('/');
-		newChatHandler();
-	}}
-/>
+<button id="sidebar-new-chat-button" class="hidden" on:click={startNewChatHandler} />
 
 <svelte:window
 	on:mousemove={(e) => {
@@ -861,8 +895,7 @@
 								e.stopImmediatePropagation();
 								e.preventDefault();
 
-								goto('/');
-								newChatHandler();
+								await startNewChatHandler();
 							}}
 							aria-label={$i18n.t('New Chat')}
 						>
@@ -1046,7 +1079,7 @@
 					class="flex items-center rounded-xl size-8.5 h-full justify-center hover:bg-gray-100/50 dark:hover:bg-gray-850/50 transition no-drag-region"
 					href="/"
 					draggable="false"
-					on:click={newChatHandler}
+					on:click|preventDefault={startNewChatHandler}
 				>
 					<img
 						crossorigin="anonymous"
@@ -1056,7 +1089,7 @@
 					/>
 				</a>
 
-				<a href="/" class="flex flex-1 px-0.5" on:click={newChatHandler}>
+				<a href="/" class="flex flex-1 px-0.5" on:click|preventDefault={startNewChatHandler}>
 					<div
 						id="sidebar-webui-name"
 						class=" self-center font-medium text-gray-850 dark:text-white font-primary"
@@ -1107,7 +1140,7 @@
 							class="group grow flex items-center space-x-3 rounded-2xl px-2.5 py-2 hover:bg-gray-100 dark:hover:bg-gray-900 transition outline-none"
 							href="/"
 							draggable="false"
-							on:click={newChatHandler}
+							on:click|preventDefault={startNewChatHandler}
 							aria-label={$i18n.t('New Chat')}
 						>
 							<div class="self-center">

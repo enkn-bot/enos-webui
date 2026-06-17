@@ -46,6 +46,7 @@
 
 	import FolderOpen from '$lib/components/icons/FolderOpen.svelte';
 	import EllipsisHorizontal from '$lib/components/icons/EllipsisHorizontal.svelte';
+	import PencilSquare from '$lib/components/icons/PencilSquare.svelte';
 
 	import ChatItem from './ChatItem.svelte';
 	import FolderMenu from './Folders/FolderMenu.svelte';
@@ -381,6 +382,37 @@
 		}, 500);
 	};
 
+	const selectProjectFolderHandler = async ({ openFiles = false } = {}) => {
+		const folder = await getFolderById(localStorage.token, folderId).catch((error) => {
+			toast.error(`${error}`);
+			return null;
+		});
+
+		if (folder) {
+			await selectedFolder.set(folder);
+		}
+
+		if (isDeskSurface && getEnosDesktopBridge()) {
+			showLocalFileFolderId.set(folderId);
+			if (openFiles) {
+				showControls.set(true);
+				showFileNavPath.set('.');
+			}
+		}
+	};
+
+	const startProjectChatHandler = async (e) => {
+		e.stopPropagation();
+		e.preventDefault();
+
+		await selectProjectFolderHandler();
+		await goto('/');
+
+		if ($mobile) {
+			showSidebar.set(!$showSidebar);
+		}
+	};
+
 	let chats = null;
 	export const setFolderItems = async () => {
 		await tick();
@@ -540,20 +572,7 @@
 					}
 
 					clickTimer = setTimeout(async () => {
-						const folder = await getFolderById(localStorage.token, folderId).catch((error) => {
-							toast.error(`${error}`);
-							return null;
-						});
-
-						if (folder) {
-							await selectedFolder.set(folder);
-						}
-
-						if (isDeskSurface && getEnosDesktopBridge()) {
-							showLocalFileFolderId.set(folderId);
-							showControls.set(true);
-							showFileNavPath.set('.');
-						}
+						await selectProjectFolderHandler({ openFiles: true });
 
 						await goto('/');
 
@@ -631,9 +650,19 @@
 					{/if}
 				</div>
 
-				<button
-					class="absolute z-10 right-2 invisible group-hover:visible self-center flex items-center dark:text-gray-300"
+				<div
+					class="absolute z-10 right-2 invisible group-hover:visible self-center flex items-center gap-1 dark:text-gray-300"
 				>
+					{#if isDeskSurface}
+						<button
+							class="p-1 dark:hover:bg-gray-850 rounded-lg touch-auto"
+							aria-label={$i18n.t('New Project Chat')}
+							on:click={startProjectChatHandler}
+						>
+							<PencilSquare className="size-4" strokeWidth="2.5" />
+						</button>
+					{/if}
+
 					<FolderMenu
 						projectMode={isDeskSurface}
 						onEdit={() => {
@@ -654,7 +683,7 @@
 							<EllipsisHorizontal className="size-4" strokeWidth="2.5" />
 						</div>
 					</FolderMenu>
-				</button>
+				</div>
 			</div>
 		</div>
 
