@@ -2,12 +2,20 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-test('Desk sidebar suppresses top-level Chats and routes device folder selection to Files', () => {
+test('Desk sidebar suppresses top-level Chats and binds selected Mac folders to sidebar folders', () => {
 	const sidebar = readFileSync('src/lib/components/layout/Sidebar.svelte', 'utf8');
 	const folderModal = readFileSync(
 		'src/lib/components/layout/Sidebar/Folders/FolderModal.svelte',
 		'utf8'
 	);
+	const recursiveFolder = readFileSync(
+		'src/lib/components/layout/Sidebar/RecursiveFolder.svelte',
+		'utf8'
+	);
+	const chatControls = readFileSync('src/lib/components/chat/ChatControls.svelte', 'utf8');
+	const localFileNav = readFileSync('src/lib/components/chat/LocalFileNav.svelte', 'utf8');
+	const stores = readFileSync('src/lib/stores/index.ts', 'utf8');
+	const bridge = readFileSync('src/lib/enos/desktopBridge.ts', 'utf8');
 
 	assert.match(sidebar, /isDeskSurface/, 'Sidebar should identify the ENOS Desk surface');
 	assert.match(
@@ -17,23 +25,23 @@ test('Desk sidebar suppresses top-level Chats and routes device folder selection
 	);
 	assert.match(
 		sidebar,
-		/handleDeskDeviceFolderPick/,
-		'Desk should have a native device-folder picker handler'
+		/handleDeskLocalFolderPick/,
+		'Desk should have a native local-folder picker handler'
 	);
 	assert.match(
 		sidebar,
-		/showControls\.set\(true\)/,
-		'Choosing a device folder should open the shared right pane'
+		/bindWorkspaceToFolder\(res\.id\)/,
+		'Creating a Desk folder after local selection should bind the OpenWebUI folder id locally'
 	);
 	assert.match(
 		sidebar,
-		/showFileNavPath\.set\('\.'\)/,
-		'Choosing a device folder should switch the shared pane to Files'
+		/showLocalFileFolderId\.set\(res\.id\)/,
+		'Creating a Desk folder from a local folder should select that local file folder'
 	);
 	assert.match(
 		sidebar,
-		/onDeviceFolderPick=\{handleDeskDeviceFolderPick\}/,
-		'The folder modal should receive the Desk device-folder picker handler'
+		/onLocalFolderPick=\{handleDeskLocalFolderPick\}/,
+		'The folder modal should receive the Desk local-folder picker handler'
 	);
 	assert.match(
 		sidebar,
@@ -42,12 +50,52 @@ test('Desk sidebar suppresses top-level Chats and routes device folder selection
 	);
 	assert.match(
 		folderModal,
-		/export let onDeviceFolderPick/,
-		'FolderModal should expose a device-folder action hook'
+		/export let onLocalFolderPick/,
+		'FolderModal should expose a local-folder action hook'
 	);
 	assert.match(
 		folderModal,
-		/Choose Device Folder/,
-		'FolderModal should surface the device-folder option when asked'
+		/Select Folder/,
+		'FolderModal should surface Select Folder inside the existing Knowledge action row'
+	);
+	assert.doesNotMatch(
+		folderModal,
+		/Device Folder/,
+		'FolderModal should not use a separate top device-folder card'
+	);
+	assert.match(
+		folderModal,
+		/localWorkspace/,
+		'FolderModal should keep the selected local folder pending until Save creates the sidebar folder'
+	);
+	assert.match(
+		recursiveFolder,
+		/showLocalFileFolderId\.set\(folderId\)/,
+		'Clicking a Desk folder should select its local file binding'
+	);
+	assert.match(
+		chatControls,
+		/<LocalFileNav folderId=\{\$showLocalFileFolderId\}/,
+		'Files pane should receive the selected Desk folder id'
+	);
+	assert.match(
+		localFileNav,
+		/export let folderId/,
+		'LocalFileNav should support folder-scoped bridge calls'
+	);
+	assert.match(
+		localFileNav,
+		/chooseWorkspaceForFolder\(folderId\)/,
+		'LocalFileNav should relink a selected sidebar folder through the bridge if needed'
+	);
+	assert.match(
+		stores,
+		/showLocalFileFolderId/,
+		'Shared stores should expose the selected local file folder id'
+	);
+	assert.match(
+		bridge,
+		/bindWorkspaceToFolder/,
+		'Desktop bridge contract should include folder binding'
 	);
 });

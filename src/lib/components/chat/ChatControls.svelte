@@ -20,6 +20,7 @@
 		showEmbeds,
 		settings,
 		showFileNavPath,
+		showLocalFileFolderId,
 		selectedTerminalId,
 		user
 	} from '$lib/stores';
@@ -380,7 +381,7 @@
 									onClose={() => showControls.set(false)}
 								/>
 							{:else if activeTab === 'files' && showLocalFileNav}
-								<LocalFileNav onAttach={handleTerminalAttach} />
+								<LocalFileNav folderId={$showLocalFileFolderId} onAttach={handleTerminalAttach} />
 							{:else if activeTab === 'files' && showTerminalFileNav}
 								<FileNav onAttach={handleTerminalAttach} {chatId} />
 							{:else if activeTab === 'files' && codeInterpreterEnabled}
@@ -511,7 +512,7 @@
 										onClose={() => showControls.set(false)}
 									/>
 								{:else if activeTab === 'files' && showLocalFileNav}
-									<LocalFileNav onAttach={handleTerminalAttach} />
+									<LocalFileNav folderId={$showLocalFileFolderId} onAttach={handleTerminalAttach} />
 								{:else if activeTab === 'files' && showTerminalFileNav}
 									<FileNav onAttach={handleTerminalAttach} overlay={dragged} {chatId} />
 								{:else if activeTab === 'files' && codeInterpreterEnabled}

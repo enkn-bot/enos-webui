@@ -13,6 +13,9 @@
 	import { WEBUI_API_BASE_URL } from '$lib/constants';
 
 	export let selectedItems = [];
+	export let leadingActionLabel = '';
+	export let onLeadingAction: Function = async () => {};
+	export let hideUploadFiles = false;
 	const i18n = getContext('i18n');
 
 	let loaded = false;
@@ -191,6 +194,16 @@
 
 		{#if loaded}
 			<div class="flex flex-wrap flex-row text-sm gap-1">
+				{#if leadingActionLabel}
+					<button
+						class=" px-3.5 py-1.5 font-medium hover:bg-black/5 dark:hover:bg-white/5 outline outline-1 outline-gray-100 dark:outline-gray-850 rounded-3xl"
+						type="button"
+						on:click={async () => {
+							await onLeadingAction();
+						}}>{$i18n.t(leadingActionLabel)}</button
+					>
+				{/if}
+
 				<KnowledgeSelector
 					on:select={(e) => {
 						const item = e.detail;
@@ -212,7 +225,7 @@
 					</div>
 				</KnowledgeSelector>
 
-				{#if $user?.role === 'admin' || $user?.permissions?.chat?.file_upload}
+				{#if !hideUploadFiles && ($user?.role === 'admin' || $user?.permissions?.chat?.file_upload)}
 					<button
 						class=" px-3.5 py-1.5 font-medium hover:bg-black/5 dark:hover:bg-white/5 outline outline-1 outline-gray-100 dark:outline-gray-850 rounded-3xl"
 						type="button"

@@ -21,8 +21,8 @@
 	export let folderId = null;
 	export let parentId = null;
 	export let edit = false;
-	export let showDeviceFolderAction = false;
-	export let onDeviceFolderPick: Function = async () => {};
+	export let showLocalFolderAction = false;
+	export let onLocalFolderPick: Function = async () => {};
 
 	let folder = null;
 	let name = '';
@@ -33,6 +33,7 @@
 		system_prompt: '',
 		files: []
 	};
+	let localWorkspace = null;
 
 	let loading = false;
 
@@ -59,6 +60,7 @@
 			name,
 			meta,
 			data,
+			localWorkspace,
 			parent_id: edit ? undefined : parentId
 		});
 		show = false;
@@ -94,6 +96,15 @@
 		}
 	};
 
+	const selectLocalFolder = async () => {
+		const workspace = await onLocalFolderPick();
+		if (!workspace) return;
+		localWorkspace = workspace;
+		if (!name?.trim()) {
+			name = workspace.name;
+		}
+	};
+
 	$: if (show) {
 		init();
 	}
@@ -107,6 +118,7 @@
 			system_prompt: '',
 			files: []
 		};
+		localWorkspace = null;
 	}
 </script>
 
@@ -138,30 +150,6 @@
 						submitHandler();
 					}}
 				>
-					{#if showDeviceFolderAction && !edit}
-						<div
-							class="mb-3 flex items-center justify-between gap-3 rounded-xl border border-gray-100 dark:border-gray-800 px-3 py-2.5"
-						>
-							<div class="min-w-0">
-								<div class="text-sm font-medium text-gray-800 dark:text-gray-100">
-									{$i18n.t('Device Folder')}
-								</div>
-								<div class="text-xs text-gray-500 dark:text-gray-400">
-									{$i18n.t('Use a Mac folder in the Desk Files pane.')}
-								</div>
-							</div>
-							<button
-								class="shrink-0 px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 hover:bg-gray-200 dark:bg-gray-850 dark:hover:bg-gray-800 transition"
-								type="button"
-								on:click={async () => {
-									await onDeviceFolderPick();
-								}}
-							>
-								{$i18n.t('Choose Device Folder')}
-							</button>
-						</div>
-					{/if}
-
 					<div class="flex flex-col w-full mt-1">
 						<div class=" mb-1 text-xs text-gray-500">{$i18n.t('Folder Name')}</div>
 
@@ -255,7 +243,12 @@
 					{/if}
 
 					<div class="my-2">
-						<Knowledge bind:selectedItems={data.files}>
+						<Knowledge
+							bind:selectedItems={data.files}
+							leadingActionLabel={showLocalFolderAction && !edit ? 'Select Folder' : ''}
+							onLeadingAction={selectLocalFolder}
+							hideUploadFiles={showLocalFolderAction && !edit}
+						>
 							<div slot="label">
 								<div class="flex w-full justify-between">
 									<div class=" mb-2 text-xs text-gray-500">

@@ -17,8 +17,12 @@
 
 	const i18n = getContext('i18n');
 
-	export let onAttach: (blob: Blob, name: string, contentType: string) => void | Promise<void> =
-		() => {};
+	export let folderId: string | null = null;
+	export let onAttach: (
+		blob: Blob,
+		name: string,
+		contentType: string
+	) => void | Promise<void> = () => {};
 
 	let bridge: EnosDesktopBridge | null = null;
 	let workspace: EnosDesktopWorkspace | null = null;
@@ -28,6 +32,7 @@
 	let loading = false;
 	let fileLoading = false;
 	let error: string | null = null;
+	let loadedFolderId: string | null = null;
 
 	const displayPath = (path: string) => (path === '.' ? '/' : `/${path}`);
 
@@ -52,15 +57,24 @@
 
 	const loadWorkspace = async () => {
 		if (!bridge) return;
-		workspace = await bridge.getWorkspace();
-		if (workspace) await loadDir('.');
+		loadedFolderId = folderId;
+		workspace = await bridge.getWorkspace(folderId);
+		if (workspace) {
+			await loadDir('.');
+		} else {
+			listing = null;
+			currentPath = '.';
+			selectedFile = null;
+		}
 	};
 
 	const chooseWorkspace = async () => {
 		if (!bridge) return;
 		error = null;
 		try {
-			workspace = await bridge.chooseWorkspace();
+			workspace = folderId
+				? await bridge.chooseWorkspaceForFolder(folderId)
+				: await bridge.chooseWorkspace();
 			if (workspace) await loadDir('.');
 		} catch (e) {
 			error = e?.message ?? String(e);
@@ -73,7 +87,7 @@
 		error = null;
 		selectedFile = null;
 		try {
-			listing = await bridge.listDir(path);
+			listing = await bridge.listDir(path, folderId);
 			currentPath = listing.path;
 		} catch (e) {
 			error = e?.message ?? String(e);
@@ -91,7 +105,7 @@
 		fileLoading = true;
 		error = null;
 		try {
-			selectedFile = await bridge.readFile(entry.path);
+			selectedFile = await bridge.readFile(entry.path, folderId);
 		} catch (e) {
 			error = e?.message ?? String(e);
 		} finally {
@@ -112,6 +126,10 @@
 		}
 		await loadWorkspace();
 	});
+
+	$: if (bridge && folderId !== loadedFolderId) {
+		loadWorkspace();
+	}
 </script>
 
 <div class="h-full min-h-0 flex flex-col text-gray-700 dark:text-gray-200">
@@ -127,13 +145,15 @@
 					{/if}
 				</div>
 			</div>
-			<button
-				class="shrink-0 px-2 py-1 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
-				on:click={chooseWorkspace}
-				type="button"
-			>
-				{$i18n.t(workspace ? 'Change' : 'Choose')}
-			</button>
+			{#if !workspace || !folderId}
+				<button
+					class="shrink-0 px-2 py-1 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+					on:click={chooseWorkspace}
+					type="button"
+				>
+					{$i18n.t(workspace ? 'Change' : 'Choose')}
+				</button>
+			{/if}
 		</div>
 	</div>
 
@@ -149,12 +169,14 @@
 					on:click={chooseWorkspace}
 					type="button"
 				>
-					{$i18n.t('Choose Local Folder')}
+					{$i18n.t(folderId ? 'Select Folder' : 'Choose Local Folder')}
 				</button>
 			</div>
 		</div>
 	{:else}
-		<div class="flex items-center gap-1 px-2 pb-1.5 shrink-0 border-b border-gray-50 dark:border-gray-800">
+		<div
+			class="flex items-center gap-1 px-2 pb-1.5 shrink-0 border-b border-gray-50 dark:border-gray-800"
+		>
 			<button
 				class="px-2 py-1 rounded text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-40"
 				disabled={parentPath(currentPath) === null}
@@ -182,7 +204,9 @@
 		</div>
 
 		{#if error}
-			<div class="mx-3 my-2 px-2 py-1.5 rounded-md bg-red-50 dark:bg-red-950/30 text-xs text-red-600 dark:text-red-300">
+			<div
+				class="mx-3 my-2 px-2 py-1.5 rounded-md bg-red-50 dark:bg-red-950/30 text-xs text-red-600 dark:text-red-300"
+			>
 				{error}
 			</div>
 		{/if}
@@ -244,8 +268,7 @@
 					<div class="text-xs text-gray-400">{$i18n.t('Loading preview...')}</div>
 				{:else if selectedFile.encoding === 'utf8'}
 					<pre
-						class="max-h-40 overflow-auto text-xs whitespace-pre-wrap rounded-md bg-gray-50 dark:bg-gray-900 p-2"
-					>{selectedFile.data}</pre>
+						class="max-h-40 overflow-auto text-xs whitespace-pre-wrap rounded-md bg-gray-50 dark:bg-gray-900 p-2">{selectedFile.data}</pre>
 				{:else}
 					<div class="text-xs text-gray-400">
 						{$i18n.t('Binary preview is unavailable. You can still attach the file.')}

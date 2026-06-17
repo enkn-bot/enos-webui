@@ -32,7 +32,8 @@
 		sidebarWidth,
 		activeChatIds,
 		showControls,
-		showFileNavPath
+		showFileNavPath,
+		showLocalFileFolderId
 	} from '$lib/stores';
 	import { onMount, getContext, tick, onDestroy } from 'svelte';
 
@@ -224,7 +225,7 @@
 		}
 	};
 
-	const createFolder = async ({ name, data, parent_id }) => {
+	const createFolder = async ({ name, data, parent_id, localWorkspace }) => {
 		name = name?.trim();
 		if (!name) {
 			toast.error($i18n.t('Folder name cannot be empty.'));
@@ -268,30 +269,36 @@
 		});
 
 		if (res) {
+			if (localWorkspace && isDeskSurface && hasDesktopBridge) {
+				const bridge = getEnosDesktopBridge();
+				await bridge.bindWorkspaceToFolder(res.id);
+				showLocalFileFolderId.set(res.id);
+				showControls.set(true);
+				showFileNavPath.set('.');
+			}
 			// newFolderId = res.id;
 			await initFolders();
 			showFolders = true;
 		}
 	};
 
-	const handleDeskDeviceFolderPick = async () => {
+	const handleDeskLocalFolderPick = async () => {
 		const bridge = getEnosDesktopBridge();
 		if (!bridge) {
 			toast.error($i18n.t('ENOS Desktop bridge is unavailable.'));
-			return;
+			return null;
 		}
 
 		try {
 			const workspace = await bridge.chooseWorkspace();
 			if (workspace) {
-				showCreateFolderModal = false;
-				showControls.set(true);
-				showFileNavPath.set('.');
 				toast.success($i18n.t('Local folder selected'));
+				return workspace;
 			}
 		} catch (error) {
 			toast.error(error?.message ?? `${error}`);
 		}
+		return null;
 	};
 
 	const initChannels = async () => {
@@ -759,8 +766,8 @@
 
 <FolderModal
 	bind:show={showCreateFolderModal}
-	showDeviceFolderAction={isDeskSurface && hasDesktopBridge}
-	onDeviceFolderPick={handleDeskDeviceFolderPick}
+	showLocalFolderAction={isDeskSurface && hasDesktopBridge}
+	onLocalFolderPick={handleDeskLocalFolderPick}
 	onSubmit={async (folder) => {
 		await createFolder(folder);
 		showCreateFolderModal = false;

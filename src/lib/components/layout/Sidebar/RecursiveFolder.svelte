@@ -8,10 +8,20 @@
 	import fileSaver from 'file-saver';
 	const { saveAs } = fileSaver;
 
+	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 
-	import { chatId, mobile, selectedFolder, showSidebar } from '$lib/stores';
+	import {
+		chatId,
+		mobile,
+		selectedFolder,
+		showControls,
+		showFileNavPath,
+		showLocalFileFolderId,
+		showSidebar
+	} from '$lib/stores';
+	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 
 	import {
 		deleteFolderById,
@@ -536,6 +546,16 @@
 
 						if (folder) {
 							await selectedFolder.set(folder);
+						}
+
+						if (
+							browser &&
+							window.location.hostname === 'enosdesk.duckdns.org' &&
+							getEnosDesktopBridge()
+						) {
+							showLocalFileFolderId.set(folderId);
+							showControls.set(true);
+							showFileNavPath.set('.');
 						}
 
 						await goto('/');
