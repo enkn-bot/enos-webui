@@ -22,6 +22,7 @@ const MAX_SUMMARY_CHARS = 3000;
 type BuildProjectActionContextArgs = {
 	bridge: EnosDesktopBridge | null;
 	folderId?: string | null;
+	activePath?: string | null;
 	prompt?: string;
 };
 
@@ -38,6 +39,11 @@ const selectSummaryEntries = (listing: EnosDesktopProjectDirectoryListing) =>
 		.filter((entry) => entry.type === 'file' && SUMMARY_FILE_NAMES.has(entry.name))
 		.slice(0, MAX_SUMMARY_FILES);
 
+const normalizeProjectPath = (path?: string | null) => {
+	const value = String(path || '.').trim();
+	return value === '' ? '.' : value;
+};
+
 const formatPreview = (preview: EnosDesktopProjectFilePreview) => {
 	if (preview.encoding !== 'utf8') return `### ${preview.path}\n[non-text preview omitted]`;
 	const text =
@@ -50,13 +56,15 @@ const formatPreview = (preview: EnosDesktopProjectFilePreview) => {
 export const buildProjectActionContext = async ({
 	bridge,
 	folderId,
+	activePath: rawActivePath = '.',
 	prompt = ''
 }: BuildProjectActionContextArgs): Promise<string> => {
 	if (!bridge || !folderId) return '';
 
+	const activePath = normalizeProjectPath(rawActivePath);
 	let listing: EnosDesktopProjectDirectoryListing;
 	try {
-		listing = await bridge.listProjectFiles(folderId, '.');
+		listing = await bridge.listProjectFiles(folderId, activePath);
 	} catch {
 		return '';
 	}
@@ -64,10 +72,12 @@ export const buildProjectActionContext = async ({
 	const lines = [
 		'Live local project context from ENOS Desk.',
 		'Use this read-only context when the user asks about this selected project, folder, or files.',
+		'This active folder listing is authoritative for questions about "this folder", "the current folder", or the Files pane.',
 		'Write/edit project file actions require explicit confirmation and have not been executed.',
 		'',
 		`Project root: ${listing.rootName}`,
-		'Root files and folders:',
+		`Active folder in ENOS Desk Files pane: ${listing.path}`,
+		'Active folder files and folders:',
 		...listing.entries.slice(0, MAX_ROOT_ENTRIES).map(formatEntry)
 	];
 

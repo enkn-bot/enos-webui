@@ -48,6 +48,8 @@
 		selectedTerminalId,
 		showFileNavPath,
 		showFileNavDir,
+		showLocalFileFolderId,
+		showLocalFilePath,
 		chatRequestQueues,
 		desktopEvent
 	} from '$lib/stores';
@@ -2381,11 +2383,35 @@
 		const projectActionPrompt = String(
 			regenerationPrompt ?? userMessage?.merged?.content ?? userMessage?.content ?? ''
 		);
+		const activeProjectFilePath =
+			$selectedFolder?.id && $selectedFolder.id === $showLocalFileFolderId
+				? $showLocalFilePath
+				: '.';
 		const projectActionContext = await buildProjectActionContext({
 			bridge: getEnosDesktopBridge(),
 			folderId: $selectedFolder?.id,
+			activePath: activeProjectFilePath,
 			prompt: projectActionPrompt
 		});
+
+		if (projectContextDigest) {
+			messages = [
+				...messages,
+				{
+					role: 'system',
+					content: `Project context from the selected ENOS Desk project.\nUse this as read-only project context when the user asks about the project, files, implementation, or next work. If live local project context follows this message, that live context is newer and overrides this saved digest for folder listing questions. If the context seems stale or insufficient, say what needs to be re-analyzed or opened before making strong claims.\n\n${projectContextDigest}`
+				}
+			];
+		} else if ($selectedFolder?.id && !projectActionContext) {
+			messages = [
+				...messages,
+				{
+					role: 'system',
+					content:
+						'A project is selected, but local project context is still being prepared. If the user asks what this project, folder, or local files are about, use any live project file listing that is available. If live context is unavailable or insufficient, do not guess; say ENOS Desk is still preparing or needs the project folder reselected.'
+				}
+			];
+		}
 
 		if (projectActionContext) {
 			messages = [
@@ -2393,25 +2419,6 @@
 				{
 					role: 'system',
 					content: projectActionContext
-				}
-			];
-		}
-
-		if (projectContextDigest) {
-			messages = [
-				...messages,
-				{
-					role: 'system',
-					content: `Project context from the selected ENOS Desk project.\nUse this as read-only project context when the user asks about the project, folder, files, implementation, or next work. If the context seems stale or insufficient, say what needs to be re-analyzed or opened before making strong claims.\n\n${projectContextDigest}`
-				}
-			];
-		} else if ($selectedFolder?.id) {
-			messages = [
-				...messages,
-				{
-					role: 'system',
-					content:
-						'A project is selected, but local project context is still being prepared. If the user asks what this project, folder, or local files are about, use any live project file listing that is available. If live context is unavailable or insufficient, do not guess; say ENOS Desk is still preparing or needs the project folder reselected.'
 				}
 			];
 		}

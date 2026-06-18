@@ -94,6 +94,11 @@ test('Desk sidebar suppresses top-level Chats and binds selected Mac folders to 
 		'Shared stores should expose the selected local file folder id'
 	);
 	assert.match(
+		stores,
+		/showLocalFilePath/,
+		'Shared stores should expose the active path inside the selected local file folder'
+	);
+	assert.match(
 		bridge,
 		/bindWorkspaceToFolder/,
 		'Desktop bridge contract should include folder binding'
@@ -413,6 +418,7 @@ test('Desk project chats attach live local file action context before model call
 	const bridge = readFileSync('src/lib/enos/desktopBridge.ts', 'utf8');
 	const projectActions = readFileSync('src/lib/enos/projectActions.ts', 'utf8');
 	const chat = readFileSync('src/lib/components/chat/Chat.svelte', 'utf8');
+	const localFileNav = readFileSync('src/lib/components/chat/LocalFileNav.svelte', 'utf8');
 
 	assert.match(
 		bridge,
@@ -436,8 +442,23 @@ test('Desk project chats attach live local file action context before model call
 	);
 	assert.match(
 		projectActions,
-		/listProjectFiles\(folderId, '\.'\)/,
-		'Project action helper should always list the selected project root'
+		/activePath/,
+		'Project action helper should accept the active Files pane path'
+	);
+	assert.match(
+		projectActions,
+		/listProjectFiles\(folderId, activePath\)/,
+		'Project action helper should list the active Files pane folder, not always the root'
+	);
+	assert.match(
+		projectActions,
+		/Active folder in ENOS Desk Files pane/,
+		'Project action helper should tell the model which folder is currently active'
+	);
+	assert.match(
+		projectActions,
+		/This active folder listing is authoritative/,
+		'Project action helper should make the active folder override stale digest summaries'
 	);
 	assert.match(
 		projectActions,
@@ -453,6 +474,26 @@ test('Desk project chats attach live local file action context before model call
 		chat,
 		/buildProjectActionContext/,
 		'Chat completion should build live project action context'
+	);
+	assert.match(
+		chat,
+		/activePath: activeProjectFilePath/,
+		'Chat completion should pass the active Files pane path into live project context'
+	);
+	assert.match(
+		chat,
+		/showLocalFilePath/,
+		'Chat completion should observe the active Files pane path'
+	);
+	assert.match(
+		chat,
+		/projectContextDigest[\s\S]*projectActionContext/,
+		'Saved digest should be added before live context so active folder context has final authority'
+	);
+	assert.match(
+		localFileNav,
+		/showLocalFilePath\.set\(currentPath\)/,
+		'Files pane should publish the active folder path whenever it changes'
 	);
 	assert.match(
 		chat,

@@ -13,6 +13,7 @@
 		type EnosDesktopProjectGitStatus,
 		type EnosDesktopWorkspace
 	} from '$lib/enos/desktopBridge';
+	import { showLocalFilePath } from '$lib/stores';
 
 	import Folder from '../icons/Folder.svelte';
 	import Document from '../icons/Document.svelte';
@@ -104,6 +105,8 @@
 	const loadWorkspace = async () => {
 		if (!bridge) return;
 		loadedFolderId = folderId;
+		currentPath = '.';
+		showLocalFilePath.set(currentPath);
 		error = null;
 		try {
 			workspace = await bridge.getWorkspace(folderId);
@@ -114,6 +117,7 @@
 			} else {
 				listing = null;
 				currentPath = '.';
+				showLocalFilePath.set(currentPath);
 				selectedFile = null;
 				gitStatus = null;
 			}
@@ -122,6 +126,7 @@
 			workspace = null;
 			listing = null;
 			currentPath = '.';
+			showLocalFilePath.set(currentPath);
 			selectedFile = null;
 			gitStatus = null;
 		}
@@ -153,10 +158,12 @@
 		try {
 			listing = await bridge.listDir(path, folderId);
 			currentPath = listing.path;
+			showLocalFilePath.set(currentPath);
 		} catch (e) {
 			error = friendlyDesktopError(e);
 			listing = null;
 			currentPath = '.';
+			showLocalFilePath.set(currentPath);
 			selectedFile = null;
 			editContent = '';
 		} finally {
