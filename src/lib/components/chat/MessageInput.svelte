@@ -96,7 +96,8 @@
 	import PlusAlt from '../icons/PlusAlt.svelte';
 	import Dropdown from '../common/Dropdown.svelte';
 	import Check from '../icons/Check.svelte';
-	import LockClosed from '../icons/LockClosed.svelte';
+	import CheckCircle from '../icons/CheckCircle.svelte';
+	import UserBadgeCheck from '../icons/UserBadgeCheck.svelte';
 
 	import CommandSuggestionList from './MessageInput/CommandSuggestionList.svelte';
 	import Knobs from '../icons/Knobs.svelte';
@@ -1748,7 +1749,11 @@
 												aria-label={$i18n.t('Project action permissions')}
 												title={$i18n.t('Project action permissions')}
 											>
-												<LockClosed className="size-4.5" strokeWidth="1.75" />
+												{#if projectPermissionProfile === 'approve_safe_project_edits'}
+													<CheckCircle className="size-5.5" strokeWidth="1.75" />
+												{:else}
+													<UserBadgeCheck className="size-5.5" strokeWidth="1.75" />
+												{/if}
 											</button>
 
 											<div slot="content" class="py-1">
@@ -1760,7 +1765,9 @@
 													class="w-full rounded-xl px-3 py-2 flex items-center gap-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800"
 													on:click={() => setProjectPermissionProfile('ask')}
 												>
-													<LockClosed className="size-5 text-gray-500 dark:text-gray-400 shrink-0" />
+													<UserBadgeCheck
+														className="size-5 text-gray-500 dark:text-gray-400 shrink-0"
+													/>
 													<div class="min-w-0 flex-1">
 														<div class="text-sm font-medium">{$i18n.t('Ask for approval')}</div>
 														<div class="text-xs text-gray-500 dark:text-gray-400 truncate">
@@ -1776,7 +1783,10 @@
 													class="w-full rounded-xl px-3 py-2 flex items-center gap-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800"
 													on:click={() => setProjectPermissionProfile('approve_safe_project_edits')}
 												>
-													<LockClosed className="size-5 text-sky-600 dark:text-sky-300 shrink-0" />
+													<CheckCircle
+														className="size-5 text-sky-600 dark:text-sky-300 shrink-0"
+														strokeWidth="1.75"
+													/>
 													<div class="min-w-0 flex-1">
 														<div class="text-sm font-medium">{$i18n.t('Approve safe edits')}</div>
 														<div class="text-xs text-gray-500 dark:text-gray-400 truncate">

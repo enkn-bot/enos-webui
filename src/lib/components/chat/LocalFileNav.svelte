@@ -17,6 +17,14 @@
 	import Folder from '../icons/Folder.svelte';
 	import Document from '../icons/Document.svelte';
 	import Spinner from '../common/Spinner.svelte';
+	import Dropdown from '../common/Dropdown.svelte';
+	import EllipsisHorizontal from '../icons/EllipsisHorizontal.svelte';
+	import FilePlusAlt from '../icons/FilePlusAlt.svelte';
+	import NewFolderAlt from '../icons/NewFolderAlt.svelte';
+	import ArrowPath from '../icons/ArrowPath.svelte';
+	import Eye from '../icons/Eye.svelte';
+	import Pencil from '../icons/Pencil.svelte';
+	import GarbageBin from '../icons/GarbageBin.svelte';
 
 	const i18n = getContext('i18n');
 
@@ -43,7 +51,16 @@
 	let error: string | null = null;
 	let loadedFolderId: string | null = null;
 
-	const displayPath = (path: string) => (path === '.' ? '/' : `/${path}`);
+	const pathCrumbs = (name: string, path: string) => {
+		const parts = path === '.' ? [] : path.split('/').filter(Boolean);
+		return [
+			{ label: name, path: '.' },
+			...parts.map((part, index) => ({
+				label: part,
+				path: parts.slice(0, index + 1).join('/')
+			}))
+		];
+	};
 
 	const friendlyDesktopError = (e: any) => {
 		const message = e?.message ?? String(e);
@@ -70,13 +87,6 @@
 			return $i18n.t('This project folder is unavailable. Select the project folder again.');
 		}
 		return message;
-	};
-
-	const parentPath = (path: string) => {
-		if (path === '.') return null;
-		const parts = path.split('/').filter(Boolean);
-		parts.pop();
-		return parts.length ? parts.join('/') : '.';
 	};
 
 	const decodePreview = (preview: EnosDesktopFilePreview) => {
@@ -393,53 +403,72 @@
 			</div>
 		</div>
 	{:else}
-		<div
-			class="flex items-center gap-1 px-2 pb-1.5 shrink-0 border-b border-gray-50 dark:border-gray-800"
-		>
-			<button
-				class="px-2 py-1 rounded text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-40"
-				disabled={parentPath(currentPath) === null}
-				on:click={() => {
-					const parent = parentPath(currentPath);
-					if (parent) loadDir(parent);
-				}}
-				type="button"
-			>
-				{$i18n.t('Back')}
-			</button>
-			<button
-				class="px-2 py-1 rounded text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-				on:click={async () => {
-					await loadDir(currentPath);
-					await syncProjectContext();
-					await loadGitStatus();
-				}}
-				type="button"
-			>
-				{$i18n.t('Refresh')}
-			</button>
-			{#if folderId}
-				<button
-					class="px-2 py-1 rounded text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-					on:click={createFile}
-					type="button"
-				>
-					{$i18n.t('New File')}
-				</button>
-				<button
-					class="px-2 py-1 rounded text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-					on:click={createFolder}
-					type="button"
-				>
-					{$i18n.t('New Folder')}
-				</button>
-			{/if}
-			<div class="min-w-0 flex-1 truncate text-xs text-gray-500 dark:text-gray-400">
-				{workspace.name}{displayPath(currentPath)}
+		<div class="flex items-center gap-2 px-3 pb-1.5 shrink-0 border-b border-gray-50 dark:border-gray-800">
+			<div class="min-w-0 flex-1 flex items-center gap-1 overflow-x-auto scrollbar-none text-xs">
+				{#each pathCrumbs(workspace.name, currentPath) as crumb, index}
+					{#if index > 0}
+						<span class="text-gray-300 dark:text-gray-600 shrink-0">/</span>
+					{/if}
+					<button
+						class="shrink-0 max-w-36 truncate rounded px-1 py-0.5 {crumb.path === currentPath
+							? 'text-gray-700 dark:text-gray-200'
+							: 'text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200'}"
+						on:click={() => loadDir(crumb.path)}
+						type="button"
+					>
+						{crumb.label}{crumb.path === currentPath ? '/' : ''}
+					</button>
+				{/each}
 			</div>
 			{#if loading}
 				<Spinner className="size-4" />
 			{/if}
+			<Dropdown align="end" sideOffset={4}>
+				<button
+					class="shrink-0 size-7 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-800"
+					type="button"
+					aria-label={$i18n.t('Project file actions')}
+					title={$i18n.t('Project file actions')}
+				>
+					<EllipsisHorizontal className="size-5" strokeWidth="1.75" />
+				</button>
+
+				<div slot="content">
+					<div
+						class="min-w-[180px] rounded-2xl p-1 bg-white dark:bg-gray-850 dark:text-white shadow-lg border border-gray-100 dark:border-gray-800"
+					>
+						<div class="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
+							{$i18n.t('Project file actions')}
+						</div>
+						{#if folderId}
+							<button
+								class="select-none flex rounded-xl py-1.5 px-3 w-full hover:bg-gray-50 dark:hover:bg-gray-800 transition items-center gap-2 text-sm"
+								on:click={createFile}
+								type="button"
+							>
+								<FilePlusAlt className="size-4" />
+								<span>{$i18n.t('New File')}</span>
+							</button>
+							<button
+								class="select-none flex rounded-xl py-1.5 px-3 w-full hover:bg-gray-50 dark:hover:bg-gray-800 transition items-center gap-2 text-sm"
+								on:click={createFolder}
+								type="button"
+							>
+								<NewFolderAlt className="size-4" />
+								<span>{$i18n.t('New Folder')}</span>
+							</button>
+						{/if}
+						<button
+							class="select-none flex rounded-xl py-1.5 px-3 w-full hover:bg-gray-50 dark:hover:bg-gray-800 transition items-center gap-2 text-sm"
+							on:click={refreshProjectState}
+							type="button"
+						>
+							<ArrowPath className="size-4" />
+							<span>{$i18n.t('Refresh')}</span>
+						</button>
+					</div>
+				</div>
+			</Dropdown>
 		</div>
 
 		{#if error}
@@ -475,27 +504,50 @@
 									</span>
 								{/if}
 							</button>
-							<button
-								class="shrink-0 px-1 py-0.5 rounded text-[11px] text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-								on:click={() => revealEntry(entry)}
-								type="button"
-							>
-								{$i18n.t('Reveal')}
-							</button>
-							<button
-								class="shrink-0 px-1 py-0.5 rounded text-[11px] text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-								on:click={() => renameEntry(entry)}
-								type="button"
-							>
-								{$i18n.t('Rename')}
-							</button>
-							<button
-								class="shrink-0 px-1 py-0.5 rounded text-[11px] text-gray-400 hover:text-red-600 dark:hover:text-red-300"
-								on:click={() => deleteEntry(entry)}
-								type="button"
-							>
-								{$i18n.t('Delete')}
-							</button>
+							<Dropdown align="end" sideOffset={4}>
+								<button
+									class="shrink-0 size-7 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-700"
+									on:click={(event) => event.stopPropagation()}
+									type="button"
+									aria-label={$i18n.t('Entry actions')}
+									title={$i18n.t('Entry actions')}
+								>
+									<EllipsisHorizontal className="size-5" strokeWidth="1.75" />
+								</button>
+								<div slot="content">
+									<div
+										class="min-w-[150px] rounded-2xl p-1 bg-white dark:bg-gray-850 dark:text-white shadow-lg border border-gray-100 dark:border-gray-800"
+									>
+										<div class="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
+											{$i18n.t('Entry actions')}
+										</div>
+										<button
+											class="select-none flex rounded-xl py-1.5 px-3 w-full hover:bg-gray-50 dark:hover:bg-gray-800 transition items-center gap-2 text-sm"
+											on:click={() => revealEntry(entry)}
+											type="button"
+										>
+											<Eye className="size-4" />
+											<span>{$i18n.t('Reveal')}</span>
+										</button>
+										<button
+											class="select-none flex rounded-xl py-1.5 px-3 w-full hover:bg-gray-50 dark:hover:bg-gray-800 transition items-center gap-2 text-sm"
+											on:click={() => renameEntry(entry)}
+											type="button"
+										>
+											<Pencil className="size-4" />
+											<span>{$i18n.t('Rename')}</span>
+										</button>
+										<button
+											class="select-none flex rounded-xl py-1.5 px-3 w-full hover:bg-red-50 dark:hover:bg-red-950/40 transition items-center gap-2 text-sm text-red-600 dark:text-red-300"
+											on:click={() => deleteEntry(entry)}
+											type="button"
+										>
+											<GarbageBin className="size-4" />
+											<span>{$i18n.t('Delete')}</span>
+										</button>
+									</div>
+								</div>
+							</Dropdown>
 						</li>
 					{/each}
 				</ul>

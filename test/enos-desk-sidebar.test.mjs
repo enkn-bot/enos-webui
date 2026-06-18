@@ -513,11 +513,41 @@ test('Desk Files pane exposes permissioned project file actions and local Git aw
 		/Project action permissions/,
 		'Composer permission menu should identify the action permission control'
 	);
+	assert.match(
+		messageInput,
+		/UserBadgeCheck/,
+		'Composer approval-first mode should use a distinct approval icon'
+	);
+	assert.match(
+		messageInput,
+		/CheckCircle/,
+		'Composer safe-edit mode should use a distinct safe-edit icon'
+	);
+	assert.doesNotMatch(
+		messageInput,
+		/<LockClosed/,
+		'Composer permission control should not use duplicate padlock icons for both modes'
+	);
 	assert.doesNotMatch(
 		localFileNav,
 		/Ask Before Changing|Approve Safe Project Edits|Ask for approval|Approve safe edits/,
 		'Files pane should not carry the project permission mode selector'
 	);
+	assert.match(
+		localFileNav,
+		/Project file actions/,
+		'Files pane should group project-level actions behind one overflow menu'
+	);
+	assert.match(
+		localFileNav,
+		/Entry actions/,
+		'Files pane should group per-file actions behind a row overflow menu'
+	);
+	assert.match(localFileNav, /EllipsisHorizontal/, 'Files pane should use compact ellipsis menus');
+	assert.match(localFileNav, /FilePlusAlt/, 'Files pane project menu should include a new-file icon');
+	assert.match(localFileNav, /NewFolderAlt/, 'Files pane project menu should include a new-folder icon');
+	assert.match(localFileNav, /ArrowPath/, 'Files pane project menu should keep refresh in overflow');
+	assert.doesNotMatch(localFileNav, /\$i18n\.t\('Back'\)/, 'Files pane should avoid a Back button');
 	assert.match(localFileNav, /New File/, 'Files pane should create new files');
 	assert.match(localFileNav, /New Folder/, 'Files pane should create new folders');
 	assert.match(localFileNav, /Save/, 'Files pane should save text edits');
