@@ -1,3 +1,6 @@
+import type { DeskChatMessage, DeskCompletion } from '$lib/enos/deskAgentLoop';
+import type { DeskToolSpec } from '$lib/enos/deskFileTools';
+
 export type EnosDesktopPlatform = 'electron' | 'tauri' | 'swift';
 export type EnosDesktopPermissionProfile = 'ask' | 'approve_safe_project_edits';
 
@@ -169,6 +172,11 @@ export type EnosDesktopBridge = {
 		path: string
 	) => Promise<EnosDesktopProjectActionResult>;
 	getProjectGitStatus: (folderId: string) => Promise<EnosDesktopProjectGitStatus>;
+	/** Desk-local model call — available only in newer Electron builds. */
+	agentComplete?: (
+		messages: DeskChatMessage[],
+		tools: DeskToolSpec[]
+	) => Promise<DeskCompletion>;
 };
 
 declare global {

@@ -130,6 +130,8 @@
 		formatProjectWriteFailure,
 		formatProjectWriteSuccess
 	} from '$lib/enos/projectChatActions';
+	import { runDeskAgentLoop } from '$lib/enos/deskAgentLoop';
+	import { DESK_FILE_TOOLS, executeDeskFileTool } from '$lib/enos/deskFileTools';
 
 	export let chatIdProp = '';
 
@@ -1904,32 +1906,19 @@
 	};
 
 	const handleProjectChatAction = async (userPrompt) => {
-		const initialFolderId = activeProjectFolderId();
-		const initialActivePath = initialFolderId ? activeProjectPathForFolder(initialFolderId) : '.';
-		const action = detectProjectChatAction({ prompt: userPrompt, activePath: initialActivePath });
-		if (!action) return false;
-
 		try {
 			const capabilities = await getEnosDesktopBridgeCapabilities();
 			const hasLocalProjectFiles = canUseEnosLocalProjectFiles(capabilities);
-			const hasLocalProjectMutations = canUseEnosLocalProjectMutations(capabilities);
-
-			if (action.kind === 'capability' || action.kind === 'clarify') {
-				await createLocalProjectActionMessage(
-					userPrompt,
-					hasLocalProjectFiles ? action.message : WEB_PROJECT_ACTION_MESSAGE
-				);
-				return true;
-			}
 
 			if (!hasLocalProjectFiles) {
-				await createLocalProjectActionMessage(userPrompt, WEB_PROJECT_ACTION_MESSAGE);
-				return true;
+				// Not in Electron — fall through to the normal chat pipeline.
+				return false;
 			}
 
 			await hydrateProjectFolderFromChat(chat);
 			const bridge = getEnosDesktopBridge();
 			const folderId = activeProjectFolderId();
+
 			if (!bridge) {
 				await createLocalProjectActionMessage(
 					userPrompt,
@@ -1946,73 +1935,62 @@
 				return true;
 			}
 
-			if (
-				!hasLocalProjectMutations &&
-				['create-file', 'write-file', 'create-folder', 'rename-entry', 'delete-entry'].includes(
-					action.kind
-				)
-			) {
-				await createLocalProjectActionMessage(userPrompt, DESKTOP_MUTATION_UNAVAILABLE_MESSAGE);
-				return true;
+			const hasLocalProjectMutations = canUseEnosLocalProjectMutations(capabilities);
+
+			const loopMessages = [
+				{
+					role: 'system',
+					content:
+						`You are ENOS Desk, an AI agent with direct access to the user's local project files via tool calls.\n` +
+						`Active project folder id: ${folderId}.\n` +
+						`Mutations (write/edit/delete) are ${hasLocalProjectMutations ? 'permitted' : 'not permitted in this session — read-only'}.`
+				},
+				{ role: 'user', content: userPrompt }
+			];
+
+			const complete = async (msgs, tools) => {
+				if (!bridge.agentComplete) throw new Error('Desk agent endpoint not available — update ENOS Desk.');
+				return bridge.agentComplete(msgs, tools);
+			};
+
+			const executeTool = (name, args, confirmed) =>
+				executeDeskFileTool({ bridge, folderId, name, args, confirmed });
+
+			const confirm = async ({ result }) => {
+				const msg = projectActionConfirmationMessage(result.request);
+				return window.confirm(msg);
+			};
+
+			const tools = hasLocalProjectMutations
+				? DESK_FILE_TOOLS
+				: DESK_FILE_TOOLS.filter((t) =>
+						['list_files', 'read_file', 'reveal_entry'].includes(t.function.name)
+					);
+
+			const outcome = await runDeskAgentLoop({
+				messages: loopMessages,
+				tools,
+				complete,
+				executeTool,
+				confirm
+			});
+
+			// Fire file-change events for any tool that mutated the FS.
+			if (hasLocalProjectMutations) {
+				dispatchProjectFilesChanged(folderId, null);
 			}
 
-			if (action.kind === 'list-directory') {
-				const listing = await bridge.listProjectFiles(folderId, action.path);
-				await createLocalProjectActionMessage(userPrompt, formatProjectListingMessage(listing));
-				return true;
-			}
-
-			if (action.kind === 'read-file') {
-				const preview = await bridge.readProjectFile(folderId, action.path);
-				await createLocalProjectActionMessage(userPrompt, formatProjectFileReadMessage(preview));
-				return true;
-			}
-
-			let result;
-			if (action.kind === 'create-file') {
-				result = await runConfirmedProjectChatAction((confirmed = false) =>
-					bridge.createProjectFile(folderId, action.path, action.content, { confirmed })
-				);
-			} else if (action.kind === 'write-file') {
-				result = await runConfirmedProjectChatAction((confirmed = false) =>
-					bridge.writeProjectFile(folderId, action.path, action.content, { confirmed })
-				);
-			} else if (action.kind === 'create-folder') {
-				result = await runConfirmedProjectChatAction((confirmed = false) =>
-					bridge.createProjectFolder(folderId, action.path, { confirmed })
-				);
-			} else if (action.kind === 'rename-entry') {
-				result = await runConfirmedProjectChatAction((confirmed = false) =>
-					bridge.renameProjectEntry(folderId, action.path, action.toPath, { confirmed })
-				);
-			} else if (action.kind === 'delete-entry') {
-				result = await runConfirmedProjectChatAction((confirmed = false) =>
-					bridge.deleteProjectEntry(folderId, action.path, { confirmed })
-				);
-			} else if (action.kind === 'reveal-entry') {
-				result = await bridge.revealProjectEntry(folderId, action.path);
-			}
-
-			if (result?.status === 'requires_confirmation') {
-				await createLocalProjectActionMessage(userPrompt, formatProjectWriteCancelled(result.path));
-				return true;
-			}
-
-			if (result?.status) {
-				dispatchProjectFilesChanged(folderId, result);
-				toast.success($i18n.t('Project file action completed'));
-				await createLocalProjectActionMessage(userPrompt, formatProjectMutationSuccess(result));
-				return true;
-			}
+			await createLocalProjectActionMessage(userPrompt, outcome.content || '(No response from agent.)');
+			return true;
 		} catch (error) {
-			console.error('[enos project action]', error);
+			console.error('[enos desk agent]', error);
 			toast.error($i18n.t('Project file action failed'));
-			const failedPath = 'path' in action ? action.path : 'project';
-			await createLocalProjectActionMessage(userPrompt, formatProjectWriteFailure(failedPath, error));
+			await createLocalProjectActionMessage(
+				userPrompt,
+				formatProjectWriteFailure('project', error)
+			);
 			return true;
 		}
-
-		return false;
 	};
 
 	const addMessages = async ({ modelId, parentId, messages }) => {

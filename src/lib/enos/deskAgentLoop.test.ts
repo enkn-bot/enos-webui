@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
-import { runDeskAgentLoop, type DeskCompletion } from '$lib/enos/deskAgentLoop';
+import { runDeskAgentLoop, type DeskAgentLoopArgs, type DeskCompletion } from '$lib/enos/deskAgentLoop';
 import { DESK_FILE_TOOLS } from '$lib/enos/deskFileTools';
 
 const call = (id: string, name: string, args: Record<string, unknown>) => ({
@@ -8,9 +8,10 @@ const call = (id: string, name: string, args: Record<string, unknown>) => ({
 	function: { name, arguments: JSON.stringify(args) }
 });
 
-const baseArgs = (overrides: Record<string, any>) => ({
+const baseArgs = (overrides: Partial<DeskAgentLoopArgs>): DeskAgentLoopArgs => ({
 	messages: [{ role: 'user' as const, content: 'do the thing' }],
 	tools: DESK_FILE_TOOLS,
+	complete: vi.fn(async (): Promise<DeskCompletion> => ({ content: 'fallback' })),
 	executeTool: vi.fn(async () => ({ status: 'ok' as const, summary: 'done', data: 'result' })),
 	...overrides
 });
@@ -93,7 +94,7 @@ describe('runDeskAgentLoop', () => {
 		const executeTool = vi.fn(async () => ({
 			status: 'requires_confirmation' as const,
 			summary: 'delete x.md',
-			request: { action: 'deleteProjectEntry', status: 'requires_confirmation', path: 'x.md', bytes: 0, preview: '' }
+			request: { action: 'deleteProjectEntry' as const, status: 'requires_confirmation' as const, path: 'x.md', bytes: 0, preview: '' }
 		}));
 		const confirm = vi.fn(async () => false);
 
