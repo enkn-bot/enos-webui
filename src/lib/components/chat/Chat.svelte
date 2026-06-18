@@ -119,17 +119,11 @@
 	import { getBanners } from '$lib/apis/configs';
 	import {
 		canUseEnosLocalProjectFiles,
-		canUseEnosLocalProjectMutations,
 		getEnosDesktopBridge,
 		getEnosDesktopBridgeCapabilities
 	} from '$lib/enos/desktopBridge';
 	import { buildProjectActionContext } from '$lib/enos/projectActions';
-	import {
-		detectProjectChatAction,
-		formatProjectWriteCancelled,
-		formatProjectWriteFailure,
-		formatProjectWriteSuccess
-	} from '$lib/enos/projectChatActions';
+	import { formatProjectWriteFailure } from '$lib/enos/projectChatActions';
 	import { runDeskAgentLoop } from '$lib/enos/deskAgentLoop';
 	import { DESK_FILE_TOOLS, executeDeskFileTool } from '$lib/enos/deskFileTools';
 
@@ -1824,31 +1818,6 @@
 	const activeProjectPathForFolder = (folderId) =>
 		folderId && folderId === $showLocalFileFolderId ? $showLocalFilePath : '.';
 
-	const formatProjectListingMessage = (listing) => {
-		const pathLabel = listing.path === '.' ? listing.rootName : listing.path;
-		const entries = listing.entries.map((entry) =>
-			entry.type === 'directory'
-				? `- \`${entry.name}/\``
-				: `- \`${entry.name}\`${entry.size === null ? '' : ` (${entry.size} bytes)`}`
-		);
-		return [
-			`The folder \`${pathLabel}/\` contains ${listing.entries.length} item${listing.entries.length === 1 ? '' : 's'}:`,
-			'',
-			entries.length ? entries.join('\n') : '- [empty]'
-		].join('\n');
-	};
-
-	const escapeCodeFence = (value = '') => String(value).replace(/```/g, '`\u200b``');
-
-	const formatProjectFileReadMessage = (preview) => {
-		if (preview.encoding !== 'utf8') {
-			return `The file \`${preview.path}\` is not a UTF-8 text file, so I did not inline its contents.`;
-		}
-		return [`The file \`${preview.path}\` contains:`, '', '```text', escapeCodeFence(preview.data), '```'].join(
-			'\n'
-		);
-	};
-
 	const projectActionLabel = (action) => {
 		if (action === 'deleteProjectEntry') return $i18n.t('Delete');
 		if (action === 'renameProjectEntry') return $i18n.t('Rename');
@@ -1862,39 +1831,6 @@
 		const target = result.toPath ? `${result.path} -> ${result.toPath}` : result.path;
 		const preview = result.preview ? `\n\n${result.preview}` : '';
 		return `${projectActionLabel(result.action)} ${target}?${preview}`;
-	};
-
-	const WEB_PROJECT_ACTION_MESSAGE =
-		'Local project files are only available in the ENOS Desk desktop app. In the web app, I can use saved project context, uploaded files/Knowledge, or connected Git/cloud repos, but I cannot read or write files on your Mac.';
-
-	const DESKTOP_MUTATION_UNAVAILABLE_MESSAGE =
-		'Local project edits are unavailable in this session. Restart ENOS Desk and reopen this project to enable read/write folder actions.';
-
-	const runConfirmedProjectChatAction = async (run) => {
-		let result = await run(false);
-		if (result.status === 'requires_confirmation') {
-			if (!window.confirm(projectActionConfirmationMessage(result))) return result;
-			result = await run(true);
-		}
-		return result;
-	};
-
-	const formatProjectMutationSuccess = (result) => {
-		if (result.status === 'created' && result.action === 'createProjectFolder') {
-			return `Created folder \`${result.path}/\` in the selected project.`;
-		}
-		if (result.status === 'created') return formatProjectWriteSuccess(result.path, result.bytes);
-		if (result.status === 'written') {
-			return [`Updated \`${result.path}\` in the selected project.`, `Bytes written: ${result.bytes}.`]
-				.filter(Boolean)
-				.join('\n\n');
-		}
-		if (result.status === 'renamed') {
-			return `Renamed \`${result.path}\` to \`${result.toPath}\` in the selected project.`;
-		}
-		if (result.status === 'trashed') return `Moved \`${result.path}\` to trash.`;
-		if (result.status === 'revealed') return `Revealed \`${result.path}\` in Finder.`;
-		return `Completed project action for \`${result.path}\`.`;
 	};
 
 	const dispatchProjectFilesChanged = (folderId, result) => {
@@ -1935,8 +1871,6 @@
 				return true;
 			}
 
-			const hasLocalProjectMutations = canUseEnosLocalProjectMutations(capabilities);
-
 			// Carry the last N turns of chat history so follow-up questions have context.
 			const HISTORY_TURNS = 6;
 			const priorMessages = createMessagesList(history, history.currentId)
@@ -1944,13 +1878,23 @@
 				.map((m) => ({ role: m.role as 'user' | 'assistant', content: String(m.content ?? '') }))
 				.filter((m) => m.content.length > 0);
 
+			// In ENOS Desk with the bridge present and a folder selected, the agent has
+			// full read-write access. The confirmation dialog (below) is the real safety
+			// gate for mutations — not a capability flag — so we always offer the full
+			// toolset and tell the model plainly that it can act.
 			const loopMessages = [
 				{
 					role: 'system' as const,
 					content:
-						`You are ENOS Desk, an AI agent with direct access to the user's local project files via tool calls.\n` +
-						`Active project folder id: ${folderId}.\n` +
-						`Mutations (write/edit/delete) are ${hasLocalProjectMutations ? 'permitted' : 'not permitted in this session — read-only'}.`
+						`You are ENOS Desk, an autonomous file and coding agent with DIRECT read-write ` +
+						`access to the user's local project files through the provided tools.\n` +
+						`Active project folder: ${folderId}.\n\n` +
+						`You CAN and SHOULD use the tools to do real work: list_files, read_file, ` +
+						`write_file, edit_file, create_folder, rename_entry, delete_entry, reveal_entry. ` +
+						`When the user asks you to create, write, edit, move, or delete files, DO IT by ` +
+						`calling the appropriate tool — never reply that you are unable to or that the ` +
+						`system does not permit it. Generate file contents yourself. The user is prompted ` +
+						`to confirm before any change is applied to disk, so act decisively.`
 				},
 				...priorMessages,
 				{ role: 'user' as const, content: userPrompt }
@@ -1969,24 +1913,22 @@
 				return window.confirm(msg);
 			};
 
-			const tools = hasLocalProjectMutations
-				? DESK_FILE_TOOLS
-				: DESK_FILE_TOOLS.filter((t) =>
-						['list_files', 'read_file', 'reveal_entry'].includes(t.function.name)
-					);
+			console.debug('[enos desk agent] starting loop', {
+				folderId,
+				toolCount: DESK_FILE_TOOLS.length,
+				capabilities
+			});
 
 			const outcome = await runDeskAgentLoop({
 				messages: loopMessages,
-				tools,
+				tools: DESK_FILE_TOOLS,
 				complete,
 				executeTool,
 				confirm
 			});
 
-			// Fire file-change events for any tool that mutated the FS.
-			if (hasLocalProjectMutations) {
-				dispatchProjectFilesChanged(folderId, null);
-			}
+			// A tool may have mutated the FS; refresh the file tree.
+			dispatchProjectFilesChanged(folderId, null);
 
 			await createLocalProjectActionMessage(userPrompt, outcome.content || '(No response from agent.)');
 			return true;
