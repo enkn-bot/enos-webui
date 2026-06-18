@@ -35,7 +35,10 @@
 		name: string,
 		contentType: string
 	) => void | Promise<void> = () => {};
-	export let onProjectDigest: (digest: EnosDesktopProjectDigest) => void | Promise<void> = () => {};
+	export let onProjectDigest: (
+		folderId: string,
+		digest: EnosDesktopProjectDigest
+	) => void | Promise<void> = () => {};
 	export let hasProjectDigest = false;
 	export let projectContextUpdatedAt: string | null = null;
 
@@ -52,6 +55,11 @@
 	let error: string | null = null;
 	let loadedFolderId: string | null = null;
 	let removeProjectFilesChangedListener = () => {};
+	let localHasProjectDigest = false;
+	let localProjectContextUpdatedAt: string | null = null;
+
+	$: localHasProjectDigest = hasProjectDigest || Boolean(localProjectContextUpdatedAt);
+	$: if (projectContextUpdatedAt) localProjectContextUpdatedAt = projectContextUpdatedAt;
 
 	const pathCrumbs = (name: string, path: string) => {
 		const parts = path === '.' ? [] : path.split('/').filter(Boolean);
@@ -322,7 +330,8 @@
 		try {
 			const digest = await bridge.buildProjectDigest(activeFolderId);
 			if (folderId === activeFolderId) {
-				await onProjectDigest(digest);
+				localProjectContextUpdatedAt = digest.generatedAt;
+				Promise.resolve(onProjectDigest(activeFolderId, digest)).catch(() => {});
 			}
 		} catch (e) {
 			error = friendlyDesktopError(e);
@@ -375,10 +384,10 @@
 					<div class="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
 						{#if syncingProjectContext}
 							{$i18n.t('Updating project context...')}
-						{:else if hasProjectDigest}
+						{:else if localHasProjectDigest}
 							{$i18n.t('Project context ready')}
-							{#if projectContextUpdatedAt}
-								<span>· {new Date(projectContextUpdatedAt).toLocaleString()}</span>
+							{#if localProjectContextUpdatedAt}
+								<span>· {new Date(localProjectContextUpdatedAt).toLocaleString()}</span>
 							{/if}
 						{:else}
 							{$i18n.t('Preparing project context...')}

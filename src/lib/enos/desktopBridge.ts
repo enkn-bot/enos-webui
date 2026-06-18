@@ -1,6 +1,16 @@
 export type EnosDesktopPlatform = 'electron' | 'tauri' | 'swift';
 export type EnosDesktopPermissionProfile = 'ask' | 'approve_safe_project_edits';
 
+export type EnosDesktopCapabilities = {
+	desktopBridge: true;
+	version: string;
+	platform: EnosDesktopPlatform;
+	localProjectFiles: boolean;
+	localProjectMutations: boolean;
+	localProjectReveal: boolean;
+	localProjectGitStatus: boolean;
+};
+
 export type EnosDesktopWorkspace = {
 	folderId?: string | null;
 	name: string;
@@ -107,6 +117,7 @@ export type EnosDesktopProjectGitStatus = {
 export type EnosDesktopBridge = {
 	version: string;
 	platform: EnosDesktopPlatform;
+	getCapabilities: () => Promise<EnosDesktopCapabilities>;
 	chooseWorkspace: () => Promise<EnosDesktopWorkspace | null>;
 	chooseWorkspaceForFolder: (folderId: string) => Promise<EnosDesktopWorkspace | null>;
 	bindWorkspaceToFolder: (folderId: string) => Promise<EnosDesktopWorkspace | null>;
@@ -170,3 +181,23 @@ export const getEnosDesktopBridge = (): EnosDesktopBridge | null => {
 	if (typeof window === 'undefined') return null;
 	return window.enosDesktop ?? null;
 };
+
+export const getEnosDesktopBridgeCapabilities =
+	async (): Promise<EnosDesktopCapabilities | null> => {
+		const bridge = getEnosDesktopBridge();
+		if (!bridge || typeof bridge.getCapabilities !== 'function') return null;
+
+		try {
+			const capabilities = await bridge.getCapabilities();
+			return capabilities?.desktopBridge ? capabilities : null;
+		} catch {
+			return null;
+		}
+	};
+
+export const canUseEnosLocalProjectFiles = (capabilities?: EnosDesktopCapabilities | null) =>
+	Boolean(capabilities?.desktopBridge && capabilities.localProjectFiles);
+
+export const canUseEnosLocalProjectMutations = (
+	capabilities?: EnosDesktopCapabilities | null
+) => Boolean(canUseEnosLocalProjectFiles(capabilities) && capabilities?.localProjectMutations);

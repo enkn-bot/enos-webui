@@ -40,7 +40,9 @@
 	import PyodideFileNav from './PyodideFileNav.svelte';
 	import Overview from './Overview.svelte';
 	import {
-		getEnosDesktopBridge,
+		canUseEnosLocalProjectFiles,
+		getEnosDesktopBridgeCapabilities,
+		type EnosDesktopCapabilities,
 		type EnosDesktopProjectDigest
 	} from '$lib/enos/desktopBridge';
 
@@ -80,7 +82,7 @@
 	let activeTab: ControlTab = savedTab;
 	let controlTabOrder: ControlTab[] = DEFAULT_CONTROL_TAB_ORDER;
 	let visibleControlTabs: ControlTab[] = [];
-	let hasDesktopBridge = false;
+	let desktopCapabilities: EnosDesktopCapabilities | null = null;
 	// svelte-ignore reactive_declaration_module_script_dependency
 	$: {
 		savedTab = activeTab;
@@ -101,7 +103,7 @@
 			canUseDirectTerminal);
 	$: showTerminalFileNav =
 		hasSelectedTerminalAccess || (isDeskSurface && hasConfiguredTerminal && canUseDirectTerminal);
-	$: showLocalFileNav = isDeskSurface && hasDesktopBridge;
+	$: showLocalFileNav = isDeskSurface && canUseEnosLocalProjectFiles(desktopCapabilities);
 	$: showProjectFileNav = showLocalFileNav && Boolean($showLocalFileFolderId);
 	$: showDeskProjectFilesEmpty = showLocalFileNav && !$showLocalFileFolderId;
 	$: showFilesTab =
@@ -191,12 +193,11 @@
 		}
 	};
 
-	const handleProjectDigest = async (digest: EnosDesktopProjectDigest) => {
-		const folder = $selectedFolder;
-		if (!folder?.id) {
-			toast.error($i18n.t('Select a project first'));
+	const handleProjectDigest = async (folderId: string, digest: EnosDesktopProjectDigest) => {
+		if (!folderId) {
 			return;
 		}
+		const folder = $selectedFolder?.id === folderId ? $selectedFolder : { id: folderId, data: {} };
 
 		const data = {
 			...(folder?.data ?? {}),
@@ -210,12 +211,15 @@
 			}
 		};
 
-		const updated = await updateFolderById(localStorage.token, folder.id, { data });
-		selectedFolder.set({
-			...folder,
-			...(updated ?? {}),
-			data
-		});
+		const updated = await updateFolderById(localStorage.token, folderId, { data });
+		if ($selectedFolder?.id === folderId) {
+			selectedFolder.set({
+				...folder,
+				...(updated ?? {}),
+				id: folderId,
+				data
+			});
+		}
 	};
 
 	export const openPane = () => {
@@ -257,7 +261,9 @@
 	};
 
 	onMount(() => {
-		hasDesktopBridge = Boolean(getEnosDesktopBridge());
+		void getEnosDesktopBridgeCapabilities().then((capabilities) => {
+			desktopCapabilities = capabilities;
+		});
 
 		const mediaQuery = window.matchMedia('(min-width: 1024px)');
 		mediaQuery.addEventListener('change', handleMediaQuery);

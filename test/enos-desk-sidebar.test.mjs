@@ -105,6 +105,58 @@ test('Desk sidebar suppresses top-level Chats and binds selected Mac folders to 
 	);
 });
 
+test('Desk local file mode is gated by desktop bridge capabilities', () => {
+	const chat = readFileSync('src/lib/components/chat/Chat.svelte', 'utf8');
+	const chatControls = readFileSync('src/lib/components/chat/ChatControls.svelte', 'utf8');
+	const bridge = readFileSync('src/lib/enos/desktopBridge.ts', 'utf8');
+
+	assert.match(
+		bridge,
+		/export type EnosDesktopCapabilities/,
+		'Desktop bridge contract should expose an explicit capabilities payload'
+	);
+	assert.match(
+		bridge,
+		/getEnosDesktopBridgeCapabilities/,
+		'Web UI should verify the desktop bridge with an async capabilities handshake'
+	);
+	assert.match(
+		bridge,
+		/canUseEnosLocalProjectFiles/,
+		'Local file mode should be derived from capabilities, not hostname alone'
+	);
+	assert.match(
+		bridge,
+		/canUseEnosLocalProjectMutations/,
+		'Write/delete/rename should be separately gated from read/list capabilities'
+	);
+	assert.match(
+		chatControls,
+		/getEnosDesktopBridgeCapabilities/,
+		'Files pane should hide local files unless the desktop bridge capability check succeeds'
+	);
+	assert.match(
+		chatControls,
+		/canUseEnosLocalProjectFiles/,
+		'Files pane should be capability-gated instead of only checking window.enosDesktop'
+	);
+	assert.match(
+		chat,
+		/getEnosDesktopBridgeCapabilities/,
+		'Chat action routing should verify the bridge before local file operations'
+	);
+	assert.match(
+		chat,
+		/canUseEnosLocalProjectMutations/,
+		'Chat write actions should require mutation capability before calling bridge write methods'
+	);
+	assert.match(
+		chat,
+		/WEB_PROJECT_ACTION_MESSAGE/,
+		'Web sessions should get a local-files-unavailable message instead of generic model hallucination'
+	);
+});
+
 test('Projects language replaces folder copy while Desk project menus stay work-led', () => {
 	const sidebar = readFileSync('src/lib/components/layout/Sidebar.svelte', 'utf8');
 	const folderModal = readFileSync(
@@ -343,6 +395,16 @@ test('Desk project folders can digest local files into project chat context', ()
 	);
 	assert.match(
 		localFileNav,
+		/onProjectDigest\(activeFolderId, digest\)/,
+		'Files pane should save refreshed context against the active local project id'
+	);
+	assert.match(
+		localFileNav,
+		/localHasProjectDigest/,
+		'Files pane should update context-ready status locally after a successful digest'
+	);
+	assert.match(
+		localFileNav,
 		/\$i18n\.t\('Preparing project context\.\.\.'\)/,
 		'Files pane should avoid asking the user to manually analyze a project'
 	);
@@ -353,8 +415,23 @@ test('Desk project folders can digest local files into project chat context', ()
 	);
 	assert.match(
 		chatControls,
-		/const handleProjectDigest = async/,
-		'ChatControls should own saving project context onto the selected project'
+		/const handleProjectDigest = async \(folderId: string, digest: EnosDesktopProjectDigest\)/,
+		'ChatControls should save project context against the Files pane project id'
+	);
+	assert.match(
+		chatControls,
+		/updateFolderById\(localStorage\.token, folderId/,
+		'Digest persistence should update the active project folder instead of relying on selected chat state'
+	);
+	assert.doesNotMatch(
+		chatControls,
+		/const folder = \$selectedFolder;\s*if \(!folder\?\.id\)/,
+		'Digest persistence should not falsely require selectedFolder while a Files pane project is active'
+	);
+	assert.doesNotMatch(
+		chatControls,
+		/toast\.error\(\$i18n\.t\('Select a project first'\)\)/,
+		'Background project digest refresh should not show a false project-selection toast'
 	);
 	assert.match(
 		chatControls,
@@ -634,7 +711,7 @@ test('Desk chat write requests execute through the desktop bridge before model c
 
 	assert.match(
 		projectChatActions,
-		/detectProjectWriteCommand/,
+		/detectProjectChatAction/,
 		'Project chat actions should detect simple write/create-file requests'
 	);
 	assert.match(
@@ -644,7 +721,7 @@ test('Desk chat write requests execute through the desktop bridge before model c
 	);
 	assert.match(
 		chat,
-		/handleProjectWriteCommand/,
+		/handleProjectChatAction/,
 		'Chat submit path should have a project write command handler'
 	);
 	assert.match(
@@ -664,7 +741,120 @@ test('Desk chat write requests execute through the desktop bridge before model c
 	);
 	assert.match(
 		chat,
-		/if \(await handleProjectWriteCommand\(userPrompt\)\) return/,
+		/if \(await handleProjectChatAction\(userPrompt\)\) return/,
 		'Chat submit handler should stop before submitPrompt when a project write command was handled'
+	);
+});
+
+test('Desk chat project actions route all base file operations before model calls', () => {
+	const chat = readFileSync('src/lib/components/chat/Chat.svelte', 'utf8');
+	const projectChatActions = readFileSync('src/lib/enos/projectChatActions.ts', 'utf8');
+
+	assert.match(
+		projectChatActions,
+		/export const detectProjectChatAction/,
+		'Project chat actions should expose a single deterministic router'
+	);
+	for (const kind of [
+		'list-directory',
+		'read-file',
+		'create-file',
+		'write-file',
+		'create-folder',
+		'rename-entry',
+		'delete-entry',
+		'reveal-entry',
+		'clarify'
+	]) {
+		assert.match(projectChatActions, new RegExp(`kind: '${kind}'`), `${kind} should be routable`);
+	}
+
+	assert.match(chat, /handleProjectChatAction/, 'Chat should use the generic project action handler');
+	for (const method of [
+		'listProjectFiles',
+		'readProjectFile',
+		'createProjectFile',
+		'writeProjectFile',
+		'createProjectFolder',
+		'renameProjectEntry',
+		'deleteProjectEntry',
+		'revealProjectEntry'
+	]) {
+		assert.match(chat, new RegExp(`bridge\\.${method}`), `${method} should be executed by Chat`);
+	}
+	assert.match(
+		chat,
+		/if \(await handleProjectChatAction\(userPrompt\)\) return/,
+		'Chat submit handler should stop before submitPrompt when any project action was handled'
+	);
+
+	const handlerStart = chat.indexOf('const handleProjectChatAction = async');
+	const handlerEnd = chat.indexOf('const submitHandler', handlerStart);
+	const handler = chat.slice(handlerStart, handlerEnd);
+	const detectIndex = handler.indexOf('const action = detectProjectChatAction');
+	const noBridgeIndex = handler.indexOf('if (!bridge)');
+	const noFolderIndex = handler.indexOf('if (!folderId)');
+	assert.ok(handlerStart > -1, 'Chat should have a project action handler');
+	assert.ok(detectIndex > -1, 'Chat should classify project action language');
+	assert.ok(noBridgeIndex > -1, 'Chat should handle missing desktop bridge locally');
+	assert.ok(noFolderIndex > -1, 'Chat should handle missing project selection locally');
+	assert.ok(
+		detectIndex < noBridgeIndex && detectIndex < noFolderIndex,
+		'Chat should classify capability/clarify prompts before bridge/folder guards so they cannot fall through to the model'
+	);
+});
+
+test('Desk project chats recover project selection from saved chat folder id', () => {
+	const chat = readFileSync('src/lib/components/chat/Chat.svelte', 'utf8');
+
+	assert.match(
+		chat,
+		/folders,/,
+		'Chat should observe the folders store so saved project folders can be recovered after reload'
+	);
+	assert.match(
+		chat,
+		/getFolderById/,
+		'Chat should be able to fetch a project folder when the sidebar store is not hydrated yet'
+	);
+	assert.match(
+		chat,
+		/const projectFolderIdFromChat =/,
+		'Chat should derive the active project from the loaded chat folder id'
+	);
+	assert.match(
+		chat,
+		/const hydrateProjectFolderFromChat = async/,
+		'Chat should hydrate selectedFolder from chat.folder_id on load'
+	);
+	assert.match(
+		chat,
+		/hydrateProjectFolderFromChat\(chat\)/,
+		'Loading or creating a project chat should restore selected project context'
+	);
+	assert.match(
+		chat,
+		/const activeProjectFolderId = \(\) =>[\s\S]*projectFolderIdFromChat\(chat\)/,
+		'Project actions should fall back to chat.folder_id if selectedFolder was cleared'
+	);
+	assert.match(
+		chat,
+		/const activeProjectFolder = \(\) =>/,
+		'Project context injection should use the same active project resolver as local actions'
+	);
+	assert.match(
+		chat,
+		/const activeProjectId = activeProjectFolderId\(\)/,
+		'Project context injection should build live local context from the resolved project id'
+	);
+	assert.match(
+		chat,
+		/if \(activeProjectFolderId\(\)\) \{[\s\S]*await hydrateProjectFolderFromChat\(chat\)/,
+		'Creating the first project chat message should keep project context instead of clearing selectedFolder'
+	);
+	assert.match(
+		chat,
+		/showLocalFileFolderId\.set\(folder\.id\)/,
+		'Project chat hydration should restore the Files pane project id without waiting on bridge timing'
 	);
 });

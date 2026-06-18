@@ -43,6 +43,7 @@
 		terminalServers,
 		functions,
 		selectedFolder,
+		folders,
 		pinnedChats,
 		showEmbeds,
 		selectedTerminalId,
@@ -99,7 +100,7 @@
 	import { uploadFile } from '$lib/apis/files';
 	import { createOpenAITextStream } from '$lib/apis/streaming';
 	import { getFunctions } from '$lib/apis/functions';
-	import { updateFolderById } from '$lib/apis/folders';
+	import { getFolderById, updateFolderById } from '$lib/apis/folders';
 
 	import Banner from '../common/Banner.svelte';
 	import MessageInput from '$lib/components/chat/MessageInput.svelte';
@@ -116,10 +117,15 @@
 	import Sidebar from '../icons/Sidebar.svelte';
 	import Image from '../common/Image.svelte';
 	import { getBanners } from '$lib/apis/configs';
-	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
+	import {
+		canUseEnosLocalProjectFiles,
+		canUseEnosLocalProjectMutations,
+		getEnosDesktopBridge,
+		getEnosDesktopBridgeCapabilities
+	} from '$lib/enos/desktopBridge';
 	import { buildProjectActionContext } from '$lib/enos/projectActions';
 	import {
-		detectProjectWriteCommand,
+		detectProjectChatAction,
 		formatProjectWriteCancelled,
 		formatProjectWriteFailure,
 		formatProjectWriteSuccess
@@ -1411,6 +1417,8 @@
 		});
 
 		if (chat) {
+			await hydrateProjectFolderFromChat(chat);
+
 			tags = await getTagsById(localStorage.token, $chatId).catch(async (error) => {
 				return [];
 			});
@@ -1758,52 +1766,249 @@
 		}
 	};
 
-	const handleProjectWriteCommand = async (userPrompt) => {
-		const bridge = getEnosDesktopBridge();
-		const folderId = $selectedFolder?.id;
-		if (!bridge || !folderId) return false;
+	const projectFolderIdFromChat = (source = chat) =>
+		source?.folder_id ?? source?.folderId ?? source?.chat?.folder_id ?? source?.chat?.folderId ?? null;
 
-		const activePath = folderId === $showLocalFileFolderId ? $showLocalFilePath : '.';
-		const command = detectProjectWriteCommand({ prompt: userPrompt, activePath });
-		if (!command) return false;
+	const knownProjectFolderById = (folderId) => {
+		if (!folderId) return null;
+		const collection = $folders;
+		if (Array.isArray(collection)) {
+			return collection.find((folder) => folder?.id === folderId) ?? null;
+		}
+		if (collection && typeof collection === 'object') {
+			return collection[folderId] ?? null;
+		}
+		return null;
+	};
 
-		const runCreate = (confirmed = false) =>
-			bridge.createProjectFile(folderId, command.path, command.content, { confirmed });
+	const hydrateProjectFolderFromChat = async (source = chat) => {
+		const folderId = projectFolderIdFromChat(source);
+		if (!folderId) return null;
+
+		if ($selectedFolder?.id === folderId) {
+			if ($showLocalFileFolderId !== folderId) {
+				showLocalFileFolderId.set(folderId);
+			}
+			return $selectedFolder;
+		}
+
+		let folder = knownProjectFolderById(folderId);
+		if (!folder) {
+			folder = await getFolderById(localStorage.token, folderId).catch((error) => {
+				console.error('[project folder hydrate]', error);
+				return null;
+			});
+		}
+
+		if (folder?.id) {
+			await selectedFolder.set(folder);
+			showLocalFileFolderId.set(folder.id);
+			return folder;
+		}
+
+		return null;
+	};
+
+	const activeProjectFolderId = () =>
+		$selectedFolder?.id ?? $showLocalFileFolderId ?? projectFolderIdFromChat(chat);
+
+	const activeProjectFolder = () => {
+		const folderId = activeProjectFolderId();
+		if (!folderId) return null;
+		if ($selectedFolder?.id === folderId) return $selectedFolder;
+		return knownProjectFolderById(folderId);
+	};
+
+	const activeProjectPathForFolder = (folderId) =>
+		folderId && folderId === $showLocalFileFolderId ? $showLocalFilePath : '.';
+
+	const formatProjectListingMessage = (listing) => {
+		const pathLabel = listing.path === '.' ? listing.rootName : listing.path;
+		const entries = listing.entries.map((entry) =>
+			entry.type === 'directory'
+				? `- \`${entry.name}/\``
+				: `- \`${entry.name}\`${entry.size === null ? '' : ` (${entry.size} bytes)`}`
+		);
+		return [
+			`The folder \`${pathLabel}/\` contains ${listing.entries.length} item${listing.entries.length === 1 ? '' : 's'}:`,
+			'',
+			entries.length ? entries.join('\n') : '- [empty]'
+		].join('\n');
+	};
+
+	const escapeCodeFence = (value = '') => String(value).replace(/```/g, '`\u200b``');
+
+	const formatProjectFileReadMessage = (preview) => {
+		if (preview.encoding !== 'utf8') {
+			return `The file \`${preview.path}\` is not a UTF-8 text file, so I did not inline its contents.`;
+		}
+		return [`The file \`${preview.path}\` contains:`, '', '```text', escapeCodeFence(preview.data), '```'].join(
+			'\n'
+		);
+	};
+
+	const projectActionLabel = (action) => {
+		if (action === 'deleteProjectEntry') return $i18n.t('Delete');
+		if (action === 'renameProjectEntry') return $i18n.t('Rename');
+		if (action === 'createProjectFolder') return $i18n.t('New Folder');
+		if (action === 'createProjectFile') return $i18n.t('New File');
+		if (action === 'writeProjectFile') return $i18n.t('Save');
+		return $i18n.t('Project action');
+	};
+
+	const projectActionConfirmationMessage = (result) => {
+		const target = result.toPath ? `${result.path} -> ${result.toPath}` : result.path;
+		const preview = result.preview ? `\n\n${result.preview}` : '';
+		return `${projectActionLabel(result.action)} ${target}?${preview}`;
+	};
+
+	const WEB_PROJECT_ACTION_MESSAGE =
+		'Local project files are only available in the ENOS Desk desktop app. In the web app, I can use saved project context, uploaded files/Knowledge, or connected Git/cloud repos, but I cannot read or write files on your Mac.';
+
+	const DESKTOP_MUTATION_UNAVAILABLE_MESSAGE =
+		'Local project edits are unavailable in this session. Restart ENOS Desk and reopen this project to enable read/write folder actions.';
+
+	const runConfirmedProjectChatAction = async (run) => {
+		let result = await run(false);
+		if (result.status === 'requires_confirmation') {
+			if (!window.confirm(projectActionConfirmationMessage(result))) return result;
+			result = await run(true);
+		}
+		return result;
+	};
+
+	const formatProjectMutationSuccess = (result) => {
+		if (result.status === 'created' && result.action === 'createProjectFolder') {
+			return `Created folder \`${result.path}/\` in the selected project.`;
+		}
+		if (result.status === 'created') return formatProjectWriteSuccess(result.path, result.bytes);
+		if (result.status === 'written') {
+			return [`Updated \`${result.path}\` in the selected project.`, `Bytes written: ${result.bytes}.`]
+				.filter(Boolean)
+				.join('\n\n');
+		}
+		if (result.status === 'renamed') {
+			return `Renamed \`${result.path}\` to \`${result.toPath}\` in the selected project.`;
+		}
+		if (result.status === 'trashed') return `Moved \`${result.path}\` to trash.`;
+		if (result.status === 'revealed') return `Revealed \`${result.path}\` in Finder.`;
+		return `Completed project action for \`${result.path}\`.`;
+	};
+
+	const dispatchProjectFilesChanged = (folderId, result) => {
+		window.dispatchEvent(
+			new CustomEvent('enos:project-files-changed', {
+				detail: { folderId, path: result?.toPath ?? result?.path ?? null }
+			})
+		);
+	};
+
+	const handleProjectChatAction = async (userPrompt) => {
+		const initialFolderId = activeProjectFolderId();
+		const initialActivePath = initialFolderId ? activeProjectPathForFolder(initialFolderId) : '.';
+		const action = detectProjectChatAction({ prompt: userPrompt, activePath: initialActivePath });
+		if (!action) return false;
 
 		try {
-			let result = await runCreate(false);
-			if (result.status === 'requires_confirmation') {
-				const preview = result.preview ? `\n\n${result.preview}` : '';
-				if (!window.confirm(`Create ${result.path}?${preview}`)) {
-					await createLocalProjectActionMessage(
-						userPrompt,
-						formatProjectWriteCancelled(result.path)
-					);
-					return true;
-				}
-				result = await runCreate(true);
-			}
+			const capabilities = await getEnosDesktopBridgeCapabilities();
+			const hasLocalProjectFiles = canUseEnosLocalProjectFiles(capabilities);
+			const hasLocalProjectMutations = canUseEnosLocalProjectMutations(capabilities);
 
-			if (result.status === 'created') {
-				window.dispatchEvent(
-					new CustomEvent('enos:project-files-changed', {
-						detail: { folderId, path: result.path }
-					})
-				);
-				toast.success($i18n.t('Project file created'));
+			if (action.kind === 'capability' || action.kind === 'clarify') {
 				await createLocalProjectActionMessage(
 					userPrompt,
-					formatProjectWriteSuccess(result.path, result.bytes)
+					hasLocalProjectFiles ? action.message : WEB_PROJECT_ACTION_MESSAGE
 				);
 				return true;
 			}
+
+			if (!hasLocalProjectFiles) {
+				await createLocalProjectActionMessage(userPrompt, WEB_PROJECT_ACTION_MESSAGE);
+				return true;
+			}
+
+			await hydrateProjectFolderFromChat(chat);
+			const bridge = getEnosDesktopBridge();
+			const folderId = activeProjectFolderId();
+			if (!bridge) {
+				await createLocalProjectActionMessage(
+					userPrompt,
+					'Restart ENOS Desk to enable local project actions.'
+				);
+				return true;
+			}
+
+			if (!folderId) {
+				await createLocalProjectActionMessage(
+					userPrompt,
+					'Select a project first. Local file actions are scoped to the active ENOS Desk project folder.'
+				);
+				return true;
+			}
+
+			if (
+				!hasLocalProjectMutations &&
+				['create-file', 'write-file', 'create-folder', 'rename-entry', 'delete-entry'].includes(
+					action.kind
+				)
+			) {
+				await createLocalProjectActionMessage(userPrompt, DESKTOP_MUTATION_UNAVAILABLE_MESSAGE);
+				return true;
+			}
+
+			if (action.kind === 'list-directory') {
+				const listing = await bridge.listProjectFiles(folderId, action.path);
+				await createLocalProjectActionMessage(userPrompt, formatProjectListingMessage(listing));
+				return true;
+			}
+
+			if (action.kind === 'read-file') {
+				const preview = await bridge.readProjectFile(folderId, action.path);
+				await createLocalProjectActionMessage(userPrompt, formatProjectFileReadMessage(preview));
+				return true;
+			}
+
+			let result;
+			if (action.kind === 'create-file') {
+				result = await runConfirmedProjectChatAction((confirmed = false) =>
+					bridge.createProjectFile(folderId, action.path, action.content, { confirmed })
+				);
+			} else if (action.kind === 'write-file') {
+				result = await runConfirmedProjectChatAction((confirmed = false) =>
+					bridge.writeProjectFile(folderId, action.path, action.content, { confirmed })
+				);
+			} else if (action.kind === 'create-folder') {
+				result = await runConfirmedProjectChatAction((confirmed = false) =>
+					bridge.createProjectFolder(folderId, action.path, { confirmed })
+				);
+			} else if (action.kind === 'rename-entry') {
+				result = await runConfirmedProjectChatAction((confirmed = false) =>
+					bridge.renameProjectEntry(folderId, action.path, action.toPath, { confirmed })
+				);
+			} else if (action.kind === 'delete-entry') {
+				result = await runConfirmedProjectChatAction((confirmed = false) =>
+					bridge.deleteProjectEntry(folderId, action.path, { confirmed })
+				);
+			} else if (action.kind === 'reveal-entry') {
+				result = await bridge.revealProjectEntry(folderId, action.path);
+			}
+
+			if (result?.status === 'requires_confirmation') {
+				await createLocalProjectActionMessage(userPrompt, formatProjectWriteCancelled(result.path));
+				return true;
+			}
+
+			if (result?.status) {
+				dispatchProjectFilesChanged(folderId, result);
+				toast.success($i18n.t('Project file action completed'));
+				await createLocalProjectActionMessage(userPrompt, formatProjectMutationSuccess(result));
+				return true;
+			}
 		} catch (error) {
-			console.error('[enos project write]', error);
+			console.error('[enos project action]', error);
 			toast.error($i18n.t('Project file action failed'));
-			await createLocalProjectActionMessage(
-				userPrompt,
-				formatProjectWriteFailure(command.path, error)
-			);
+			const failedPath = 'path' in action ? action.path : 'project';
+			await createLocalProjectActionMessage(userPrompt, formatProjectWriteFailure(failedPath, error));
 			return true;
 		}
 
@@ -2177,7 +2382,7 @@
 			}
 		}
 
-		if (await handleProjectWriteCommand(userPrompt)) return;
+		if (await handleProjectChatAction(userPrompt)) return;
 
 		// Clear input and submit
 		messageInput?.setText('');
@@ -2490,20 +2695,21 @@
 				.filter((message) => message?.role === 'user' || message?.content?.trim());
 		}
 
+		await hydrateProjectFolderFromChat(chat);
+		const activeProjectId = activeProjectFolderId();
+		const projectFolder = activeProjectFolder();
 		const projectContextDigest =
-			typeof $selectedFolder?.data?.project_context_digest === 'string'
-				? $selectedFolder.data.project_context_digest.trim()
+			typeof projectFolder?.data?.project_context_digest === 'string'
+				? projectFolder.data.project_context_digest.trim()
 				: '';
 		const projectActionPrompt = String(
 			regenerationPrompt ?? userMessage?.merged?.content ?? userMessage?.content ?? ''
 		);
-		const activeProjectFilePath =
-			$selectedFolder?.id && $selectedFolder.id === $showLocalFileFolderId
-				? $showLocalFilePath
-				: '.';
+		const activeProjectFilePath = activeProjectId ? activeProjectPathForFolder(activeProjectId) : '.';
+		const projectCapabilities = await getEnosDesktopBridgeCapabilities();
 		const projectActionContext = await buildProjectActionContext({
-			bridge: getEnosDesktopBridge(),
-			folderId: $selectedFolder?.id,
+			bridge: canUseEnosLocalProjectFiles(projectCapabilities) ? getEnosDesktopBridge() : null,
+			folderId: activeProjectId,
 			activePath: activeProjectFilePath,
 			prompt: projectActionPrompt
 		});
@@ -2516,7 +2722,7 @@
 					content: `Project context from the selected ENOS Desk project.\nUse this as read-only project context when the user asks about the project, files, implementation, or next work. If live local project context follows this message, that live context is newer and overrides this saved digest for folder listing questions. If the context seems stale or insufficient, say what needs to be re-analyzed or opened before making strong claims.\n\n${projectContextDigest}`
 				}
 			];
-		} else if ($selectedFolder?.id && !projectActionContext) {
+		} else if (activeProjectId && !projectActionContext) {
 			messages = [
 				...messages,
 				{
@@ -2994,7 +3200,11 @@
 			await chats.set(await getChatList(localStorage.token, $currentChatPage));
 			currentChatPage.set(1);
 
-			selectedFolder.set(null);
+			if (activeProjectFolderId()) {
+				await hydrateProjectFolderFromChat(chat);
+			} else {
+				selectedFolder.set(null);
+			}
 		} else {
 			_chatId = `local:${$socket?.id}`; // Use socket id for temporary chat
 			await chatId.set(_chatId);
