@@ -464,10 +464,9 @@ test('Desk project chats attach live local file action context before model call
 test('Desk Files pane exposes permissioned project file actions and local Git awareness', () => {
 	const bridge = readFileSync('src/lib/enos/desktopBridge.ts', 'utf8');
 	const localFileNav = readFileSync('src/lib/components/chat/LocalFileNav.svelte', 'utf8');
+	const messageInput = readFileSync('src/lib/components/chat/MessageInput.svelte', 'utf8');
 
 	for (const method of [
-		'getPermissionProfile',
-		'setPermissionProfile',
 		'createProjectFile',
 		'writeProjectFile',
 		'createProjectFolder',
@@ -480,20 +479,44 @@ test('Desk Files pane exposes permissioned project file actions and local Git aw
 		assert.match(localFileNav, new RegExp(`bridge\\.${method}`), `Files pane should call ${method}`);
 	}
 
+	for (const method of ['getPermissionProfile', 'setPermissionProfile']) {
+		assert.match(bridge, new RegExp(`${method}:`), `Desktop bridge should type ${method}`);
+		assert.match(
+			messageInput,
+			new RegExp(`bridge\\.${method}`),
+			`Composer permission menu should call ${method}`
+		);
+		assert.doesNotMatch(
+			localFileNav,
+			new RegExp(`bridge\\.${method}`),
+			`Files pane should not own ${method}`
+		);
+	}
+
 	assert.match(
 		bridge,
 		/type EnosDesktopPermissionProfile = 'ask' \\| 'approve_safe_project_edits'/,
 		'Bridge should restrict permission profiles to supported safe modes'
 	);
 	assert.match(
-		localFileNav,
-		/Ask Before Changing/,
-		'Files pane should expose the default approval-first mode'
+		messageInput,
+		/Ask for approval/,
+		'Composer should expose the default approval-first mode'
 	);
 	assert.match(
+		messageInput,
+		/Approve safe edits/,
+		'Composer should expose the fast safe-edit mode'
+	);
+	assert.match(
+		messageInput,
+		/Project action permissions/,
+		'Composer permission menu should identify the action permission control'
+	);
+	assert.doesNotMatch(
 		localFileNav,
-		/Approve Safe Project Edits/,
-		'Files pane should expose the fast safe-edit mode'
+		/Ask Before Changing|Approve Safe Project Edits|Ask for approval|Approve safe edits/,
+		'Files pane should not carry the project permission mode selector'
 	);
 	assert.match(localFileNav, /New File/, 'Files pane should create new files');
 	assert.match(localFileNav, /New Folder/, 'Files pane should create new folders');

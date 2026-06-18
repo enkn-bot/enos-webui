@@ -95,6 +95,8 @@
 	import Component from '../icons/Component.svelte';
 	import PlusAlt from '../icons/PlusAlt.svelte';
 	import Dropdown from '../common/Dropdown.svelte';
+	import Check from '../icons/Check.svelte';
+	import LockClosed from '../icons/LockClosed.svelte';
 
 	import CommandSuggestionList from './MessageInput/CommandSuggestionList.svelte';
 	import Knobs from '../icons/Knobs.svelte';
@@ -106,6 +108,11 @@
 	import QueuedMessageItem from './MessageInput/QueuedMessageItem.svelte';
 	import TaskList from './Messages/ResponseMessage/TaskList.svelte';
 	import ModelPicker from '$lib/components/enos/ModelPicker.svelte';
+	import {
+		getEnosDesktopBridge,
+		type EnosDesktopBridge,
+		type EnosDesktopPermissionProfile
+	} from '$lib/enos/desktopBridge';
 
 	const i18n = getContext('i18n');
 
@@ -176,10 +183,34 @@
 	let selectedValvesType = 'tool'; // 'tool' or 'function'
 	let selectedValvesItemId = null;
 	let integrationsMenuCloseOnOutsideClick = true;
+	let bridge: EnosDesktopBridge | null = null;
+	let isDeskSurface = false;
+	let projectPermissionProfile: EnosDesktopPermissionProfile = 'ask';
+	let showProjectPermissionMenu = false;
 
 	$: if (!showValvesModal) {
 		integrationsMenuCloseOnOutsideClick = true;
 	}
+
+	const loadProjectPermissionProfile = async () => {
+		if (!bridge) return;
+		try {
+			projectPermissionProfile = await bridge.getPermissionProfile();
+		} catch (error) {
+			console.warn('Unable to load ENOS project action permissions', error);
+		}
+	};
+
+	const setProjectPermissionProfile = async (profile: EnosDesktopPermissionProfile) => {
+		if (!bridge) return;
+		try {
+			projectPermissionProfile = await bridge.setPermissionProfile(profile);
+			showProjectPermissionMenu = false;
+		} catch (error) {
+			toast.error($i18n.t('Unable to update project action permissions'));
+			await loadProjectPermissionProfile();
+		}
+	};
 
 	$: onChange({
 		prompt,
@@ -946,6 +977,12 @@
 	};
 
 	onMount(() => {
+		isDeskSurface = window.location.hostname === 'enosdesk.duckdns.org';
+		bridge = getEnosDesktopBridge();
+		if (isDeskSurface && bridge) {
+			loadProjectPermissionProfile();
+		}
+
 		suggestions = [
 			{
 				char: '@',
@@ -1693,6 +1730,69 @@
 											<PlusAlt className="size-5.5" />
 										</button>
 									</InputMenu>
+
+									{#if isDeskSurface && bridge}
+										<Dropdown
+											bind:show={showProjectPermissionMenu}
+											side="top"
+											align="start"
+											contentClass="w-80 rounded-2xl p-1 bg-white dark:bg-gray-850 dark:text-white shadow-lg border border-gray-100 dark:border-gray-800"
+										>
+											<button
+												type="button"
+												id="project-action-permissions-button"
+												class="bg-transparent hover:bg-gray-100 text-gray-700 dark:text-white dark:hover:bg-gray-800 rounded-full size-8 flex justify-center items-center outline-hidden focus:outline-hidden {projectPermissionProfile ===
+												'approve_safe_project_edits'
+													? 'text-sky-600 dark:text-sky-300'
+													: ''}"
+												aria-label={$i18n.t('Project action permissions')}
+												title={$i18n.t('Project action permissions')}
+											>
+												<LockClosed className="size-4.5" strokeWidth="1.75" />
+											</button>
+
+											<div slot="content" class="py-1">
+												<div class="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
+													{$i18n.t('Project action permissions')}
+												</div>
+												<button
+													type="button"
+													class="w-full rounded-xl px-3 py-2 flex items-center gap-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800"
+													on:click={() => setProjectPermissionProfile('ask')}
+												>
+													<LockClosed className="size-5 text-gray-500 dark:text-gray-400 shrink-0" />
+													<div class="min-w-0 flex-1">
+														<div class="text-sm font-medium">{$i18n.t('Ask for approval')}</div>
+														<div class="text-xs text-gray-500 dark:text-gray-400 truncate">
+															{$i18n.t('Always ask before editing project files.')}
+														</div>
+													</div>
+													{#if projectPermissionProfile === 'ask'}
+														<Check className="size-4 shrink-0" strokeWidth="2" />
+													{/if}
+												</button>
+												<button
+													type="button"
+													class="w-full rounded-xl px-3 py-2 flex items-center gap-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800"
+													on:click={() => setProjectPermissionProfile('approve_safe_project_edits')}
+												>
+													<LockClosed className="size-5 text-sky-600 dark:text-sky-300 shrink-0" />
+													<div class="min-w-0 flex-1">
+														<div class="text-sm font-medium">{$i18n.t('Approve safe edits')}</div>
+														<div class="text-xs text-gray-500 dark:text-gray-400 truncate">
+															{$i18n.t('Create and save inside this project without a second prompt.')}
+														</div>
+													</div>
+													{#if projectPermissionProfile === 'approve_safe_project_edits'}
+														<Check className="size-4 shrink-0" strokeWidth="2" />
+													{/if}
+												</button>
+												<div class="px-3 pt-1 pb-2 text-[11px] text-gray-400 dark:text-gray-500">
+													{$i18n.t('Rename and delete still ask first.')}
+												</div>
+											</div>
+										</Dropdown>
+									{/if}
 
 									{#if showWebSearchButton || showImageGenerationButton || showCodeInterpreterButton || showToolsButton || showSkillsButton || (toggleFilters && toggleFilters.length > 0)}
 										<div

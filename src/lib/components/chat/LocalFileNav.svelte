@@ -7,7 +7,6 @@
 		type EnosDesktopDirectoryListing,
 		type EnosDesktopEntry,
 		type EnosDesktopFilePreview,
-		type EnosDesktopPermissionProfile,
 		type EnosDesktopProjectActionRequest,
 		type EnosDesktopProjectActionResult,
 		type EnosDesktopProjectDigest,
@@ -37,7 +36,6 @@
 	let currentPath = '.';
 	let selectedFile: EnosDesktopFilePreview | null = null;
 	let editContent = '';
-	let permissionProfile: EnosDesktopPermissionProfile = 'ask';
 	let gitStatus: EnosDesktopProjectGitStatus | null = null;
 	let loading = false;
 	let fileLoading = false;
@@ -60,8 +58,7 @@
 			message.includes('rename-project-entry') ||
 			message.includes('delete-project-entry') ||
 			message.includes('reveal-project-entry') ||
-			message.includes('get-project-git-status') ||
-			message.includes('permission-profile')
+			message.includes('get-project-git-status')
 		) {
 			return $i18n.t('Restart ENOS Desk to enable local project actions.');
 		}
@@ -101,7 +98,6 @@
 		try {
 			workspace = await bridge.getWorkspace(folderId);
 			if (workspace) {
-				await loadPermissionProfile();
 				await loadDir('.');
 				await loadGitStatus();
 				await syncProjectContext();
@@ -129,7 +125,6 @@
 				? await bridge.chooseWorkspaceForFolder(folderId)
 				: await bridge.chooseWorkspace();
 			if (workspace) {
-				await loadPermissionProfile();
 				await loadDir('.');
 				await loadGitStatus();
 				await syncProjectContext();
@@ -180,26 +175,6 @@
 	const attachSelectedFile = async () => {
 		if (!selectedFile) return;
 		await onAttach(decodePreview(selectedFile), selectedFile.name, selectedFile.mime);
-	};
-
-	const loadPermissionProfile = async () => {
-		if (!bridge) return;
-		try {
-			permissionProfile = await bridge.getPermissionProfile();
-		} catch (e) {
-			error = friendlyDesktopError(e);
-		}
-	};
-
-	const savePermissionProfile = async () => {
-		if (!bridge) return;
-		error = null;
-		try {
-			permissionProfile = await bridge.setPermissionProfile(permissionProfile);
-		} catch (e) {
-			error = friendlyDesktopError(e);
-			await loadPermissionProfile();
-		}
 	};
 
 	const loadGitStatus = async () => {
@@ -378,20 +353,6 @@
 						{/if}
 					</div>
 					<div class="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
-						<label class="sr-only" for="enos-project-permission-profile">
-							{$i18n.t('Project file permission mode')}
-						</label>
-						<select
-							id="enos-project-permission-profile"
-							class="max-w-full rounded-md bg-gray-100 dark:bg-gray-800 px-1 py-0.5 text-[11px] text-gray-600 dark:text-gray-300"
-							bind:value={permissionProfile}
-							on:change={savePermissionProfile}
-						>
-							<option value="ask">{$i18n.t('Ask Before Changing')}</option>
-							<option value="approve_safe_project_edits">
-								{$i18n.t('Approve Safe Project Edits')}
-							</option>
-						</select>
 						{#if gitStatus?.isRepo}
 							<span class="truncate text-gray-400 dark:text-gray-500">
 								{$i18n.t('Git:')} {gitStatus.branch ?? 'unknown'}
