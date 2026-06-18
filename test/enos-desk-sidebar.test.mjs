@@ -544,6 +544,11 @@ test('Desk Files pane exposes permissioned project file actions and local Git aw
 		'Files pane should group per-file actions behind a row overflow menu'
 	);
 	assert.match(localFileNav, /EllipsisHorizontal/, 'Files pane should use compact ellipsis menus');
+	assert.doesNotMatch(
+		localFileNav,
+		/on:click=\{\(event\) => event\.stopPropagation\(\)\}/,
+		'Row action menu triggers should let Dropdown receive the click event'
+	);
 	assert.match(localFileNav, /FilePlusAlt/, 'Files pane project menu should include a new-file icon');
 	assert.match(localFileNav, /NewFolderAlt/, 'Files pane project menu should include a new-folder icon');
 	assert.match(localFileNav, /ArrowPath/, 'Files pane project menu should keep refresh in overflow');

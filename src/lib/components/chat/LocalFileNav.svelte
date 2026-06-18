@@ -507,7 +507,6 @@
 							<Dropdown align="end" sideOffset={4}>
 								<button
 									class="shrink-0 size-7 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-700"
-									on:click={(event) => event.stopPropagation()}
 									type="button"
 									aria-label={$i18n.t('Entry actions')}
 									title={$i18n.t('Entry actions')}
