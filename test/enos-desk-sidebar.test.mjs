@@ -467,6 +467,21 @@ test('Desk project chats attach live local file action context before model call
 	);
 	assert.match(
 		projectActions,
+		/extractRequestedProjectFilePaths/,
+		'Project action helper should detect explicit project file paths in the prompt'
+	);
+	assert.match(
+		projectActions,
+		/readProjectFile\(folderId, requestedPath\)/,
+		'Project action helper should read explicitly requested project files'
+	);
+	assert.match(
+		projectActions,
+		/Requested project files:/,
+		'Project action helper should label explicitly requested file contents'
+	);
+	assert.match(
+		projectActions,
 		/Write\/edit project file actions require explicit confirmation/,
 		'Project action helper should make write actions explicitly gated'
 	);
