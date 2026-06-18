@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getContext, onMount } from 'svelte';
+	import { getContext, onDestroy, onMount } from 'svelte';
 	import { formatFileSize } from '$lib/utils';
 	import {
 		getEnosDesktopBridge,
@@ -51,6 +51,7 @@
 	let syncingProjectContext = false;
 	let error: string | null = null;
 	let loadedFolderId: string | null = null;
+	let removeProjectFilesChangedListener = () => {};
 
 	const pathCrumbs = (name: string, path: string) => {
 		const parts = path === '.' ? [] : path.split('/').filter(Boolean);
@@ -331,12 +332,26 @@
 	};
 
 	onMount(async () => {
+		const handleProjectFilesChanged = async (event: Event) => {
+			const detail = (event as CustomEvent)?.detail ?? {};
+			if (!folderId || detail.folderId !== folderId) return;
+			await refreshProjectState();
+		};
+		window.addEventListener('enos:project-files-changed', handleProjectFilesChanged);
+		removeProjectFilesChangedListener = () => {
+			window.removeEventListener('enos:project-files-changed', handleProjectFilesChanged);
+		};
+
 		bridge = getEnosDesktopBridge();
 		if (!bridge) {
 			error = 'ENOS Desktop bridge is unavailable.';
 			return;
 		}
 		await loadWorkspace();
+	});
+
+	onDestroy(() => {
+		removeProjectFilesChangedListener();
 	});
 
 	$: if (bridge && folderId !== loadedFolderId) {

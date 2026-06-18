@@ -118,6 +118,12 @@
 	import { getBanners } from '$lib/apis/configs';
 	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 	import { buildProjectActionContext } from '$lib/enos/projectActions';
+	import {
+		detectProjectWriteCommand,
+		formatProjectWriteCancelled,
+		formatProjectWriteFailure,
+		formatProjectWriteSuccess
+	} from '$lib/enos/projectChatActions';
 
 	export let chatIdProp = '';
 
@@ -1698,6 +1704,112 @@
 		}
 	};
 
+	const createLocalProjectActionMessage = async (userPrompt, assistantContent) => {
+		messageInput?.setText('');
+		const modelId = selectedModels.find((id) => id) ?? 'enos.mind';
+		const model = $models.filter((m) => m.id === modelId).at(0);
+		const messages = createMessagesList(history, history.currentId);
+		const parentMessage = messages.length !== 0 ? messages.at(-1) : null;
+
+		const userMessageId = uuidv4();
+		const responseMessageId = uuidv4();
+
+		const userMessage = {
+			id: userMessageId,
+			parentId: parentMessage ? parentMessage.id : null,
+			childrenIds: [responseMessageId],
+			role: 'user',
+			content: userPrompt,
+			timestamp: Math.floor(Date.now() / 1000),
+			models: selectedModels
+		};
+
+		const responseMessage = {
+			id: responseMessageId,
+			parentId: userMessageId,
+			childrenIds: [],
+			role: 'assistant',
+			content: assistantContent,
+			done: true,
+			model: modelId,
+			modelName: model?.name ?? modelId,
+			modelIdx: 0,
+			timestamp: Math.floor(Date.now() / 1000)
+		};
+
+		if (parentMessage) {
+			parentMessage.childrenIds.push(userMessageId);
+			history.messages[parentMessage.id] = parentMessage;
+		}
+		history.messages[userMessageId] = userMessage;
+		history.messages[responseMessageId] = responseMessage;
+		history.currentId = responseMessageId;
+		history = history;
+
+		await tick();
+		if (autoScroll) {
+			scrollToBottom();
+		}
+
+		if (messages.length === 0 || !$chatId) {
+			await initChatHandler(history);
+		} else {
+			await saveChatHandler($chatId, history);
+		}
+	};
+
+	const handleProjectWriteCommand = async (userPrompt) => {
+		const bridge = getEnosDesktopBridge();
+		const folderId = $selectedFolder?.id;
+		if (!bridge || !folderId) return false;
+
+		const activePath = folderId === $showLocalFileFolderId ? $showLocalFilePath : '.';
+		const command = detectProjectWriteCommand({ prompt: userPrompt, activePath });
+		if (!command) return false;
+
+		const runCreate = (confirmed = false) =>
+			bridge.createProjectFile(folderId, command.path, command.content, { confirmed });
+
+		try {
+			let result = await runCreate(false);
+			if (result.status === 'requires_confirmation') {
+				const preview = result.preview ? `\n\n${result.preview}` : '';
+				if (!window.confirm(`Create ${result.path}?${preview}`)) {
+					await createLocalProjectActionMessage(
+						userPrompt,
+						formatProjectWriteCancelled(result.path)
+					);
+					return true;
+				}
+				result = await runCreate(true);
+			}
+
+			if (result.status === 'created') {
+				window.dispatchEvent(
+					new CustomEvent('enos:project-files-changed', {
+						detail: { folderId, path: result.path }
+					})
+				);
+				toast.success($i18n.t('Project file created'));
+				await createLocalProjectActionMessage(
+					userPrompt,
+					formatProjectWriteSuccess(result.path, result.bytes)
+				);
+				return true;
+			}
+		} catch (error) {
+			console.error('[enos project write]', error);
+			toast.error($i18n.t('Project file action failed'));
+			await createLocalProjectActionMessage(
+				userPrompt,
+				formatProjectWriteFailure(command.path, error)
+			);
+			return true;
+		}
+
+		return false;
+	};
+
 	const addMessages = async ({ modelId, parentId, messages }) => {
 		const model = $models.filter((m) => m.id === modelId).at(0);
 
@@ -2064,6 +2176,8 @@
 				return;
 			}
 		}
+
+		if (await handleProjectWriteCommand(userPrompt)) return;
 
 		// Clear input and submit
 		messageInput?.setText('');

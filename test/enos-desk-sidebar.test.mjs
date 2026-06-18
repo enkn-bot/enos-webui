@@ -627,3 +627,44 @@ test('Desk Files pane exposes permissioned project file actions and local Git aw
 		'Files pane should handle bridge confirmation requests before mutating files'
 	);
 });
+
+test('Desk chat write requests execute through the desktop bridge before model calls', () => {
+	const chat = readFileSync('src/lib/components/chat/Chat.svelte', 'utf8');
+	const projectChatActions = readFileSync('src/lib/enos/projectChatActions.ts', 'utf8');
+
+	assert.match(
+		projectChatActions,
+		/detectProjectWriteCommand/,
+		'Project chat actions should detect simple write/create-file requests'
+	);
+	assert.match(
+		projectChatActions,
+		/createTestFilePath/,
+		'Project chat actions should create a deterministic project-scoped test-file path'
+	);
+	assert.match(
+		chat,
+		/handleProjectWriteCommand/,
+		'Chat submit path should have a project write command handler'
+	);
+	assert.match(
+		chat,
+		/bridge\.createProjectFile/,
+		'Chat write command handler should execute through the desktop bridge'
+	);
+	assert.match(
+		chat,
+		/window\.confirm/,
+		'Chat write command handler should ask before mutating unless the bridge profile allows it'
+	);
+	assert.match(
+		chat,
+		/await createLocalProjectActionMessage/,
+		'Handled project write requests should create a local assistant response instead of calling the model'
+	);
+	assert.match(
+		chat,
+		/if \(await handleProjectWriteCommand\(userPrompt\)\) return/,
+		'Chat submit handler should stop before submitPrompt when a project write command was handled'
+	);
+});
