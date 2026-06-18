@@ -460,3 +460,56 @@ test('Desk project chats attach live local file action context before model call
 		'Chat completion should inject live project action context into messages'
 	);
 });
+
+test('Desk Files pane exposes permissioned project file actions and local Git awareness', () => {
+	const bridge = readFileSync('src/lib/enos/desktopBridge.ts', 'utf8');
+	const localFileNav = readFileSync('src/lib/components/chat/LocalFileNav.svelte', 'utf8');
+
+	for (const method of [
+		'getPermissionProfile',
+		'setPermissionProfile',
+		'createProjectFile',
+		'writeProjectFile',
+		'createProjectFolder',
+		'renameProjectEntry',
+		'deleteProjectEntry',
+		'revealProjectEntry',
+		'getProjectGitStatus'
+	]) {
+		assert.match(bridge, new RegExp(`${method}:`), `Desktop bridge should type ${method}`);
+		assert.match(localFileNav, new RegExp(`bridge\\.${method}`), `Files pane should call ${method}`);
+	}
+
+	assert.match(
+		bridge,
+		/type EnosDesktopPermissionProfile = 'ask' \\| 'approve_safe_project_edits'/,
+		'Bridge should restrict permission profiles to supported safe modes'
+	);
+	assert.match(
+		localFileNav,
+		/Ask Before Changing/,
+		'Files pane should expose the default approval-first mode'
+	);
+	assert.match(
+		localFileNav,
+		/Approve Safe Project Edits/,
+		'Files pane should expose the fast safe-edit mode'
+	);
+	assert.match(localFileNav, /New File/, 'Files pane should create new files');
+	assert.match(localFileNav, /New Folder/, 'Files pane should create new folders');
+	assert.match(localFileNav, /Save/, 'Files pane should save text edits');
+	assert.match(localFileNav, /Rename/, 'Files pane should rename selected entries');
+	assert.match(localFileNav, /Delete/, 'Files pane should delete selected entries after confirmation');
+	assert.match(localFileNav, /Reveal/, 'Files pane should reveal selected entries in Finder');
+	assert.match(localFileNav, /Git:/, 'Files pane should show local Git branch/status when available');
+	assert.match(
+		localFileNav,
+		/runConfirmedProjectAction/,
+		'Files pane should centralize confirmation-gated project mutations'
+	);
+	assert.match(
+		localFileNav,
+		/status === 'requires_confirmation'/,
+		'Files pane should handle bridge confirmation requests before mutating files'
+	);
+});

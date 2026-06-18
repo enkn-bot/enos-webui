@@ -7,7 +7,11 @@
 		type EnosDesktopDirectoryListing,
 		type EnosDesktopEntry,
 		type EnosDesktopFilePreview,
+		type EnosDesktopPermissionProfile,
+		type EnosDesktopProjectActionRequest,
+		type EnosDesktopProjectActionResult,
 		type EnosDesktopProjectDigest,
+		type EnosDesktopProjectGitStatus,
 		type EnosDesktopWorkspace
 	} from '$lib/enos/desktopBridge';
 
@@ -32,6 +36,9 @@
 	let listing: EnosDesktopDirectoryListing | null = null;
 	let currentPath = '.';
 	let selectedFile: EnosDesktopFilePreview | null = null;
+	let editContent = '';
+	let permissionProfile: EnosDesktopPermissionProfile = 'ask';
+	let gitStatus: EnosDesktopProjectGitStatus | null = null;
 	let loading = false;
 	let fileLoading = false;
 	let syncingProjectContext = false;
@@ -46,7 +53,15 @@
 			message.includes("No handler registered") ||
 			message.includes('build-project-digest') ||
 			message.includes('list-project-files') ||
-			message.includes('read-project-file')
+			message.includes('read-project-file') ||
+			message.includes('create-project-file') ||
+			message.includes('write-project-file') ||
+			message.includes('create-project-folder') ||
+			message.includes('rename-project-entry') ||
+			message.includes('delete-project-entry') ||
+			message.includes('reveal-project-entry') ||
+			message.includes('get-project-git-status') ||
+			message.includes('permission-profile')
 		) {
 			return $i18n.t('Restart ENOS Desk to enable local project actions.');
 		}
@@ -86,12 +101,15 @@
 		try {
 			workspace = await bridge.getWorkspace(folderId);
 			if (workspace) {
+				await loadPermissionProfile();
 				await loadDir('.');
+				await loadGitStatus();
 				await syncProjectContext();
 			} else {
 				listing = null;
 				currentPath = '.';
 				selectedFile = null;
+				gitStatus = null;
 			}
 		} catch (e) {
 			error = friendlyDesktopError(e);
@@ -99,6 +117,7 @@
 			listing = null;
 			currentPath = '.';
 			selectedFile = null;
+			gitStatus = null;
 		}
 	};
 
@@ -110,7 +129,9 @@
 				? await bridge.chooseWorkspaceForFolder(folderId)
 				: await bridge.chooseWorkspace();
 			if (workspace) {
+				await loadPermissionProfile();
 				await loadDir('.');
+				await loadGitStatus();
 				await syncProjectContext();
 			}
 		} catch (e) {
@@ -123,6 +144,7 @@
 		loading = true;
 		error = null;
 		selectedFile = null;
+		editContent = '';
 		try {
 			listing = await bridge.listDir(path, folderId);
 			currentPath = listing.path;
@@ -131,6 +153,7 @@
 			listing = null;
 			currentPath = '.';
 			selectedFile = null;
+			editContent = '';
 		} finally {
 			loading = false;
 		}
@@ -146,6 +169,7 @@
 		error = null;
 		try {
 			selectedFile = await bridge.readFile(entry.path, folderId);
+			editContent = selectedFile.encoding === 'utf8' ? selectedFile.data : '';
 		} catch (e) {
 			error = friendlyDesktopError(e);
 		} finally {
@@ -156,6 +180,145 @@
 	const attachSelectedFile = async () => {
 		if (!selectedFile) return;
 		await onAttach(decodePreview(selectedFile), selectedFile.name, selectedFile.mime);
+	};
+
+	const loadPermissionProfile = async () => {
+		if (!bridge) return;
+		try {
+			permissionProfile = await bridge.getPermissionProfile();
+		} catch (e) {
+			error = friendlyDesktopError(e);
+		}
+	};
+
+	const savePermissionProfile = async () => {
+		if (!bridge) return;
+		error = null;
+		try {
+			permissionProfile = await bridge.setPermissionProfile(permissionProfile);
+		} catch (e) {
+			error = friendlyDesktopError(e);
+			await loadPermissionProfile();
+		}
+	};
+
+	const loadGitStatus = async () => {
+		if (!bridge || !folderId) return;
+		try {
+			gitStatus = await bridge.getProjectGitStatus(folderId);
+		} catch {
+			gitStatus = null;
+		}
+	};
+
+	const refreshProjectState = async () => {
+		await loadDir(currentPath);
+		await loadGitStatus();
+		await syncProjectContext();
+	};
+
+	const actionLabel = (result: EnosDesktopProjectActionRequest) => {
+		if (result.action === 'deleteProjectEntry') return $i18n.t('Delete');
+		if (result.action === 'renameProjectEntry') return $i18n.t('Rename');
+		if (result.action === 'createProjectFolder') return $i18n.t('New Folder');
+		if (result.action === 'createProjectFile') return $i18n.t('New File');
+		return $i18n.t('Save');
+	};
+
+	const confirmationMessage = (result: EnosDesktopProjectActionRequest) => {
+		const target = result.toPath ? `${result.path} -> ${result.toPath}` : result.path;
+		const preview = result.preview ? `\n\n${result.preview}` : '';
+		return `${actionLabel(result)} ${target}?${preview}`;
+	};
+
+	const runConfirmedProjectAction = async (
+		run: (
+			confirmed: boolean
+		) => Promise<EnosDesktopProjectActionRequest | EnosDesktopProjectActionResult>
+	) => {
+		const first = await run(false);
+		if (first.status === 'requires_confirmation') {
+			if (!window.confirm(confirmationMessage(first))) return first;
+			await run(true);
+		}
+		await refreshProjectState();
+		return first;
+	};
+
+	const createFile = async () => {
+		if (!bridge || !folderId) return;
+		const path = window.prompt($i18n.t('New file path'));
+		if (!path) return;
+		error = null;
+		try {
+			await runConfirmedProjectAction((confirmed) =>
+				bridge.createProjectFile(folderId, path, '', { confirmed })
+			);
+		} catch (e) {
+			error = friendlyDesktopError(e);
+		}
+	};
+
+	const createFolder = async () => {
+		if (!bridge || !folderId) return;
+		const path = window.prompt($i18n.t('New folder path'));
+		if (!path) return;
+		error = null;
+		try {
+			await runConfirmedProjectAction((confirmed) =>
+				bridge.createProjectFolder(folderId, path, { confirmed })
+			);
+		} catch (e) {
+			error = friendlyDesktopError(e);
+		}
+	};
+
+	const saveSelectedFile = async () => {
+		if (!bridge || !folderId || !selectedFile || selectedFile.encoding !== 'utf8') return;
+		error = null;
+		try {
+			await runConfirmedProjectAction((confirmed) =>
+				bridge.writeProjectFile(folderId, selectedFile.path, editContent, { confirmed })
+			);
+		} catch (e) {
+			error = friendlyDesktopError(e);
+		}
+	};
+
+	const renameEntry = async (entry: EnosDesktopEntry) => {
+		if (!bridge || !folderId) return;
+		const toPath = window.prompt($i18n.t('Rename to'), entry.path);
+		if (!toPath || toPath === entry.path) return;
+		error = null;
+		try {
+			await runConfirmedProjectAction((confirmed) =>
+				bridge.renameProjectEntry(folderId, entry.path, toPath, { confirmed })
+			);
+		} catch (e) {
+			error = friendlyDesktopError(e);
+		}
+	};
+
+	const deleteEntry = async (entry: EnosDesktopEntry) => {
+		if (!bridge || !folderId) return;
+		error = null;
+		try {
+			await runConfirmedProjectAction((confirmed) =>
+				bridge.deleteProjectEntry(folderId, entry.path, { confirmed })
+			);
+		} catch (e) {
+			error = friendlyDesktopError(e);
+		}
+	};
+
+	const revealEntry = async (entry: EnosDesktopEntry) => {
+		if (!bridge || !folderId) return;
+		error = null;
+		try {
+			await bridge.revealProjectEntry(folderId, entry.path);
+		} catch (e) {
+			error = friendlyDesktopError(e);
+		}
 	};
 
 	const syncProjectContext = async () => {
@@ -214,6 +377,30 @@
 							{$i18n.t('Preparing project context...')}
 						{/if}
 					</div>
+					<div class="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
+						<label class="sr-only" for="enos-project-permission-profile">
+							{$i18n.t('Project file permission mode')}
+						</label>
+						<select
+							id="enos-project-permission-profile"
+							class="max-w-full rounded-md bg-gray-100 dark:bg-gray-800 px-1 py-0.5 text-[11px] text-gray-600 dark:text-gray-300"
+							bind:value={permissionProfile}
+							on:change={savePermissionProfile}
+						>
+							<option value="ask">{$i18n.t('Ask Before Changing')}</option>
+							<option value="approve_safe_project_edits">
+								{$i18n.t('Approve Safe Project Edits')}
+							</option>
+						</select>
+						{#if gitStatus?.isRepo}
+							<span class="truncate text-gray-400 dark:text-gray-500">
+								{$i18n.t('Git:')} {gitStatus.branch ?? 'unknown'}
+								{#if gitStatus.statusLines.length > 0}
+									· {gitStatus.statusLines.length} {$i18n.t('changes')}
+								{/if}
+							</span>
+						{/if}
+					</div>
 				{/if}
 			</div>
 			{#if !workspace || !folderId}
@@ -264,11 +451,28 @@
 				on:click={async () => {
 					await loadDir(currentPath);
 					await syncProjectContext();
+					await loadGitStatus();
 				}}
 				type="button"
 			>
 				{$i18n.t('Refresh')}
 			</button>
+			{#if folderId}
+				<button
+					class="px-2 py-1 rounded text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+					on:click={createFile}
+					type="button"
+				>
+					{$i18n.t('New File')}
+				</button>
+				<button
+					class="px-2 py-1 rounded text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+					on:click={createFolder}
+					type="button"
+				>
+					{$i18n.t('New Folder')}
+				</button>
+			{/if}
 			<div class="min-w-0 flex-1 truncate text-xs text-gray-500 dark:text-gray-400">
 				{workspace.name}{displayPath(currentPath)}
 			</div>
@@ -289,12 +493,12 @@
 			{#if listing && listing.entries.length > 0}
 				<ul class="py-1">
 					{#each listing.entries as entry}
-						<li>
+						<li class="flex items-center gap-1 px-2 hover:bg-gray-50 dark:hover:bg-gray-800 {selectedFile?.path ===
+						entry.path
+							? 'bg-gray-50 dark:bg-gray-800'
+							: ''}">
 							<button
-								class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-gray-50 dark:hover:bg-gray-800 {selectedFile?.path ===
-								entry.path
-									? 'bg-gray-50 dark:bg-gray-800'
-									: ''}"
+								class="min-w-0 flex-1 flex items-center gap-2 py-1.5 text-left"
 								on:click={() => openEntry(entry)}
 								type="button"
 							>
@@ -309,6 +513,27 @@
 										{formatFileSize(entry.size ?? 0)}
 									</span>
 								{/if}
+							</button>
+							<button
+								class="shrink-0 px-1 py-0.5 rounded text-[11px] text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+								on:click={() => revealEntry(entry)}
+								type="button"
+							>
+								{$i18n.t('Reveal')}
+							</button>
+							<button
+								class="shrink-0 px-1 py-0.5 rounded text-[11px] text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+								on:click={() => renameEntry(entry)}
+								type="button"
+							>
+								{$i18n.t('Rename')}
+							</button>
+							<button
+								class="shrink-0 px-1 py-0.5 rounded text-[11px] text-gray-400 hover:text-red-600 dark:hover:text-red-300"
+								on:click={() => deleteEntry(entry)}
+								type="button"
+							>
+								{$i18n.t('Delete')}
 							</button>
 						</li>
 					{/each}
@@ -329,6 +554,15 @@
 							{formatFileSize(selectedFile.size)} · {selectedFile.mime}
 						</div>
 					</div>
+					{#if selectedFile.encoding === 'utf8'}
+						<button
+							class="px-2 py-1 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+							on:click={saveSelectedFile}
+							type="button"
+						>
+							{$i18n.t('Save')}
+						</button>
+					{/if}
 					<button
 						class="px-2 py-1 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
 						on:click={attachSelectedFile}
@@ -341,8 +575,11 @@
 				{#if fileLoading}
 					<div class="text-xs text-gray-400">{$i18n.t('Loading preview...')}</div>
 				{:else if selectedFile.encoding === 'utf8'}
-					<pre
-						class="max-h-40 overflow-auto text-xs whitespace-pre-wrap rounded-md bg-gray-50 dark:bg-gray-900 p-2">{selectedFile.data}</pre>
+					<textarea
+						class="h-40 w-full resize-y rounded-md bg-gray-50 dark:bg-gray-900 p-2 text-xs outline-none focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-700"
+						spellcheck="false"
+						bind:value={editContent}
+					/>
 				{:else}
 					<div class="text-xs text-gray-400">
 						{$i18n.t('Binary preview is unavailable. You can still attach the file.')}

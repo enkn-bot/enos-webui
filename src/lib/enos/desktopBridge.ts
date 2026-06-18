@@ -1,4 +1,5 @@
 export type EnosDesktopPlatform = 'electron' | 'tauri' | 'swift';
+export type EnosDesktopPermissionProfile = 'ask' | 'approve_safe_project_edits';
 
 export type EnosDesktopWorkspace = {
 	folderId?: string | null;
@@ -63,6 +64,46 @@ export type EnosDesktopProjectWriteRequest = {
 	preview: string;
 };
 
+export type EnosDesktopProjectActionOptions = {
+	confirmed?: boolean;
+};
+
+export type EnosDesktopProjectActionRequest = {
+	action:
+		| 'createProjectFile'
+		| 'writeProjectFile'
+		| 'createProjectFolder'
+		| 'renameProjectEntry'
+		| 'deleteProjectEntry';
+	status: 'requires_confirmation';
+	path: string;
+	toPath?: string;
+	bytes: number;
+	preview: string;
+};
+
+export type EnosDesktopProjectActionResult = {
+	action:
+		| 'createProjectFile'
+		| 'writeProjectFile'
+		| 'createProjectFolder'
+		| 'renameProjectEntry'
+		| 'deleteProjectEntry'
+		| 'revealProjectEntry';
+	status: 'created' | 'written' | 'renamed' | 'trashed' | 'revealed';
+	path: string;
+	toPath?: string;
+	bytes?: number;
+	modifiedAt?: string;
+};
+
+export type EnosDesktopProjectGitStatus = {
+	action: 'getProjectGitStatus';
+	isRepo: boolean;
+	branch: string | null;
+	statusLines: string[];
+};
+
 export type EnosDesktopBridge = {
 	version: string;
 	platform: EnosDesktopPlatform;
@@ -80,6 +121,43 @@ export type EnosDesktopBridge = {
 		path: string,
 		content: string
 	) => Promise<EnosDesktopProjectWriteRequest>;
+	getPermissionProfile: () => Promise<EnosDesktopPermissionProfile>;
+	setPermissionProfile: (
+		permissionProfile: EnosDesktopPermissionProfile
+	) => Promise<EnosDesktopPermissionProfile>;
+	createProjectFile: (
+		folderId: string,
+		path: string,
+		content?: string,
+		options?: EnosDesktopProjectActionOptions
+	) => Promise<EnosDesktopProjectActionRequest | EnosDesktopProjectActionResult>;
+	writeProjectFile: (
+		folderId: string,
+		path: string,
+		content: string,
+		options?: EnosDesktopProjectActionOptions
+	) => Promise<EnosDesktopProjectActionRequest | EnosDesktopProjectActionResult>;
+	createProjectFolder: (
+		folderId: string,
+		path: string,
+		options?: EnosDesktopProjectActionOptions
+	) => Promise<EnosDesktopProjectActionRequest | EnosDesktopProjectActionResult>;
+	renameProjectEntry: (
+		folderId: string,
+		fromPath: string,
+		toPath: string,
+		options?: EnosDesktopProjectActionOptions
+	) => Promise<EnosDesktopProjectActionRequest | EnosDesktopProjectActionResult>;
+	deleteProjectEntry: (
+		folderId: string,
+		path: string,
+		options?: EnosDesktopProjectActionOptions
+	) => Promise<EnosDesktopProjectActionRequest | EnosDesktopProjectActionResult>;
+	revealProjectEntry: (
+		folderId: string,
+		path: string
+	) => Promise<EnosDesktopProjectActionResult>;
+	getProjectGitStatus: (folderId: string) => Promise<EnosDesktopProjectGitStatus>;
 };
 
 declare global {
