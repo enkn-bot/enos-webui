@@ -1937,15 +1937,23 @@
 
 			const hasLocalProjectMutations = canUseEnosLocalProjectMutations(capabilities);
 
+			// Carry the last N turns of chat history so follow-up questions have context.
+			const HISTORY_TURNS = 6;
+			const priorMessages = createMessagesList(history, history.currentId)
+				.slice(-HISTORY_TURNS * 2)
+				.map((m) => ({ role: m.role as 'user' | 'assistant', content: String(m.content ?? '') }))
+				.filter((m) => m.content.length > 0);
+
 			const loopMessages = [
 				{
-					role: 'system',
+					role: 'system' as const,
 					content:
 						`You are ENOS Desk, an AI agent with direct access to the user's local project files via tool calls.\n` +
 						`Active project folder id: ${folderId}.\n` +
 						`Mutations (write/edit/delete) are ${hasLocalProjectMutations ? 'permitted' : 'not permitted in this session — read-only'}.`
 				},
-				{ role: 'user', content: userPrompt }
+				...priorMessages,
+				{ role: 'user' as const, content: userPrompt }
 			];
 
 			const complete = async (msgs, tools) => {
