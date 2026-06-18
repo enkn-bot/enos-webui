@@ -45,6 +45,7 @@
 	import DragGhost from '$lib/components/common/DragGhost.svelte';
 
 	import FolderOpen from '$lib/components/icons/FolderOpen.svelte';
+	import Folder from '$lib/components/icons/Folder.svelte';
 	import EllipsisHorizontal from '$lib/components/icons/EllipsisHorizontal.svelte';
 
 	import ChatItem from './ChatItem.svelte';
@@ -585,37 +586,15 @@
 					e.stopPropagation();
 				}}
 			>
-				<button
-					class="text-gray-500 dark:text-gray-500 transition-all p-1 hover:bg-gray-200 dark:hover:bg-gray-850 rounded-lg"
-					on:click={(e) => {
-						e.stopPropagation();
-						e.stopImmediatePropagation();
-						open = !open;
-						isExpandedUpdateDebounceHandler();
-					}}
-				>
+				<div class="text-gray-500 dark:text-gray-500 flex items-center justify-center p-1">
 					{#if folders[folderId]?.meta?.icon}
-						<div class="flex group-hover:hidden transition-all">
-							<Emoji className="size-3.5" shortCode={folders[folderId].meta.icon} />
-						</div>
-
-						<div class="hidden group-hover:flex transition-all p-[1px]">
-							{#if open}
-								<ChevronDown className=" size-3" strokeWidth="2.5" />
-							{:else}
-								<ChevronRight className=" size-3" strokeWidth="2.5" />
-							{/if}
-						</div>
+						<Emoji className="size-3.5" shortCode={folders[folderId].meta.icon} />
+					{:else if open}
+						<FolderOpen className="size-3.5" strokeWidth="2" />
 					{:else}
-						<div class="p-[1px]">
-							{#if open}
-								<ChevronDown className=" size-3" strokeWidth="2.5" />
-							{:else}
-								<ChevronRight className=" size-3" strokeWidth="2.5" />
-							{/if}
-						</div>
+						<Folder className="size-3.5" strokeWidth="2" />
 					{/if}
-				</button>
+				</div>
 
 				<div class="translate-y-[0.5px] flex-1 justify-start text-start line-clamp-1">
 					{#if edit}
@@ -649,8 +628,26 @@
 					{/if}
 				</div>
 
+				<button
+					class="text-gray-500 dark:text-gray-500 transition-all p-1 hover:bg-gray-200 dark:hover:bg-gray-850 rounded-lg"
+					on:click={(e) => {
+						e.stopPropagation();
+						e.stopImmediatePropagation();
+						open = !open;
+						isExpandedUpdateDebounceHandler();
+					}}
+				>
+					<div class="p-[1px]">
+						{#if open}
+							<ChevronDown className=" size-3" strokeWidth="2.5" />
+						{:else}
+							<ChevronRight className=" size-3" strokeWidth="2.5" />
+						{/if}
+					</div>
+				</button>
+
 				<div
-					class="absolute z-10 right-2 invisible group-hover:visible self-center flex items-center gap-1 dark:text-gray-300"
+					class="absolute z-10 right-10 invisible group-hover:visible self-center flex items-center gap-1 dark:text-gray-300"
 				>
 					<FolderMenu
 						projectMode={isDeskSurface}
@@ -680,7 +677,7 @@
 		<div slot="content" class="w-full">
 			{#if (folders[folderId]?.childrenIds ?? []).length > 0 || (chats ?? []).length > 0}
 				<div
-					class="ml-3 pl-1 mt-[1px] flex flex-col overflow-y-auto scrollbar-hidden border-s border-gray-100 dark:border-gray-900"
+					class="ml-4 pl-1 mt-[1px] flex flex-col overflow-y-auto scrollbar-hidden border-s border-gray-100 dark:border-gray-900"
 				>
 					{#if folders[folderId]?.childrenIds}
 						{@const children = folders[folderId]?.childrenIds
