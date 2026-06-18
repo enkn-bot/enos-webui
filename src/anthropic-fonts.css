@@ -1,0 +1,104 @@
+/*
+ * Anthropic font stack — toggle via <html data-fonts="anthropic">.
+ * Reversible: remove the data-fonts attribute to restore the default stack.
+ *
+ * These are the variable-weight web fonts served by Anthropic (weight range 300–800).
+ */
+
+@font-face {
+	font-family: 'Anthropic Sans';
+	src: url('/assets/fonts/AnthropicSans-Roman-Web.woff2') format('woff2');
+	font-weight: 300 800;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Anthropic Sans';
+	src: url('/assets/fonts/AnthropicSans-Italic-Web.woff2') format('woff2');
+	font-weight: 300 800;
+	font-style: italic;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Anthropic Serif';
+	src: url('/assets/fonts/AnthropicSerif-Roman-Web.woff2') format('woff2');
+	font-weight: 300 800;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Anthropic Serif';
+	src: url('/assets/fonts/AnthropicSerif-Italic-Web.woff2') format('woff2');
+	font-weight: 300 800;
+	font-style: italic;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Anthropic Mono';
+	src: url('/assets/fonts/AnthropicMono-Roman-Web.woff2') format('woff2');
+	font-weight: 300 800;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Anthropic Mono';
+	src: url('/assets/fonts/AnthropicMono-Italic-Web.woff2') format('woff2');
+	font-weight: 300 800;
+	font-style: italic;
+	font-display: swap;
+}
+
+:root[data-fonts='anthropic'] {
+	--font-primary:
+		'Anthropic Sans', -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui, sans-serif;
+	--font-secondary: 'Anthropic Serif', Georgia, 'Times New Roman', serif;
+	--font-mono:
+		'Anthropic Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+	/* Present metadata as structured data: mono, muted, compact. */
+	#response-message-model-name,
+	.response-message-timestamp {
+		font-family: var(--font-mono);
+		font-size: 0.7rem;
+		font-weight: 400;
+		letter-spacing: 0.02em;
+		text-transform: uppercase;
+	}
+
+	/* More breathable long-form reading. */
+	.markdown-prose,
+	.markdown-prose-sm,
+	.markdown-prose-xs {
+		line-height: 1.6;
+	}
+
+	.markdown-prose p,
+	.markdown-prose-sm p,
+	.markdown-prose-xs p {
+		margin-top: 0.75em;
+		margin-bottom: 0.75em;
+	}
+
+	/* Keep the Perplexity-style thumbnail strip intact: paragraphs that only
+	   contain images should stay inline and keep their native spacing. */
+	.markdown-prose p:has(img[data-cy='image']),
+	.markdown-prose-sm p:has(img[data-cy='image']),
+	.markdown-prose-xs p:has(img[data-cy='image']) {
+		display: inline-block;
+		margin-top: 0;
+		margin-bottom: 0;
+		line-height: 1;
+		vertical-align: top;
+	}
+
+	.markdown-prose p:has(img[data-cy='image']) br,
+	.markdown-prose-sm p:has(img[data-cy='image']) br,
+	.markdown-prose-xs p:has(img[data-cy='image']) br {
+		display: none;
+	}
+}

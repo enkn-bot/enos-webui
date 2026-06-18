@@ -168,7 +168,7 @@
 	let showDeleteConfirm = false;
 
 	let model = null;
-	$: model = $models.find((m) => m.id === message.model);
+	$: model = $models.find((m) => m.id === history.messages[messageId]?.model);
 
 	$: statusEntries = message?.statusHistory ?? [...(message?.status ? [message?.status] : [])];
 	$: hasVisibleStatus =
@@ -190,6 +190,19 @@
 	let speakAbort: AbortController | null = null;
 
 	let showRateComment = false;
+
+	$: displayFiles = message.files?.filter((f) => ['image', 'file'].includes(f.type)) ?? [];
+	$: usageTooltipContent = (message as any).usage
+		? `<pre>${sanitizeResponseContent(
+				JSON.stringify((message as any).usage, null, 2)
+					.replace(/"([^(")"]+)":/g, '$1:')
+					.slice(1, -1)
+					.split('\n')
+					.map((line) => line.slice(2))
+					.map((line) => (line.endsWith(',') ? line.slice(0, -1) : line))
+					.join('\n')
+			)}</pre>`
+		: '';
 
 	const copyToClipboard = async (text) => {
 		text = removeAllDetails(text);
@@ -681,7 +694,7 @@
 							: 'invisible group-hover:visible transition text-gray-400'}"
 					>
 						<Tooltip content={dayjs(message.timestamp * 1000).format('LLLL')}>
-							<span class="line-clamp-1"
+							<span class="line-clamp-1 response-message-timestamp"
 								>{$i18n.t(formatDate(message.timestamp * 1000), {
 									LOCALIZED_TIME: dayjs(message.timestamp * 1000).format('LT'),
 									LOCALIZED_DATE: dayjs(message.timestamp * 1000).format('L')
@@ -699,12 +712,12 @@
 							<StatusHistory statusHistory={message?.statusHistory} />
 						{/if}
 
-						{#if message?.files && message.files?.filter( (f) => ['image', 'file'].includes(f.type) ).length > 0}
+						{#if displayFiles.length > 0}
 							<div
 								class="my-1 w-full flex overflow-x-auto gap-2 flex-wrap"
 								dir={$settings?.chatDirection ?? 'auto'}
 							>
-								{#each message.files.filter((f) => ['image', 'file'].includes(f.type)) as file}
+								{#each displayFiles as file}
 									<div>
 										{#if file.type === 'image' || (file?.content_type ?? '').startsWith('image/')}
 											<Image src={file.url} alt={message.content} />
@@ -1144,17 +1157,7 @@
 
 								{#if message.usage}
 									<Tooltip
-										content={message.usage
-											? `<pre>${sanitizeResponseContent(
-													JSON.stringify(message.usage, null, 2)
-														.replace(/"([^(")"]+)":/g, '$1:')
-														.slice(1, -1)
-														.split('\n')
-														.map((line) => line.slice(2))
-														.map((line) => (line.endsWith(',') ? line.slice(0, -1) : line))
-														.join('\n')
-												)}</pre>`
-											: ''}
+										content={usageTooltipContent}
 										placement="bottom"
 									>
 										<button

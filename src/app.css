@@ -33,6 +33,13 @@
 /* --app-text-scale is updated via the UI Scale slider (Interface.svelte) */
 :root {
 	--app-text-scale: 1;
+	/* Default font stack; override with :root[data-fonts="anthropic"] in anthropic-fonts.css */
+	--font-primary:
+		'Archivo', 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Inter', ui-sans-serif, system-ui,
+		'Segoe UI', Roboto, sans-serif;
+	--font-secondary: 'InstrumentSerif', Georgia, 'Times New Roman', serif;
+	--font-mono:
+		'JetBrainsMono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
 }
 
 html {
@@ -71,7 +78,15 @@ code {
 }
 
 .font-secondary {
-	font-family: 'InstrumentSerif', sans-serif;
+	font-family: var(--font-secondary);
+}
+
+/* Anthropic Serif emphasis: use the design-system weight 600 instead of browser default 700. */
+:root[data-fonts='anthropic'] .font-secondary strong,
+:root[data-fonts='anthropic'] .markdown-prose strong,
+:root[data-fonts='anthropic'] .markdown-prose-sm strong,
+:root[data-fonts='anthropic'] .markdown-prose-xs strong {
+	font-weight: 600;
 }
 
 .marked a {
@@ -119,7 +134,7 @@ textarea::placeholder {
 }
 
 .font-primary {
-	font-family: 'Archivo', 'Vazirmatn', sans-serif;
+	font-family: var(--font-primary);
 }
 
 .drag-region {
