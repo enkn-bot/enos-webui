@@ -131,6 +131,7 @@
 	import { runDeskAgentLoop } from '$lib/enos/deskAgentLoop';
 	import { DESK_FILE_TOOLS, describeDeskTool, executeDeskFileTool } from '$lib/enos/deskFileTools';
 	import { groundingLine } from '$lib/enos/grounding';
+	import { surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
 
 	export let chatIdProp = '';
 
@@ -1802,6 +1803,7 @@
 
 	const isDeskSurface = () =>
 		typeof window !== 'undefined' && window.location.hostname === 'enosdesk.duckdns.org';
+	const currentSurface = () => surfaceFromIsDesk(isDeskSurface());
 
 	const rememberDeskProjectFolder = (folder) => {
 		if (isDeskSurface() && folder?.id) {
@@ -3281,17 +3283,20 @@
 		if (!$temporaryChatEnabled) {
 			chat = await createNewChat(
 				localStorage.token,
-				{
-					id: _chatId,
-					title: $i18n.t('New Chat'),
-					models: selectedModels,
-					system: $settings.system ?? undefined,
-					params: params,
-					history: history,
-					messages: createMessagesList(history, history.currentId),
-					tags: [],
-					timestamp: Date.now()
-				},
+				withSurfaceMeta(
+					{
+						id: _chatId,
+						title: $i18n.t('New Chat'),
+						models: selectedModels,
+						system: $settings.system ?? undefined,
+						params: params,
+						history: history,
+						messages: createMessagesList(history, history.currentId),
+						tags: [],
+						timestamp: Date.now()
+					},
+					currentSurface()
+				),
 				$selectedFolder?.id
 			);
 
@@ -3543,15 +3548,18 @@
 
 								const savedChat = await createNewChat(
 									localStorage.token,
-									{
-										id: uuidv4(),
-										title: title.length > 50 ? `${title.slice(0, 50)}...` : title,
-										models: selectedModels,
-										params: params,
-										history: history,
-										messages: messages,
-										timestamp: Date.now()
-									},
+									withSurfaceMeta(
+										{
+											id: uuidv4(),
+											title: title.length > 50 ? `${title.slice(0, 50)}...` : title,
+											models: selectedModels,
+											params: params,
+											history: history,
+											messages: messages,
+											timestamp: Date.now()
+										},
+										currentSurface()
+									),
 									null
 								);
 

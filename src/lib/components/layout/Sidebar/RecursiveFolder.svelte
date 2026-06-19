@@ -38,6 +38,7 @@
 		updateChatFolderIdById,
 		importChats
 	} from '$lib/apis/chats';
+	import { filterBySurface, surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
 
 	import ChevronDown from '../../icons/ChevronDown.svelte';
 	import ChevronRight from '../../icons/ChevronRight.svelte';
@@ -86,6 +87,7 @@
 
 	let name = '';
 	$: isDeskSurface = browser && window.location.hostname === 'enosdesk.duckdns.org';
+	$: currentSurface = surfaceFromIsDesk(isDeskSurface);
 
 	const onDragOver = (e) => {
 		e.preventDefault();
@@ -173,7 +175,7 @@
 									chat = await importChats(localStorage.token, [
 										{
 											chat: item.chat,
-											meta: item?.meta ?? {},
+											meta: withSurfaceMeta({ meta: item?.meta ?? {} }, currentSurface).meta,
 											pinned: false,
 											folder_id: null,
 											created_at: item?.created_at ?? null,
@@ -417,10 +419,11 @@
 	export const setFolderItems = async () => {
 		await tick();
 		if (open) {
-			chats = await getChatListByFolderId(localStorage.token, folderId).catch((error) => {
+			const folderChats = await getChatListByFolderId(localStorage.token, folderId).catch((error) => {
 				toast.error(`${error}`);
 				return [];
 			});
+			chats = filterBySurface(folderChats, currentSurface);
 		} else {
 			chats = null;
 		}
@@ -470,12 +473,18 @@
 
 		name = name.trim();
 
-		const res = await createNewFolder(localStorage.token, {
-			name,
-			data,
-			meta,
-			parent_id
-		}).catch((error) => {
+		const res = await createNewFolder(
+			localStorage.token,
+			withSurfaceMeta(
+				{
+					name,
+					data,
+					meta,
+					parent_id
+				},
+				currentSurface
+			)
+		).catch((error) => {
 			toast.error(`${error}`);
 			return null;
 		});

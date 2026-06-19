@@ -18,6 +18,7 @@
 		createNewFolder
 	} from '$lib/apis/folders';
 	import { getChatsByFolderId } from '$lib/apis/chats';
+	import { surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
 
 	import FolderModal from '$lib/components/layout/Sidebar/Folders/FolderModal.svelte';
 
@@ -38,6 +39,9 @@
 	let showCreateSubFolderModal = false;
 	let showDeleteConfirm = false;
 	let deleteFolderContents = true;
+
+	const isDeskSurface = () =>
+		typeof window !== 'undefined' && window.location.hostname === 'enosdesk.duckdns.org';
 
 	const updateHandler = async ({ name, meta, data }) => {
 		if (name === '') {
@@ -82,6 +86,7 @@
 	const updateIconHandler = async (iconName) => {
 		const res = await updateFolderById(localStorage.token, folder.id, {
 			meta: {
+				...(folder.meta ?? {}),
 				icon: iconName ?? ''
 			}
 		}).catch((error) => {
@@ -142,12 +147,18 @@
 
 		name = name.trim();
 
-		const res = await createNewFolder(localStorage.token, {
-			name,
-			data,
-			meta,
-			parent_id
-		}).catch((error) => {
+		const res = await createNewFolder(
+			localStorage.token,
+			withSurfaceMeta(
+				{
+					name,
+					data,
+					meta,
+					parent_id
+				},
+				surfaceFromIsDesk(isDeskSurface())
+			)
+		).catch((error) => {
 			toast.error(`${error}`);
 			return null;
 		});

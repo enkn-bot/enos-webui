@@ -84,6 +84,7 @@
 	import { slide } from 'svelte/transition';
 	import HotkeyHint from '../common/HotkeyHint.svelte';
 	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
+	import { filterBySurface, surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
 
 	const BREAKPOINT = 768;
 	const DEFAULT_PINNED_ITEMS = ['notes', 'workspace'];
@@ -116,6 +117,9 @@
 
 	$: pinnedItems = $settings?.pinnedMenuItems ?? DEFAULT_PINNED_ITEMS;
 	$: isDeskSurface = browser && window.location.hostname === 'enosdesk.duckdns.org';
+	$: currentSurface = surfaceFromIsDesk(isDeskSurface);
+	$: sidebarChats = filterBySurface($chats ?? [], currentSurface);
+	$: sidebarPinnedChats = filterBySurface($pinnedChats ?? [], currentSurface);
 	$: hasDesktopBridge = browser && Boolean(getEnosDesktopBridge());
 	$: showDeskChats = !isDeskSurface;
 
@@ -191,9 +195,10 @@
 			return;
 		}
 
-		const folderList = await getFolders(localStorage.token).catch((error) => {
+		const allFolders = await getFolders(localStorage.token).catch((error) => {
 			return [];
 		});
+		const folderList = filterBySurface(allFolders, currentSurface);
 		_folders.set(folderList.sort((a, b) => b.updated_at - a.updated_at));
 
 		folders = {};
@@ -271,7 +276,7 @@
 		}
 	};
 
-	const createFolder = async ({ name, data, parent_id, localWorkspace }) => {
+	const createFolder = async ({ name, meta, data, parent_id, localWorkspace }) => {
 		name = name?.trim();
 		if (!name) {
 			toast.error($i18n.t('Folder name cannot be empty.'));
@@ -299,17 +304,25 @@
 			[tempId]: {
 				id: tempId,
 				name: name,
+				meta: withSurfaceMeta({ meta }, currentSurface).meta,
 				parent_id: parent_id,
 				created_at: Date.now(),
 				updated_at: Date.now()
 			}
 		};
 
-		const res = await createNewFolder(localStorage.token, {
-			name,
-			data,
-			parent_id
-		}).catch((error) => {
+		const res = await createNewFolder(
+			localStorage.token,
+			withSurfaceMeta(
+				{
+					name,
+					meta,
+					data,
+					parent_id
+				},
+				currentSurface
+			)
+		).catch((error) => {
 			toast.error(`${error}`);
 			return null;
 		});
@@ -381,7 +394,10 @@
 			})(),
 			await (async () => {
 				console.log('Init pinned chats');
-				const _pinnedChats = await getPinnedChatList(localStorage.token);
+				const _pinnedChats = filterBySurface(
+					await getPinnedChatList(localStorage.token),
+					currentSurface
+				);
 				pinnedChats.set(_pinnedChats);
 			})(),
 			await (async () => {
@@ -396,7 +412,10 @@
 			})(),
 			await (async () => {
 				console.log('Init chat list');
-				const _chats = await getChatList(localStorage.token, $currentChatPage);
+				const _chats = filterBySurface(
+					await getChatList(localStorage.token, $currentChatPage),
+					currentSurface
+				);
 				await chats.set(_chats);
 			})()
 		]);
@@ -412,10 +431,11 @@
 
 		let newChatList = [];
 
-		newChatList = await getChatList(localStorage.token, $currentChatPage);
+		const rawChatList = await getChatList(localStorage.token, $currentChatPage);
+		newChatList = filterBySurface(rawChatList, currentSurface);
 
 		// once the bottom of the list has been reached (no results) there is no need to continue querying
-		allChatsLoaded = newChatList.length === 0;
+		allChatsLoaded = rawChatList.length === 0;
 		const existingIds = new Set(($chats ?? []).map((c) => c.id));
 		const uniqueNewChats = newChatList.filter((c) => !existingIds.has(c.id));
 		await chats.set([...($chats ? $chats : []), ...uniqueNewChats]);
@@ -431,7 +451,7 @@
 				await importChats(localStorage.token, [
 					{
 						chat: item.chat,
-						meta: item?.meta ?? {},
+						meta: withSurfaceMeta({ meta: item?.meta ?? {} }, currentSurface).meta,
 						pinned: pinned,
 						folder_id: folderId,
 						created_at: item?.created_at ?? null,
@@ -1493,7 +1513,7 @@
 									chat = await importChats(localStorage.token, [
 										{
 											chat: item.chat,
-											meta: item?.meta ?? {},
+											meta: withSurfaceMeta({ meta: item?.meta ?? {} }, currentSurface).meta,
 											pinned: false,
 											folder_id: null,
 											created_at: item?.created_at ?? null,
@@ -1541,7 +1561,7 @@
 							}
 						}}
 					>
-						{#if $pinnedChats.length > 0}
+						{#if sidebarPinnedChats.length > 0}
 							<div class="mb-1">
 								<div class="flex flex-col space-y-1 rounded-xl">
 									<Folder
@@ -1561,7 +1581,8 @@
 													chat = await importChats(localStorage.token, [
 														{
 															chat: item.chat,
-															meta: item?.meta ?? {},
+															meta: withSurfaceMeta({ meta: item?.meta ?? {} }, currentSurface)
+																.meta,
 															pinned: false,
 															folder_id: null,
 															created_at: item?.created_at ?? null,
@@ -1599,7 +1620,7 @@
 										<div
 											class="ml-3 pl-1 mt-[1px] flex flex-col overflow-y-auto scrollbar-hidden border-s border-gray-100 dark:border-gray-900 text-gray-900 dark:text-gray-200"
 										>
-											{#each $pinnedChats as chat, idx (`pinned-chat-${chat?.id ?? idx}`)}
+											{#each sidebarPinnedChats as chat, idx (`pinned-chat-${chat?.id ?? idx}`)}
 												<ChatItem
 													className=""
 													id={chat.id}
@@ -1633,8 +1654,8 @@
 						<div class=" flex-1 flex flex-col overflow-y-auto scrollbar-hidden">
 							<div class="pt-1.5">
 								{#if $chats}
-									{#each $chats as chat, idx (`chat-${chat?.id ?? idx}`)}
-										{#if idx === 0 || (idx > 0 && chat.time_range !== $chats[idx - 1].time_range)}
+									{#each sidebarChats as chat, idx (`chat-${chat?.id ?? idx}`)}
+										{#if idx === 0 || (idx > 0 && chat.time_range !== sidebarChats[idx - 1].time_range)}
 											<div
 												class="w-full pl-2.5 text-xs text-gray-500 dark:text-gray-500 font-medium {idx ===
 												0
