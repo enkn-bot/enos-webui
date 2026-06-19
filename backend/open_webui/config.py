@@ -3186,12 +3186,13 @@ FOLLOW_UP_GENERATION_PROMPT_TEMPLATE = ConfigVar(
 )
 
 DEFAULT_FOLLOW_UP_GENERATION_PROMPT_TEMPLATE = """### Task:
-Suggest 3-5 relevant follow-up questions or prompts that the user might naturally ask next in this conversation as a **user**, based on the chat history, to help continue or deepen the discussion.
+Suggest 3-5 relevant follow-up questions or prompts that the user might naturally ask next as a **user**, to continue the conversation.
 ### Guidelines:
+- Anchor on the MOST RECENT user/assistant exchange. If the conversation has shifted topics, follow the current topic — do not resurface earlier, now-unrelated topics.
+- If the latest message is a greeting, an acknowledgement, or has no specific topic, suggest a few broad, generally useful prompts — not questions about earlier unrelated subjects.
 - Write all follow-up questions from the user’s point of view, directed to the assistant.
-- Make questions concise, clear, and directly related to the discussed topic(s).
-- Only suggest follow-ups that make sense given the chat content and do not repeat what was already covered.
-- If the conversation is very short or not specific, suggest more general (but relevant) follow-ups the user might ask.
+- Make questions concise, clear, and directly related to the current topic.
+- Only suggest follow-ups that make sense and do not repeat what was already covered.
 - Use the conversation's primary language; default to English if multilingual.
 - Response must be a JSON object with a "follow_ups" key containing an array of strings, no extra text or formatting.
 ### Output:
