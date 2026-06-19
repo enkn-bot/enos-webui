@@ -32,6 +32,7 @@
 	export let title = 'Chats';
 	export let emptyPlaceholder = '';
 	export let shareUrl = false;
+	export let shareReturnUrl = '';
 	export let showUserInfo = false;
 	export let showSearch = true;
 	export let readOnly = false;
@@ -63,6 +64,18 @@
 			orderBy = key;
 			direction = 'asc';
 		}
+	};
+
+	const getChatHref = (chatId) => {
+		if (!shareUrl) {
+			return `/c/${chatId}`;
+		}
+
+		if (shareReturnUrl) {
+			return `/s/${chatId}?returnTo=${encodeURIComponent(shareReturnUrl)}`;
+		}
+
+		return `/s/${chatId}`;
 	};
 
 	const deleteHandler = async (chatId) => {
@@ -270,7 +283,7 @@
 									{/if}
 									<a
 										class={showUserInfo ? 'flex-1' : 'basis-3/5'}
-										href={shareUrl ? `/s/${chat.id}` : `/c/${chat.id}`}
+										href={getChatHref(chat.id)}
 										on:click={() => (show = false)}
 									>
 										<div class="text-ellipsis line-clamp-1 w-full">

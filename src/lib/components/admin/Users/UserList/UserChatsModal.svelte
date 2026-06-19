@@ -114,6 +114,7 @@
 	})}
 	emptyPlaceholder={$i18n.t('No chats found for this user.')}
 	shareUrl={true}
+	shareReturnUrl="/admin/users/overview"
 	{chatList}
 	{allChatsLoaded}
 	{chatListLoading}

@@ -16,6 +16,7 @@
 	import { getModels } from '$lib/apis';
 	import { toast } from 'svelte-sonner';
 	import localizedFormat from 'dayjs/plugin/localizedFormat';
+	import ArrowLeft from '$lib/components/icons/ArrowLeft.svelte';
 
 	const i18n = getContext('i18n');
 	dayjs.extend(localizedFormat);
@@ -43,6 +44,14 @@
 	};
 
 	$: messages = createMessagesList(history, history.currentId);
+
+	const returnTo = $page.url.searchParams.get('returnTo') ?? '';
+
+	const returnToUsers = () => {
+		if (returnTo.startsWith('/admin/users')) {
+			goto(returnTo);
+		}
+	};
 
 	$: if ($page.params.id) {
 		(async () => {
@@ -201,12 +210,24 @@
 				class="absolute bottom-0 right-0 left-0 flex justify-center w-full bg-linear-to-b from-transparent to-white dark:to-gray-900"
 			>
 				<div class="pb-5">
-					<button
-						class="px-3.5 py-1.5 text-sm font-medium bg-black hover:bg-gray-900 text-white dark:bg-white dark:text-black dark:hover:bg-gray-100 transition rounded-full"
-						on:click={cloneSharedChat}
-					>
-						{$i18n.t('Clone Chat')}
-					</button>
+					<div class="flex items-center gap-2">
+						{#if returnTo.startsWith('/admin/users')}
+							<button
+								class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium bg-white/90 hover:bg-white text-gray-700 border border-gray-200 dark:bg-gray-900/90 dark:hover:bg-gray-900 dark:text-gray-100 dark:border-gray-800 transition rounded-full shadow-sm"
+								on:click={returnToUsers}
+							>
+								<ArrowLeft className="size-3.5" strokeWidth="2" />
+								<span>{$i18n.t('Back to Users')}</span>
+							</button>
+						{/if}
+
+						<button
+							class="px-3.5 py-1.5 text-sm font-medium bg-black hover:bg-gray-900 text-white dark:bg-white dark:text-black dark:hover:bg-gray-100 transition rounded-full"
+							on:click={cloneSharedChat}
+						>
+							{$i18n.t('Clone Chat')}
+						</button>
+					</div>
 				</div>
 			</div>
 		</div>
