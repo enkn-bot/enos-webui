@@ -66,7 +66,8 @@ describe('DESK_FILE_TOOLS contract', () => {
 				'read_file',
 				'rename_entry',
 				'reveal_entry',
-				'write_file'
+				'write_file',
+				'git_status'
 			].sort()
 		);
 	});
@@ -178,5 +179,39 @@ describe('executeDeskFileTool', () => {
 			args: {}
 		});
 		expect(res.status).toBe('error');
+	});
+
+	test('git_status reports branch and changed files for a repo', async () => {
+		const bridge = fakeBridge({
+			getProjectGitStatus: vi.fn(async () => ({
+				action: 'getProjectGitStatus',
+				isRepo: true,
+				branch: 'main',
+				statusLines: [' M src/app.ts', '?? notes.md']
+			}))
+		});
+		const res = await executeDeskFileTool({
+			bridge,
+			folderId: 'F',
+			name: 'git_status',
+			args: {}
+		});
+		expect(res.status).toBe('ok');
+		expect(res.status === 'ok' && res.summary).toContain('main');
+		expect(res.status === 'ok' && String(res.data)).toContain('src/app.ts');
+	});
+
+	test('git_status is read-only and never needs confirmation', async () => {
+		const bridge = fakeBridge({
+			getProjectGitStatus: vi.fn(async () => ({
+				action: 'getProjectGitStatus',
+				isRepo: false,
+				branch: null,
+				statusLines: []
+			}))
+		});
+		const res = await executeDeskFileTool({ bridge, folderId: 'F', name: 'git_status', args: {} });
+		expect(res.status).toBe('ok');
+		expect(res.status === 'ok' && res.summary.toLowerCase()).toContain('not a git');
 	});
 });

@@ -1985,7 +1985,8 @@
 						`access to the user's local project files through the provided tools.\n` +
 						`Active project folder: ${folderId}.\n\n` +
 						`You CAN and SHOULD use the tools to do real work: list_files, read_file, ` +
-						`write_file, edit_file, create_folder, rename_entry, delete_entry, reveal_entry. ` +
+						`write_file, edit_file, create_folder, rename_entry, delete_entry, reveal_entry, ` +
+						`git_status (read-only branch + changed files). ` +
 						`When the user asks you to create, write, edit, move, or delete files, DO IT by ` +
 						`calling the appropriate tool — never reply that you are unable to or that the ` +
 						`system does not permit it. Generate file contents yourself. The user is prompted ` +

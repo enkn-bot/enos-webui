@@ -25,7 +25,8 @@ export type DeskToolName =
 	| 'create_folder'
 	| 'rename_entry'
 	| 'delete_entry'
-	| 'reveal_entry';
+	| 'reveal_entry'
+	| 'git_status';
 
 export type DeskToolSpec = {
 	type: 'function';
@@ -151,6 +152,15 @@ export const DESK_FILE_TOOLS: DeskToolSpec[] = [
 				required: ['path']
 			}
 		}
+	},
+	{
+		type: 'function',
+		function: {
+			name: 'git_status',
+			description:
+				'Report the project\'s git state: current branch and changed/untracked files (read-only, no network). Use to orient before suggesting or making changes.',
+			parameters: { type: 'object', properties: {}, required: [] }
+		}
 	}
 ];
 
@@ -172,6 +182,7 @@ export const describeDeskTool = (
 		case 'rename_entry': return verb(`Renaming ${p} → ${to}`, `Renamed ${p} → ${to}`);
 		case 'delete_entry': return verb(`Deleting ${p}`, `Deleted ${p}`);
 		case 'reveal_entry': return verb(`Revealing ${p}`, `Revealed ${p}`);
+		case 'git_status': return verb('Checking git status', 'Checked git status');
 		default: return verb('Working', 'Done');
 	}
 };
@@ -286,6 +297,21 @@ export const executeDeskFileTool = async ({
 				const path = requireString(args, 'path');
 				const result = await bridge.revealProjectEntry(folderId, path);
 				return { status: 'ok', summary: `${result.status} ${result.path}` };
+			}
+			case 'git_status': {
+				if (!bridge.getProjectGitStatus) {
+					return { status: 'error', message: 'git status is unavailable in this ENOS Desk build.' };
+				}
+				const git = await bridge.getProjectGitStatus(folderId);
+				if (!git.isRepo) {
+					return { status: 'ok', summary: 'This project is not a git repository.', data: '' };
+				}
+				const changed = git.statusLines.length;
+				return {
+					status: 'ok',
+					summary: `On branch ${git.branch ?? 'unknown'}, ${changed} changed file${changed === 1 ? '' : 's'}.`,
+					data: git.statusLines.join('\n')
+				};
 			}
 			default:
 				return { status: 'error', message: `Unknown tool: ${name}` };
