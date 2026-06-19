@@ -130,6 +130,7 @@
 	} from '$lib/enos/projectChatActions';
 	import { runDeskAgentLoop } from '$lib/enos/deskAgentLoop';
 	import { DESK_FILE_TOOLS, describeDeskTool, executeDeskFileTool } from '$lib/enos/deskFileTools';
+	import { groundingLine } from '$lib/enos/grounding';
 
 	export let chatIdProp = '';
 
@@ -1979,6 +1980,7 @@
 				{
 					role: 'system' as const,
 					content:
+						`${groundingLine()}\n\n` +
 						`You are ENOS Desk, an autonomous file and coding agent with DIRECT read-write ` +
 						`access to the user's local project files through the provided tools.\n` +
 						`Active project folder: ${folderId}.\n\n` +
