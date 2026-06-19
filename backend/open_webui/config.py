@@ -3250,6 +3250,9 @@ Analyze the chat history to determine the necessity of generating search queries
 - Be concise and focused on composing high-quality search queries, avoiding unnecessary elaboration, commentary, or assumptions.
 - Today's date is: {{CURRENT_DATE}}.
 - Always prioritize providing actionable and broad queries that maximize informational coverage.
+- Resolve pronouns and deictic references from the chat history before searching. Do not search for bare references such as "this", "that", "these", "the role", "the company", "he", "she", or "they" when the recent context identifies the actual person, company, role, or document.
+- For people, quote exact person names in the query and include only one or two useful context terms if available. Example: if the user asks "Can you find this Ernest Nyarko online?", use a query like { "queries": ["\"Ernest Nyarko\" LinkedIn", "\"Ernest Nyarko\" professional profile"] }.
+- Prefer exact named entities over broad category searches. If a user asks about a specific person, role, company, file, or link, the generated query must include that exact name.
 
 ### Output:
 Strictly return in JSON format: 
