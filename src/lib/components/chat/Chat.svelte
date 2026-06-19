@@ -123,7 +123,11 @@
 		getEnosDesktopBridgeCapabilities
 	} from '$lib/enos/desktopBridge';
 	import { buildProjectActionContext } from '$lib/enos/projectActions';
-	import { detectProjectChatAction, formatProjectWriteFailure } from '$lib/enos/projectChatActions';
+	import {
+		detectProjectChatAction,
+		formatProjectWriteFailure,
+		isProjectFileFactsPrompt
+	} from '$lib/enos/projectChatActions';
 	import { runDeskAgentLoop } from '$lib/enos/deskAgentLoop';
 	import { DESK_FILE_TOOLS, describeDeskTool, executeDeskFileTool } from '$lib/enos/deskFileTools';
 
@@ -1983,7 +1987,12 @@
 						`When the user asks you to create, write, edit, move, or delete files, DO IT by ` +
 						`calling the appropriate tool — never reply that you are unable to or that the ` +
 						`system does not permit it. Generate file contents yourself. The user is prompted ` +
-						`to confirm before any change is applied to disk, so act decisively.`
+						`to confirm before any change is applied to disk, so act decisively.\n\n` +
+						`FILE FACTS ARE GROUND TRUTH: when you list, count, or describe files, account for ` +
+						`EVERY file — never merge, deduplicate, or omit any, even different formats of one ` +
+						`document (a .html, .pdf and .png are THREE separate files) or system files. If a ` +
+						`listing matters, call list_files for the authoritative set. The user may act on ` +
+						`this, so completeness is safety-critical.`
 				},
 				...priorMessages,
 				{ role: 'user' as const, content: userPrompt }
@@ -2759,6 +2768,8 @@
 			regenerationPrompt ?? userMessage?.merged?.content ?? userMessage?.content ?? ''
 		);
 		const activeProjectFilePath = activeProjectId ? activeProjectPathForFolder(activeProjectId) : '.';
+		const projectFileFactsRequested =
+			Boolean(activeProjectId) && isProjectFileFactsPrompt(projectActionPrompt);
 		const projectCapabilities = await getEnosDesktopBridgeCapabilities();
 		const projectActionContext = await buildProjectActionContext({
 			bridge: canUseEnosLocalProjectFiles(projectCapabilities) ? getEnosDesktopBridge() : null,
@@ -2767,12 +2778,21 @@
 			prompt: projectActionPrompt
 		});
 
-		if (projectContextDigest) {
+		if (projectContextDigest && !projectFileFactsRequested) {
 			messages = [
 				...messages,
 				{
 					role: 'system',
-					content: `Project context from the selected ENOS Desk project.\nUse this as read-only project context when the user asks about the project, files, implementation, or next work. If live local project context follows this message, that live context is newer and overrides this saved digest for folder listing questions. If the context seems stale or insufficient, say what needs to be re-analyzed or opened before making strong claims.\n\n${projectContextDigest}`
+					content: `Saved project summary (BACKGROUND ONLY — may be stale or INCOMPLETE; it can omit binary/large/hidden files). Use it for high-level orientation about what the project is.\nNEVER answer a question about which files exist, how many files there are, or a folder's contents from this saved summary. For any file listing, count, or contents question, use the "Live local project context" listing below (or call list_files) — that is the complete, authoritative, current file set. If neither is available, say so rather than guessing.\n\n${projectContextDigest}`
+				}
+			];
+		} else if (projectFileFactsRequested && !projectActionContext) {
+			messages = [
+				...messages,
+				{
+					role: 'system',
+					content:
+						'The user asked for current project file facts, but the live local project file listing is unavailable in this request. Do not answer from a saved project summary or earlier chat text. Say ENOS Desk needs the live project folder listing to answer safely, then ask the user to retry or reselect the project folder.'
 				}
 			];
 		} else if (activeProjectId && !projectActionContext) {

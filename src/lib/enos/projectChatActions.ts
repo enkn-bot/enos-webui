@@ -114,6 +114,20 @@ const isProjectFileCapabilityQuestion = (prompt: string) => {
 	);
 };
 
+export const isProjectFileFactsPrompt = (prompt = '') => {
+	const normalized = String(prompt || '').toLowerCase().replace(/\s+/g, ' ').trim();
+	if (!normalized) return false;
+
+	return (
+		/\b(how many|count|list|show|which|what|tell me|name)\b[\s\S]{0,100}\b(files?|folders?|entries|directory|directories|contents?)\b/.test(
+			normalized
+		) ||
+		/\b(files?|folders?|entries|contents?)\b[\s\S]{0,80}\b(this|current|selected|active|folder|directory|project)\b/.test(
+			normalized
+		)
+	);
+};
+
 export const detectProjectChatAction = ({
 	prompt = '',
 	activePath = '.',
@@ -202,10 +216,7 @@ export const detectProjectChatAction = ({
 		return { kind: 'list-directory', path: explicitPath };
 	}
 
-	if (
-		/\b(what|which|list|show)\b[\s\S]{0,60}\b(files?|folder|directory)\b/i.test(text) ||
-		/\b(files?|folders?)\b[\s\S]{0,40}\b(this|current|selected)\b/i.test(text)
-	) {
+	if (isProjectFileFactsPrompt(text)) {
 		return { kind: 'list-directory', path: normalizeProjectPath(activePath ?? '.') };
 	}
 

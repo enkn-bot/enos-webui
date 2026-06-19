@@ -120,6 +120,7 @@ export type EnosDesktopProjectGitStatus = {
 export type EnosDesktopBridge = {
 	version: string;
 	platform: EnosDesktopPlatform;
+	getTitleBarStyle?: () => Promise<'hiddenInset' | 'default'>;
 	getCapabilities: () => Promise<EnosDesktopCapabilities>;
 	chooseWorkspace: () => Promise<EnosDesktopWorkspace | null>;
 	chooseWorkspaceForFolder: (folderId: string) => Promise<EnosDesktopWorkspace | null>;
