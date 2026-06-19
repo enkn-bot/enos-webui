@@ -64,6 +64,12 @@
 
 	import { WEBUI_BASE_URL, WEBUI_API_BASE_URL, PASTED_TEXT_CHARACTER_LIMIT } from '$lib/constants';
 	import { getOAuthClientAuthorizationUrl } from '$lib/apis/configs';
+	import {
+		getPastedTextPreview,
+		getTextStats,
+		isPastedTextFile,
+		shouldCollapseUserText
+	} from '$lib/enos/pastedText';
 
 	import { createNoteHandler } from '../notes/utils';
 	import { getSuggestionRenderer } from '../common/RichTextInput/suggestions';
@@ -79,6 +85,7 @@
 	import FileItem from '../common/FileItem.svelte';
 	import Image from '../common/Image.svelte';
 	import Spinner from '../common/Spinner.svelte';
+	import PastedTextCard from './PastedTextCard.svelte';
 
 	import XMark from '../icons/XMark.svelte';
 	import GlobeAlt from '../icons/GlobeAlt.svelte';
@@ -174,6 +181,12 @@
 	export let chatTasks = [];
 
 	let inputContent = null;
+	let showFullComposerText = false;
+	let composerPromptCollapsed = false;
+	$: composerPromptCollapsed = shouldCollapseUserText(prompt) && !showFullComposerText;
+	$: if (!shouldCollapseUserText(prompt)) {
+		showFullComposerText = false;
+	}
 
 	let showInputVariablesModal = false;
 	let inputVariablesModalCallback = (variableValues) => {};
@@ -1447,6 +1460,17 @@
 													</button>
 												</div>
 											</div>
+										{:else if isPastedTextFile(file)}
+											<PastedTextCard
+												item={file}
+												size={file?.size}
+												dismissible={true}
+												compact={true}
+												on:dismiss={async () => {
+													files.splice(fileIdx, 1);
+													files = files;
+												}}
+											/>
 										{:else}
 											<FileItem
 												item={file}
@@ -1472,6 +1496,37 @@
 								</div>
 							{/if}
 
+							{#if composerPromptCollapsed}
+								<div class="mx-2 mt-2.5 pb-1.5 flex flex-col gap-2">
+									<PastedTextCard
+										content={prompt}
+										title="Pasted prompt"
+										dismissible={true}
+										on:dismiss={async () => {
+											prompt = '';
+											inputContent = null;
+											chatInputElement?.setContent('');
+											await tick();
+											chatInputElement?.focus();
+										}}
+									/>
+									<div class="px-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+										<button
+											type="button"
+											class="font-medium text-gray-700 hover:text-black dark:text-gray-300 dark:hover:text-white"
+											on:click={async () => {
+												showFullComposerText = true;
+												await tick();
+												chatInputElement?.focus();
+											}}
+										>
+											Edit text
+										</button>
+										<span>Full text is attached to this message.</span>
+									</div>
+								</div>
+							{/if}
+
 							<div class="px-2.5">
 								<div
 									class="scrollbar-hidden rtl:text-right ltr:text-left bg-transparent dark:text-gray-100 outline-hidden w-full pb-1 px-1 resize-none h-fit max-h-96 overflow-auto {files.length ===
@@ -1480,6 +1535,7 @@
 											? 'pt-1.5'
 											: 'pt-2.5'
 										: ''}"
+									class:hidden={composerPromptCollapsed}
 									id="chat-input-container"
 								>
 									{#if prompt.split('\n').length > 2}
@@ -1639,6 +1695,7 @@
 
 																		if (text.length > PASTED_TEXT_CHARACTER_LIMIT) {
 																			e.preventDefault();
+																			const pastedTextStats = getTextStats(text);
 																			const blob = new Blob([text], { type: 'text/plain' });
 																			const file = new File(
 																				[blob],
@@ -1648,7 +1705,13 @@
 																				}
 																			);
 
-																			await uploadFileHandler(file, true, { context: 'full' });
+																			await uploadFileHandler(file, true, {
+																				context: 'full',
+																				isPastedText: true,
+																				pastedTextContent: text,
+																				pastedTextPreview: getPastedTextPreview(text),
+																				pastedTextStats
+																			});
 																		}
 																	}
 																} else {
@@ -1735,17 +1798,14 @@
 									{#if isDeskSurface && bridge}
 										<Dropdown
 											bind:show={showProjectPermissionMenu}
-											side="top"
+											side="bottom"
 											align="start"
 											contentClass="w-80 rounded-2xl p-1 bg-white dark:bg-gray-850 dark:text-white shadow-lg border border-gray-100 dark:border-gray-800"
 										>
 											<button
 												type="button"
 												id="project-action-permissions-button"
-												class="bg-transparent hover:bg-gray-100 text-gray-700 dark:text-white dark:hover:bg-gray-800 rounded-full size-8 flex justify-center items-center outline-hidden focus:outline-hidden {projectPermissionProfile ===
-												'approve_safe_project_edits'
-													? 'text-sky-600 dark:text-sky-300'
-													: ''}"
+												class="bg-transparent hover:bg-gray-100 text-gray-700 dark:text-white dark:hover:bg-gray-800 rounded-full size-8 flex justify-center items-center outline-hidden focus:outline-hidden"
 												aria-label={$i18n.t('Project action permissions')}
 												title={$i18n.t('Project action permissions')}
 											>
@@ -1784,7 +1844,7 @@
 													on:click={() => setProjectPermissionProfile('approve_safe_project_edits')}
 												>
 													<CheckCircle
-														className="size-5 text-sky-600 dark:text-sky-300 shrink-0"
+														className="size-5 text-gray-500 dark:text-gray-400 shrink-0"
 														strokeWidth="1.75"
 													/>
 													<div class="min-w-0 flex-1">
