@@ -597,11 +597,11 @@
 			>
 				<div class="text-gray-500 dark:text-gray-500 flex items-center justify-center p-1">
 					{#if folders[folderId]?.meta?.icon}
-						<Emoji className="size-3.5" shortCode={folders[folderId].meta.icon} />
+						<Emoji className="size-4" shortCode={folders[folderId].meta.icon} />
 					{:else if open}
-						<FolderOpen className="size-3.5" strokeWidth="2" />
+						<FolderOpen className="size-4" strokeWidth="2" />
 					{:else}
-						<Folder className="size-3.5" strokeWidth="2" />
+						<Folder className="size-4" strokeWidth="2" />
 					{/if}
 				</div>
 
@@ -638,7 +638,7 @@
 				</div>
 
 				<button
-					class="text-gray-500 dark:text-gray-500 transition-all p-1 hover:bg-gray-200 dark:hover:bg-gray-850 rounded-lg"
+					class="text-gray-500 dark:text-gray-500 transition-all p-1 hover:bg-gray-200 dark:hover:bg-gray-850 rounded-lg invisible group-hover:visible"
 					on:click={(e) => {
 						e.stopPropagation();
 						e.stopImmediatePropagation();
