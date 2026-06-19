@@ -142,8 +142,8 @@ test('Desk local file mode is gated by desktop bridge capabilities', () => {
 	);
 	assert.match(
 		chat,
-		/getEnosDesktopBridgeCapabilities/,
-		'Chat action routing should verify the bridge before local file operations'
+		/hasProjectListBridge/,
+		'Chat action routing should verify the actual project-list bridge before local file operations'
 	);
 	// The Desk agent gets the FULL toolset and the confirmation dialog is the
 	// safety gate — deliberately NOT a mutation capability flag, which desynced
@@ -261,19 +261,19 @@ test('Desk chat reload restores a project anchor before showing no-project guida
 	const handler = chat.slice(handlerStart, handlerEnd);
 	const detectIndex = handler.indexOf('const action = detectProjectChatAction');
 	const noActionIndex = handler.indexOf('if (!action) return false');
-	const capabilitiesIndex = handler.indexOf('const capabilities = await getEnosDesktopBridgeCapabilities');
+	const noBridgeIndex = handler.indexOf('if (!hasDesktopBridge)');
 	const restoreIndex = handler.indexOf('await restoreLastDeskProjectFolder()');
 	const noFolderIndex = handler.indexOf('if (!folderId)');
 	assert.ok(handlerStart > -1, 'Chat should have a project action handler');
 	assert.ok(detectIndex > -1, 'Chat should classify project action language');
 	assert.ok(noActionIndex > detectIndex, 'Non-project prompts should fall through to normal chat');
 	assert.ok(
-		detectIndex < capabilitiesIndex,
-		'Prompt classification should happen before capability checks so normal questions are not hijacked'
+		noActionIndex < noBridgeIndex,
+		'Non-project prompts should fall through before bridge checks so normal questions are not hijacked'
 	);
 	assert.ok(
-		restoreIndex > detectIndex && restoreIndex < noFolderIndex,
-		'Desk should try to restore a project anchor before showing no-project guidance'
+		restoreIndex > -1 && restoreIndex < detectIndex && restoreIndex < noFolderIndex,
+		'Desk should restore a project anchor before classifying folder-relative prompts or showing no-project guidance'
 	);
 });
 
@@ -709,12 +709,12 @@ test('Desk project chats attach live local file action context before model call
 	);
 	assert.match(
 		chat,
-		/projectContextDigest && !projectFileFactsRequested/,
+		/shouldInjectSavedProjectDigest/,
 		'Saved project summaries should not be injected for file-list/count prompts'
 	);
 	assert.match(
 		chat,
-		/projectFileFactsRequested && !projectActionContext/,
+		/shouldEmitProjectFileFactsUnavailableGuard/,
 		'File-list/count prompts without live context should get the safe fallback path'
 	);
 	assert.match(
@@ -942,11 +942,11 @@ test('Desk chat project actions route all base file operations before model call
 	const handlerEnd = chat.indexOf('const submitHandler', handlerStart);
 	const handler = chat.slice(handlerStart, handlerEnd);
 	const detectIndex = handler.indexOf('const action = detectProjectChatAction');
-	const noBridgeIndex = handler.indexOf('if (!bridge)');
+	const noBridgeIndex = handler.indexOf('if (!hasDesktopBridge)');
 	const noFolderIndex = handler.indexOf('if (!folderId)');
 	assert.ok(handlerStart > -1, 'Chat should have a project action handler');
 	assert.ok(detectIndex > -1, 'Chat should classify project action language');
-	assert.ok(noBridgeIndex > -1, 'Chat should handle missing desktop bridge locally');
+	assert.ok(noBridgeIndex > -1, 'Chat should fall through when the desktop bridge is missing');
 	assert.ok(noFolderIndex > -1, 'Chat should handle missing project selection locally');
 	assert.ok(
 		detectIndex < noBridgeIndex && detectIndex < noFolderIndex,

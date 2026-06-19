@@ -118,15 +118,16 @@
 	import Image from '../common/Image.svelte';
 	import { getBanners } from '$lib/apis/configs';
 	import {
-		canUseEnosLocalProjectFiles,
-		getEnosDesktopBridge,
-		getEnosDesktopBridgeCapabilities
+		getEnosDesktopBridge
 	} from '$lib/enos/desktopBridge';
 	import { buildProjectActionContext } from '$lib/enos/projectActions';
 	import {
 		detectProjectChatAction,
 		formatProjectWriteFailure,
-		isProjectFileFactsPrompt
+		isProjectFileFactsPrompt,
+		shouldEmitProjectFileFactsUnavailableGuard,
+		shouldInjectSavedProjectDigest,
+		shouldRouteProjectFileFactsToDeskAgent
 	} from '$lib/enos/projectChatActions';
 	import { runDeskAgentLoop } from '$lib/enos/deskAgentLoop';
 	import { DESK_FILE_TOOLS, describeDeskTool, executeDeskFileTool } from '$lib/enos/deskFileTools';
@@ -1901,6 +1902,9 @@
 	const activeProjectPathForFolder = (folderId) =>
 		folderId && folderId === $showLocalFileFolderId ? $showLocalFilePath : '.';
 
+	const hasProjectListBridge = (bridge) =>
+		Boolean(bridge && typeof bridge.listProjectFiles === 'function');
+
 	const projectActionLabel = (action) => {
 		if (action === 'deleteProjectEntry') return $i18n.t('Delete');
 		if (action === 'renameProjectEntry') return $i18n.t('Rename');
@@ -1930,32 +1934,21 @@
 
 	const handleProjectChatAction = async (userPrompt) => {
 		try {
-			const activeProjectIdBeforeRestore = activeProjectFolderId();
-			const action = detectProjectChatAction({
-				prompt: userPrompt,
-				activePath: activeProjectPathForFolder(activeProjectIdBeforeRestore)
-			});
-			if (!action) return false;
-
-			const capabilities = await getEnosDesktopBridgeCapabilities();
-			const hasLocalProjectFiles = canUseEnosLocalProjectFiles(capabilities);
-
-			if (!hasLocalProjectFiles) {
-				// Not in Electron — fall through to the normal chat pipeline.
-				return false;
-			}
-
 			await hydrateProjectFolderFromChat(chat);
 			await restoreLastDeskProjectFolder();
 			const bridge = getEnosDesktopBridge();
 			const folderId = activeProjectFolderId();
+			const hasDesktopBridge = hasProjectListBridge(bridge);
+			const projectFileFactsRequested = Boolean(folderId) && isProjectFileFactsPrompt(userPrompt);
+			const action = detectProjectChatAction({
+				prompt: userPrompt,
+				activePath: activeProjectPathForFolder(folderId)
+			});
+			if (!action) return false;
 
-			if (!bridge) {
-				await createLocalProjectActionMessage(
-					userPrompt,
-					'Restart ENOS Desk to enable local project actions.'
-				);
-				return true;
+			if (!hasDesktopBridge) {
+				// Not in Electron — fall through to the normal chat pipeline.
+				return false;
 			}
 
 			if (!folderId) {
@@ -1965,6 +1958,12 @@
 				);
 				return true;
 			}
+
+			const routeFileFactsToAgent = shouldRouteProjectFileFactsToDeskAgent({
+				projectFileFactsRequested,
+				hasDesktopBridge,
+				hasActiveProjectFolder: Boolean(folderId)
+			});
 
 			if (action.kind === 'capability' || action.kind === 'clarify') {
 				await createLocalProjectActionMessage(userPrompt, action.message);
@@ -2006,6 +2005,7 @@
 						`FILE FACTS ARE GROUND TRUTH: when you list, count, or describe files, account for ` +
 						`EVERY file — never merge, deduplicate, or omit any, even different formats of one ` +
 						`document (a .html, .pdf and .png are THREE separate files) or system files. If a ` +
+						`${routeFileFactsToAgent ? `The current user request is a file-listing/count question; call list_files before answering. ` : ''}` +
 						`listing matters, call list_files for the authoritative set. The user may act on ` +
 						`this, so completeness is safety-critical.`
 				},
@@ -2804,15 +2804,16 @@
 		const activeProjectFilePath = activeProjectId ? activeProjectPathForFolder(activeProjectId) : '.';
 		const projectFileFactsRequested =
 			Boolean(activeProjectId) && isProjectFileFactsPrompt(projectActionPrompt);
-		const projectCapabilities = await getEnosDesktopBridgeCapabilities();
+		const projectBridge = getEnosDesktopBridge();
+		const hasDesktopBridge = hasProjectListBridge(projectBridge);
 		const projectActionContext = await buildProjectActionContext({
-			bridge: canUseEnosLocalProjectFiles(projectCapabilities) ? getEnosDesktopBridge() : null,
+			bridge: hasDesktopBridge ? projectBridge : null,
 			folderId: activeProjectId,
 			activePath: activeProjectFilePath,
 			prompt: projectActionPrompt
 		});
 
-		if (projectContextDigest && !projectFileFactsRequested) {
+		if (shouldInjectSavedProjectDigest({ projectContextDigest, projectFileFactsRequested })) {
 			messages = [
 				...messages,
 				{
@@ -2820,7 +2821,13 @@
 					content: `Saved project summary (BACKGROUND ONLY — may be stale or INCOMPLETE; it can omit binary/large/hidden files). Use it for high-level orientation about what the project is.\nNEVER answer a question about which files exist, how many files there are, or a folder's contents from this saved summary. For any file listing, count, or contents question, use the "Live local project context" listing below (or call list_files) — that is the complete, authoritative, current file set. If neither is available, say so rather than guessing.\n\n${projectContextDigest}`
 				}
 			];
-		} else if (projectFileFactsRequested && !projectActionContext) {
+		} else if (
+			shouldEmitProjectFileFactsUnavailableGuard({
+				projectFileFactsRequested,
+				hasDesktopBridge,
+				projectActionContext
+			})
+		) {
 			messages = [
 				...messages,
 				{

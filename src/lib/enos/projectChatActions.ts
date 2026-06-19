@@ -128,6 +128,34 @@ export const isProjectFileFactsPrompt = (prompt = '') => {
 	);
 };
 
+export const shouldRouteProjectFileFactsToDeskAgent = ({
+	projectFileFactsRequested,
+	hasDesktopBridge,
+	hasActiveProjectFolder
+}: {
+	projectFileFactsRequested: boolean;
+	hasDesktopBridge: boolean;
+	hasActiveProjectFolder: boolean;
+}) => Boolean(projectFileFactsRequested && hasDesktopBridge && hasActiveProjectFolder);
+
+export const shouldEmitProjectFileFactsUnavailableGuard = ({
+	projectFileFactsRequested,
+	hasDesktopBridge,
+	projectActionContext
+}: {
+	projectFileFactsRequested: boolean;
+	hasDesktopBridge: boolean;
+	projectActionContext?: string | null;
+}) => Boolean(projectFileFactsRequested && !hasDesktopBridge && !String(projectActionContext || '').trim());
+
+export const shouldInjectSavedProjectDigest = ({
+	projectContextDigest,
+	projectFileFactsRequested
+}: {
+	projectContextDigest?: string | null;
+	projectFileFactsRequested: boolean;
+}) => Boolean(String(projectContextDigest || '').trim() && !projectFileFactsRequested);
+
 export const detectProjectChatAction = ({
 	prompt = '',
 	activePath = '.',

@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'vitest';
 
-import { detectProjectChatAction } from './projectChatActions';
+import {
+	detectProjectChatAction,
+	shouldEmitProjectFileFactsUnavailableGuard,
+	shouldInjectSavedProjectDigest,
+	shouldRouteProjectFileFactsToDeskAgent
+} from './projectChatActions';
 
 const now = new Date('2026-06-18T12:00:00.000Z');
 
@@ -186,5 +191,59 @@ describe('detectProjectChatAction', () => {
 				now
 			})?.kind
 		).toBe('capability');
+	});
+});
+
+describe('project file facts routing', () => {
+	test('routes file facts to the Desk agent when bridge and folder are present', () => {
+		expect(
+			shouldRouteProjectFileFactsToDeskAgent({
+				projectFileFactsRequested: true,
+				hasDesktopBridge: true,
+				hasActiveProjectFolder: true
+			})
+		).toBe(true);
+
+		expect(
+			shouldEmitProjectFileFactsUnavailableGuard({
+				projectFileFactsRequested: true,
+				hasDesktopBridge: true,
+				projectActionContext: ''
+			})
+		).toBe(false);
+	});
+
+	test('emits the unavailable guard only when there is no bridge and no live context', () => {
+		expect(
+			shouldEmitProjectFileFactsUnavailableGuard({
+				projectFileFactsRequested: true,
+				hasDesktopBridge: false,
+				projectActionContext: ''
+			})
+		).toBe(true);
+
+		expect(
+			shouldEmitProjectFileFactsUnavailableGuard({
+				projectFileFactsRequested: true,
+				hasDesktopBridge: false,
+				projectActionContext: 'Live local project context'
+			})
+		).toBe(false);
+	});
+
+	test('does not inject stale saved digests for file facts', () => {
+		expect(
+			shouldInjectSavedProjectDigest({
+				projectContextDigest: 'Saved summary says there are two files.',
+				projectFileFactsRequested: true
+			})
+		).toBe(false);
+
+		expect(
+			shouldInjectSavedProjectDigest({
+				projectContextDigest: 'Saved summary for orientation.',
+				projectFileFactsRequested: false
+			})
+		).toBe(true);
 	});
 });
