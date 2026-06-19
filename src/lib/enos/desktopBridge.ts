@@ -178,6 +178,17 @@ export type EnosDesktopBridge = {
 		messages: DeskChatMessage[],
 		tools: DeskToolSpec[]
 	) => Promise<DeskCompletion>;
+	/**
+	 * Streaming Desk-local model call. Emits content deltas to `onChunk` for live
+	 * prose animation and resolves with the same shape as agentComplete. Present
+	 * only in newer Electron builds; callers must feature-detect.
+	 */
+	agentCompleteStream?: (
+		messages: DeskChatMessage[],
+		tools: DeskToolSpec[],
+		streamId: string,
+		onChunk: (delta: string) => void
+	) => Promise<DeskCompletion>;
 };
 
 declare global {

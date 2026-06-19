@@ -2002,6 +2002,14 @@
 			];
 
 			const complete = async (msgs, tools) => {
+					if (bridge.agentCompleteStream) {
+						liveContent = '';
+						return bridge.agentCompleteStream(msgs, tools, uuidv4(), (delta) => {
+							if (!delta) return;
+							liveContent += delta;
+							setLiveContent(liveContent);
+						});
+					}
 				if (!bridge.agentComplete) throw new Error('Desk agent endpoint not available — update ENOS Desk.');
 				return bridge.agentComplete(msgs, tools);
 			};
@@ -2030,7 +2038,18 @@
 				history = history;
 			};
 
-			const onEvent = (ev) => {
+			// Live prose streaming: completion tokens are appended to the in-progress
+				// message as they arrive (reset per round; outcome.content stays final).
+				let liveContent = '';
+				const setLiveContent = (text) => {
+					const m = history.messages[responseMessageId];
+					if (!m) return;
+					m.content = text;
+					history.messages[responseMessageId] = m;
+					history = history;
+				};
+
+				const onEvent = (ev) => {
 				if (ev.type === 'tool_start') {
 					statusHistory.push({
 						action: 'enos_desk',
