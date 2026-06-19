@@ -33,6 +33,11 @@ export type DeskCompletion = {
 	tool_calls?: DeskToolCall[];
 };
 
+/** Progress events so the UI can show live tool steps (reused by OWUI statusHistory). */
+export type DeskLoopEvent =
+	| { type: 'tool_start'; name: string; args: Record<string, unknown> }
+	| { type: 'tool_end'; name: string; args: Record<string, unknown>; result: DeskToolResult };
+
 export type DeskAgentLoopArgs = {
 	messages: DeskChatMessage[];
 	tools: DeskToolSpec[];
@@ -48,6 +53,8 @@ export type DeskAgentLoopArgs = {
 		args: Record<string, unknown>;
 		result: Extract<DeskToolResult, { status: 'requires_confirmation' }>;
 	}) => Promise<boolean>;
+	/** Fired as each tool starts/finishes, so the UI can show live progress. */
+	onEvent?: (event: DeskLoopEvent) => void;
 	maxSteps?: number;
 };
 
@@ -77,6 +84,7 @@ export const runDeskAgentLoop = async ({
 	complete,
 	executeTool,
 	confirm,
+	onEvent,
 	maxSteps = DEFAULT_MAX_STEPS
 }: DeskAgentLoopArgs): Promise<DeskAgentLoopOutcome> => {
 	const working: DeskChatMessage[] = [...messages];
@@ -113,6 +121,7 @@ export const runDeskAgentLoop = async ({
 				continue;
 			}
 
+			onEvent?.({ type: 'tool_start', name, args });
 			result = await executeTool(name, args, false);
 
 			if (result.status === 'requires_confirmation') {
@@ -122,6 +131,7 @@ export const runDeskAgentLoop = async ({
 					: { status: 'error', message: 'User declined this action.' };
 			}
 
+			onEvent?.({ type: 'tool_end', name, args, result });
 			working.push({
 				role: 'tool',
 				tool_call_id: toolCall.id,

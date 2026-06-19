@@ -123,11 +123,13 @@
 		getEnosDesktopBridgeCapabilities
 	} from '$lib/enos/desktopBridge';
 	import { buildProjectActionContext } from '$lib/enos/projectActions';
-	import { formatProjectWriteFailure } from '$lib/enos/projectChatActions';
+	import { detectProjectChatAction, formatProjectWriteFailure } from '$lib/enos/projectChatActions';
 	import { runDeskAgentLoop } from '$lib/enos/deskAgentLoop';
-	import { DESK_FILE_TOOLS, executeDeskFileTool } from '$lib/enos/deskFileTools';
+	import { DESK_FILE_TOOLS, describeDeskTool, executeDeskFileTool } from '$lib/enos/deskFileTools';
 
 	export let chatIdProp = '';
+
+	const ENOS_DESK_LAST_PROJECT_FOLDER_ID = 'enosDesk:lastProjectFolderId';
 
 	let loading = true;
 
@@ -841,10 +843,21 @@
 
 		const selectedFolderSubscribe = selectedFolder.subscribe(async (folder) => {
 			await tick();
+			if (folder?.id) {
+				rememberDeskProjectFolder(folder);
+			}
+
 			if (folder?.data?.model_ids && !equal(selectedModels, folder.data.model_ids)) {
 				selectedModels = folder.data.model_ids;
 
 				console.log('Set selectedModels from folder data:', selectedModels);
+			}
+		});
+
+		const foldersSubscribe = folders.subscribe(async () => {
+			await tick();
+			if (!chatIdProp && !$selectedFolder?.id && isDeskSurface()) {
+				await restoreLastDeskProjectFolder();
 			}
 		});
 
@@ -854,6 +867,7 @@
 
 		const init = async () => {
 			if (!chatIdProp) {
+				await restoreLastDeskProjectFolder();
 				loading = false;
 				await tick();
 			}
@@ -901,6 +915,7 @@
 				pageSubscribe();
 				showControlsSubscribe();
 				selectedFolderSubscribe();
+				foldersSubscribe();
 				window.removeEventListener('message', onMessageHandler);
 				$socket?.off('events', chatEventHandler);
 				audioQueueInstance?.destroy();
@@ -1708,7 +1723,7 @@
 		}
 	};
 
-	const createLocalProjectActionMessage = async (userPrompt, assistantContent) => {
+	const createLocalProjectActionMessage = async (userPrompt, assistantContent, { done = true } = {}) => {
 		messageInput?.setText('');
 		const modelId = selectedModels.find((id) => id) ?? 'enos.mind';
 		const model = $models.filter((m) => m.id === modelId).at(0);
@@ -1734,7 +1749,8 @@
 			childrenIds: [],
 			role: 'assistant',
 			content: assistantContent,
-			done: true,
+			done,
+			statusHistory: [],
 			model: modelId,
 			modelName: model?.name ?? modelId,
 			modelIdx: 0,
@@ -1760,6 +1776,8 @@
 		} else {
 			await saveChatHandler($chatId, history);
 		}
+
+		return responseMessageId;
 	};
 
 	const projectFolderIdFromChat = (source = chat) =>
@@ -1774,6 +1792,63 @@
 		if (collection && typeof collection === 'object') {
 			return collection[folderId] ?? null;
 		}
+		return null;
+	};
+
+	const isDeskSurface = () =>
+		typeof window !== 'undefined' && window.location.hostname === 'enosdesk.duckdns.org';
+
+	const rememberDeskProjectFolder = (folder) => {
+		if (isDeskSurface() && folder?.id) {
+			localStorage.setItem(ENOS_DESK_LAST_PROJECT_FOLDER_ID, folder.id);
+		}
+	};
+
+	const firstKnownProjectFolder = () => {
+		const collection = $folders;
+		const list = Array.isArray(collection)
+			? collection
+			: collection && typeof collection === 'object'
+				? Object.values(collection)
+				: [];
+
+		return list
+			.filter((folder) => folder?.id)
+			.sort((a, b) => (b?.updated_at ?? 0) - (a?.updated_at ?? 0))
+			.at(0);
+	};
+
+	const restoreLastDeskProjectFolder = async () => {
+		if (!isDeskSurface()) return null;
+
+		if ($selectedFolder?.id) {
+			rememberDeskProjectFolder($selectedFolder);
+			if ($showLocalFileFolderId !== $selectedFolder.id) {
+				showLocalFileFolderId.set($selectedFolder.id);
+			}
+			return $selectedFolder;
+		}
+
+		const lastProjectFolderId = localStorage.getItem(ENOS_DESK_LAST_PROJECT_FOLDER_ID);
+		let folder = knownProjectFolderById(lastProjectFolderId);
+
+		if (!folder?.id && lastProjectFolderId) {
+			folder = await getFolderById(localStorage.token, lastProjectFolderId).catch((error) => {
+				console.error('[project folder restore]', error);
+				localStorage.removeItem(ENOS_DESK_LAST_PROJECT_FOLDER_ID);
+				return null;
+			});
+		}
+
+		folder = folder?.id ? folder : firstKnownProjectFolder();
+
+		if (folder?.id) {
+			await selectedFolder.set(folder);
+			showLocalFileFolderId.set(folder.id);
+			rememberDeskProjectFolder(folder);
+			return folder;
+		}
+
 		return null;
 	};
 
@@ -1799,6 +1874,7 @@
 		if (folder?.id) {
 			await selectedFolder.set(folder);
 			showLocalFileFolderId.set(folder.id);
+			rememberDeskProjectFolder(folder);
 			return folder;
 		}
 
@@ -1843,6 +1919,13 @@
 
 	const handleProjectChatAction = async (userPrompt) => {
 		try {
+			const activeProjectIdBeforeRestore = activeProjectFolderId();
+			const action = detectProjectChatAction({
+				prompt: userPrompt,
+				activePath: activeProjectPathForFolder(activeProjectIdBeforeRestore)
+			});
+			if (!action) return false;
+
 			const capabilities = await getEnosDesktopBridgeCapabilities();
 			const hasLocalProjectFiles = canUseEnosLocalProjectFiles(capabilities);
 
@@ -1852,6 +1935,7 @@
 			}
 
 			await hydrateProjectFolderFromChat(chat);
+			await restoreLastDeskProjectFolder();
 			const bridge = getEnosDesktopBridge();
 			const folderId = activeProjectFolderId();
 
@@ -1866,8 +1950,13 @@
 			if (!folderId) {
 				await createLocalProjectActionMessage(
 					userPrompt,
-					'Select a project first. Local file actions are scoped to the active ENOS Desk project folder.'
+					'Start a new project first. Local file actions need an active ENOS Desk project folder. Choose an existing project in the sidebar, or create a new project from a local folder.'
 				);
+				return true;
+			}
+
+			if (action.kind === 'capability' || action.kind === 'clarify') {
+				await createLocalProjectActionMessage(userPrompt, action.message);
 				return true;
 			}
 
@@ -1913,24 +2002,60 @@
 				return window.confirm(msg);
 			};
 
-			console.debug('[enos desk agent] starting loop', {
-				folderId,
-				toolCount: DESK_FILE_TOOLS.length,
-				capabilities
+			// Create the assistant message up front (in-progress) so the user sees
+			// live tool steps stream in — reusing OWUI's statusHistory rendering —
+			// instead of a frozen pause while the buffered agent loop runs.
+			const responseMessageId = await createLocalProjectActionMessage(userPrompt, '', {
+				done: false
 			});
+
+			const statusHistory: any[] = [];
+			const flushStatus = () => {
+				const m = history.messages[responseMessageId];
+				if (!m) return;
+				m.statusHistory = statusHistory.map((s) => ({ ...s }));
+				history.messages[responseMessageId] = m;
+				history = history;
+			};
+
+			const onEvent = (ev) => {
+				if (ev.type === 'tool_start') {
+					statusHistory.push({
+						action: 'enos_desk',
+						description: describeDeskTool(ev.name, ev.args, 'start'),
+						done: false
+					});
+				} else if (ev.type === 'tool_end') {
+					const last = statusHistory[statusHistory.length - 1];
+					if (last) {
+						last.done = true;
+						last.description = describeDeskTool(ev.name, ev.args, 'end');
+					}
+				}
+				flushStatus();
+			};
 
 			const outcome = await runDeskAgentLoop({
 				messages: loopMessages,
 				tools: DESK_FILE_TOOLS,
 				complete,
 				executeTool,
-				confirm
+				confirm,
+				onEvent
 			});
 
 			// A tool may have mutated the FS; refresh the file tree.
 			dispatchProjectFilesChanged(folderId, null);
 
-			await createLocalProjectActionMessage(userPrompt, outcome.content || '(No response from agent.)');
+			const done = history.messages[responseMessageId];
+			if (done) {
+				done.content = outcome.content || '(No response from agent.)';
+				done.statusHistory = statusHistory.map((s) => ({ ...s, done: true }));
+				done.done = true;
+				history.messages[responseMessageId] = done;
+				history = history;
+				await saveChatHandler($chatId, history);
+			}
 			return true;
 		} catch (error) {
 			console.error('[enos desk agent]', error);

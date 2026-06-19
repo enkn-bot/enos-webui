@@ -154,6 +154,28 @@ export const DESK_FILE_TOOLS: DeskToolSpec[] = [
 	}
 ];
 
+/** Short human label for a tool step, shown live in the chat status line. */
+export const describeDeskTool = (
+	name: string,
+	args: Record<string, unknown>,
+	phase: 'start' | 'end'
+): string => {
+	const p = typeof args.path === 'string' ? args.path : '';
+	const to = typeof args.to_path === 'string' ? args.to_path : '';
+	const verb = (running: string, done: string) => (phase === 'start' ? running : done);
+	switch (name) {
+		case 'list_files': return verb(`Listing ${p || 'files'}`, `Listed ${p || 'files'}`);
+		case 'read_file': return verb(`Reading ${p}`, `Read ${p}`);
+		case 'write_file': return verb(`Writing ${p}`, `Wrote ${p}`);
+		case 'edit_file': return verb(`Editing ${p}`, `Edited ${p}`);
+		case 'create_folder': return verb(`Creating folder ${p}`, `Created folder ${p}`);
+		case 'rename_entry': return verb(`Renaming ${p} → ${to}`, `Renamed ${p} → ${to}`);
+		case 'delete_entry': return verb(`Deleting ${p}`, `Deleted ${p}`);
+		case 'reveal_entry': return verb(`Revealing ${p}`, `Revealed ${p}`);
+		default: return verb('Working', 'Done');
+	}
+};
+
 export type DeskToolResult =
 	| { status: 'ok'; summary: string; data?: unknown }
 	| {

@@ -115,6 +115,19 @@ describe('runDeskAgentLoop', () => {
 		expect(complete).toHaveBeenCalledTimes(3);
 	});
 
+	test('emits tool_start and tool_end events for live progress UI', async () => {
+		const complete = vi
+			.fn()
+			.mockResolvedValueOnce({ content: '', tool_calls: [call('c1', 'write_file', { path: 'x.md', content: 'hi' })] })
+			.mockResolvedValueOnce({ content: 'done' });
+		const executeTool = vi.fn(async () => ({ status: 'ok' as const, summary: 'wrote x.md' }));
+		const events: any[] = [];
+		await runDeskAgentLoop(baseArgs({ complete, executeTool, onEvent: (e: any) => events.push(e) }));
+		expect(events.map((e) => e.type)).toEqual(['tool_start', 'tool_end']);
+		expect(events[0].name).toBe('write_file');
+		expect(events[1].result.status).toBe('ok');
+	});
+
 	test('a malformed tool-call arguments string is reported back, not thrown', async () => {
 		const complete = vi
 			.fn()
