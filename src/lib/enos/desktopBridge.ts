@@ -12,6 +12,7 @@ export type EnosDesktopCapabilities = {
 	localProjectMutations: boolean;
 	localProjectReveal: boolean;
 	localProjectGitStatus: boolean;
+	localProjectGitRead?: boolean;
 	localProjectGitWrite: boolean;
 	localProjectGitClone: boolean;
 };
@@ -143,6 +144,21 @@ export type EnosDesktopProjectGitStatus = {
 	statusLines: string[];
 };
 
+export type EnosDesktopProjectGitLog = {
+	action: 'getProjectGitLog';
+	isRepo: boolean;
+	logLines: string[];
+	truncated?: boolean;
+};
+
+export type EnosDesktopProjectGitDiff = {
+	action: 'getProjectGitDiff';
+	isRepo: boolean;
+	path: string;
+	diff: string;
+	truncated?: boolean;
+};
+
 export type EnosDesktopBridge = {
 	version: string;
 	platform: EnosDesktopPlatform;
@@ -199,6 +215,11 @@ export type EnosDesktopBridge = {
 		path: string
 	) => Promise<EnosDesktopProjectActionResult>;
 	getProjectGitStatus: (folderId: string) => Promise<EnosDesktopProjectGitStatus>;
+	getProjectGitLog?: (folderId: string) => Promise<EnosDesktopProjectGitLog>;
+	getProjectGitDiff?: (
+		folderId: string,
+		path?: string
+	) => Promise<EnosDesktopProjectGitDiff>;
 	gitStage: (
 		folderId: string,
 		paths: string[],
@@ -272,6 +293,14 @@ export const canUseEnosLocalProjectMutations = (
 export const canUseEnosLocalProjectGitWrite = (
 	capabilities?: EnosDesktopCapabilities | null
 ) => Boolean(canUseEnosLocalProjectFiles(capabilities) && capabilities?.localProjectGitWrite);
+
+export const canUseEnosLocalProjectGitRead = (
+	capabilities?: EnosDesktopCapabilities | null
+) =>
+	Boolean(
+		canUseEnosLocalProjectFiles(capabilities) &&
+			(capabilities?.localProjectGitRead ?? capabilities?.localProjectGitStatus)
+	);
 
 export const canUseEnosLocalProjectGitClone = (
 	capabilities?: EnosDesktopCapabilities | null

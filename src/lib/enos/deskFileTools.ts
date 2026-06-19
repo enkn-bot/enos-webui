@@ -27,6 +27,8 @@ export type DeskToolName =
 	| 'delete_entry'
 	| 'reveal_entry'
 	| 'git_status'
+	| 'git_log'
+	| 'git_diff'
 	| 'git_stage'
 	| 'git_commit'
 	| 'git_create_branch'
@@ -178,6 +180,30 @@ export const DESK_FILE_TOOLS: DeskToolSpec[] = [
 	{
 		type: 'function',
 		function: {
+			name: 'git_log',
+			description:
+				'Show recent commits on the current branch: short hash, author date, and subject. Read-only, capped, no network.',
+			parameters: { type: 'object', properties: {}, required: [] }
+		}
+	},
+	{
+		type: 'function',
+		function: {
+			name: 'git_diff',
+			description:
+				'Show the current working-tree diff, optionally scoped to a project-relative path. Read-only, capped, no network, and sensitive paths are redacted by the bridge.',
+			parameters: {
+				type: 'object',
+				properties: {
+					path: str('Optional project-relative file or folder path to scope the diff.')
+				},
+				required: []
+			}
+		}
+	},
+	{
+		type: 'function',
+		function: {
 			name: 'git_stage',
 			description:
 				'Stage one or more project-relative paths with git add. This is local-only and always requires user confirmation before it mutates the repository.',
@@ -261,6 +287,8 @@ export const describeDeskTool = (
 		case 'delete_entry': return verb(`Deleting ${p}`, `Deleted ${p}`);
 		case 'reveal_entry': return verb(`Revealing ${p}`, `Revealed ${p}`);
 		case 'git_status': return verb('Checking git status', 'Checked git status');
+		case 'git_log': return verb('Reading git log', 'Read git log');
+		case 'git_diff': return verb(`Reading git diff${p ? ` for ${p}` : ''}`, `Read git diff${p ? ` for ${p}` : ''}`);
 		case 'git_stage': return verb(`Staging ${gitPaths}`, `Staged ${gitPaths}`);
 		case 'git_commit': return verb('Committing staged changes', 'Committed staged changes');
 		case 'git_create_branch': return verb(`Creating branch ${branch}`, `Created branch ${branch}`);
@@ -407,6 +435,36 @@ export const executeDeskFileTool = async ({
 					data: git.statusLines.join('\n')
 				};
 			}
+			case 'git_log': {
+				if (!bridge.getProjectGitLog) {
+					return { status: 'error', message: 'git log is unavailable in this ENOS Desk build.' };
+				}
+				const git = await bridge.getProjectGitLog(folderId);
+				if (!git.isRepo) {
+					return { status: 'ok', summary: 'This project is not a git repository.', data: '' };
+				}
+				const count = git.logLines.length;
+				return {
+					status: 'ok',
+					summary: `${count} recent commit${count === 1 ? '' : 's'}${git.truncated ? ' (truncated)' : ''}.`,
+					data: git.logLines.join('\n')
+				};
+			}
+			case 'git_diff': {
+				if (!bridge.getProjectGitDiff) {
+					return { status: 'error', message: 'git diff is unavailable in this ENOS Desk build.' };
+				}
+				const path = typeof args.path === 'string' && args.path ? args.path : undefined;
+				const git = await bridge.getProjectGitDiff(folderId, path);
+				if (!git.isRepo) {
+					return { status: 'ok', summary: 'This project is not a git repository.', data: '' };
+				}
+				return {
+					status: 'ok',
+					summary: `${git.diff ? 'diff' : 'no working-tree diff'} for ${git.path}${git.truncated ? ' (truncated)' : ''}`,
+					data: git.diff
+				};
+			}
 			case 'git_stage': {
 				if (!bridge.gitStage) {
 					return { status: 'error', message: 'git staging is unavailable in this ENOS Desk build.' };
@@ -447,7 +505,7 @@ export const executeDeskFileTool = async ({
 					return {
 						status: 'error',
 						message:
-							'Unsupported git operation. ENOS Desk only allows git_status, git_stage, git_commit, git_create_branch, and git_clone.'
+							'Unsupported git operation. ENOS Desk only allows git_status, git_log, git_diff, git_stage, git_commit, git_create_branch, and git_clone.'
 					};
 				}
 				return { status: 'error', message: `Unknown tool: ${name}` };

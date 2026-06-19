@@ -51,6 +51,18 @@ const fakeBridge = (overrides: Record<string, any> = {}) =>
 			status: 'revealed',
 			path
 		})),
+		getProjectGitLog: vi.fn(async () => ({
+			action: 'getProjectGitLog',
+			isRepo: true,
+			logLines: ['abc1234 2026-06-19 initial commit']
+		})),
+		getProjectGitDiff: vi.fn(async (_f: string, path?: string) => ({
+			action: 'getProjectGitDiff',
+			isRepo: true,
+			path: path ?? '.',
+			diff: 'diff --git a/proof.txt b/proof.txt\n+SAFE_CHANGE\n',
+			truncated: false
+		})),
 		gitStage: vi.fn(async (_f: string, paths: string[], opts: any) =>
 			opts?.confirmed
 				? { action: 'stageProjectChanges', status: 'staged', path: paths.join(', '), paths }
@@ -122,6 +134,8 @@ describe('DESK_FILE_TOOLS contract', () => {
 				'git_clone',
 				'git_commit',
 				'git_create_branch',
+				'git_diff',
+				'git_log',
 				'git_stage',
 				'list_files',
 				'read_file',
@@ -276,6 +290,35 @@ describe('executeDeskFileTool', () => {
 		expect(res.status === 'ok' && res.summary.toLowerCase()).toContain('not a git');
 	});
 
+	test('git_log reports recent commits without confirmation', async () => {
+		const bridge = fakeBridge({
+			getProjectGitLog: vi.fn(async () => ({
+				action: 'getProjectGitLog',
+				isRepo: true,
+				logLines: ['abc1234 2026-06-19 commit subject', '[truncated]'],
+				truncated: true
+			}))
+		});
+		const res = await executeDeskFileTool({ bridge, folderId: 'F', name: 'git_log', args: {} });
+		expect(bridge.getProjectGitLog).toHaveBeenCalledWith('F');
+		expect(res.status).toBe('ok');
+		expect(res.status === 'ok' && res.summary).toContain('recent commits');
+		expect(res.status === 'ok' && String(res.data)).toContain('[truncated]');
+	});
+
+	test('git_diff returns the working-tree diff and forwards an optional path', async () => {
+		const bridge = fakeBridge();
+		const res = await executeDeskFileTool({
+			bridge,
+			folderId: 'F',
+			name: 'git_diff',
+			args: { path: 'proof.txt' }
+		});
+		expect(bridge.getProjectGitDiff).toHaveBeenCalledWith('F', 'proof.txt');
+		expect(res.status).toBe('ok');
+		expect(res.status === 'ok' && String(res.data)).toContain('SAFE_CHANGE');
+	});
+
 	test('git_stage surfaces confirmation, then stages paths when confirmed', async () => {
 		const bridge = fakeBridge();
 		const pending = await executeDeskFileTool({
@@ -389,5 +432,6 @@ describe('executeDeskFileTool', () => {
 		expect(res.status).toBe('error');
 		expect(res.status === 'error' && res.message.toLowerCase()).toContain('unsupported git operation');
 		expect(res.status === 'error' && res.message).toContain('git_clone');
+		expect(res.status === 'error' && res.message).toContain('git_diff');
 	});
 });
