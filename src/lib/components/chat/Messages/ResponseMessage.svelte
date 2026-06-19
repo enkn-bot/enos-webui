@@ -46,7 +46,6 @@
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import RateComment from './RateComment.svelte';
 	import Spinner from '$lib/components/common/Spinner.svelte';
-	import EnosOrb from '$lib/components/common/EnosOrb.svelte';
 	import WebSearchResults from './ResponseMessage/WebSearchResults.svelte';
 	import Sparkles from '$lib/components/icons/Sparkles.svelte';
 
@@ -840,8 +839,13 @@
 							class="w-full flex flex-col relative {edit ? 'hidden' : ''}"
 							id="response-content-container"
 						>
-							{#if message.content === '' && !message.done && !message.error && !hasVisibleStatus}
-								<EnosOrb size={30} label={$i18n.t('Thinking…')} />
+							{#if message.content === '' && !message.done && !message.error}
+								<div
+									class="min-h-8 py-1.5 text-sm font-medium text-gray-500 dark:text-gray-400"
+									aria-live="polite"
+								>
+									<span class="shimmer">{$i18n.t('Thinking…')}</span>
+								</div>
 							{:else if message.content && message.error !== true}
 								<!-- always show message contents even if there's an error -->
 								<!-- unless message.error === true which is legacy error handling, where the error message is stored in message.content -->
