@@ -145,15 +145,135 @@ test('Desk local file mode is gated by desktop bridge capabilities', () => {
 		/getEnosDesktopBridgeCapabilities/,
 		'Chat action routing should verify the bridge before local file operations'
 	);
+	// The Desk agent gets the FULL toolset and the confirmation dialog is the
+	// safety gate — deliberately NOT a mutation capability flag, which desynced
+	// and made the agent refuse legitimate file creation. See the desk
+	// tool-calling architecture note.
 	assert.match(
 		chat,
+		/tools:\s*DESK_FILE_TOOLS\b/,
+		'Chat should always offer the full Desk toolset, not a mutation-gated subset'
+	);
+	assert.doesNotMatch(
+		chat,
 		/canUseEnosLocalProjectMutations/,
-		'Chat write actions should require mutation capability before calling bridge write methods'
+		'Chat must NOT gate writes on a mutation capability flag (confirmation dialog is the gate)'
+	);
+});
+
+test('Electron hidden titlebar keeps the web sidebar layout untouched', () => {
+	const appCss = readFileSync('src/app.css', 'utf8');
+	const layout = readFileSync('src/routes/+layout.svelte', 'utf8');
+
+	assert.match(
+		layout,
+		/documentElement\.setAttribute\('data-enos-desk-titlebar', 'hidden'\)/,
+		'Electron should mark the document when the native titlebar is hidden'
+	);
+	assert.match(
+		appCss,
+		/\.drag-region\s*\{[\s\S]*-webkit-app-region:\s*drag/,
+		'Electron shell surfaces should keep drag-region support for the transparent titlebar'
+	);
+	assert.match(
+		appCss,
+		/\.no-drag-region\s*\{[\s\S]*-webkit-app-region:\s*no-drag/,
+		'Electron shell controls should keep no-drag-region support'
+	);
+	assert.doesNotMatch(
+		appCss,
+		/--enos-desk-titlebar-height/,
+		'Electron should not introduce a separate app-layout titlebar height token'
+	);
+	assert.doesNotMatch(
+		appCss,
+		/html\[data-enos-desk-titlebar=['"]hidden['"]\][\s\S]*#sidebar/,
+		'Electron should not fork sidebar sizing or spacing from the web layout'
+	);
+	assert.doesNotMatch(
+		appCss,
+		/html\[data-enos-desk-titlebar=['"]hidden['"]\][\s\S]*#navbar-right-actions/,
+		'Electron should not lift chat navbar actions out of the web layout'
+	);
+	assert.doesNotMatch(
+		appCss,
+		/html\[data-enos-desk-titlebar=['"]hidden['"]\][\s\S]*#sidebar-titlebar-toggle/,
+		'Electron should not lift the sidebar toggle away from the web layout'
+	);
+});
+
+test('Desk chat reload restores a project anchor before showing no-project guidance', () => {
+	const chat = readFileSync('src/lib/components/chat/Chat.svelte', 'utf8');
+
+	assert.match(
+		chat,
+		/detectProjectChatAction/,
+		'Desk chat handling should classify file/project intent before taking over a prompt'
 	);
 	assert.match(
 		chat,
-		/WEB_PROJECT_ACTION_MESSAGE/,
-		'Web sessions should get a local-files-unavailable message instead of generic model hallucination'
+		/ENOS_DESK_LAST_PROJECT_FOLDER_ID/,
+		'Desk should persist the last selected project folder for reload/new-chat recovery'
+	);
+	assert.match(
+		chat,
+		/localStorage\.setItem\(ENOS_DESK_LAST_PROJECT_FOLDER_ID,\s*folder\.id\)/,
+		'Selecting a project should remember it as the next Desk chat anchor'
+	);
+	assert.match(
+		chat,
+		/const restoreLastDeskProjectFolder = async/,
+		'Desk should have a restore path for the last project folder'
+	);
+	assert.match(
+		chat,
+		/localStorage\.getItem\(ENOS_DESK_LAST_PROJECT_FOLDER_ID\)/,
+		'Desk reload should read the persisted project folder id'
+	);
+	assert.match(
+		chat,
+		/knownProjectFolderById\(lastProjectFolderId\)/,
+		'Desk restore should prefer already-loaded folders before fetching'
+	);
+	assert.match(
+		chat,
+		/await restoreLastDeskProjectFolder\(\)/,
+		'New Desk chats should restore an anchor before leaving the user on an empty project state'
+	);
+	assert.match(
+		chat,
+		/const foldersSubscribe = folders\.subscribe/,
+		'Desk should retry anchor restore when the sidebar folders list hydrates after chat mount'
+	);
+	assert.match(
+		chat,
+		/foldersSubscribe\(\)/,
+		'Desk folder-list restore subscriptions should be cleaned up on unmount'
+	);
+	assert.doesNotMatch(
+		chat,
+		/Select a project first\. Local file actions are scoped to the active ENOS Desk project folder\./,
+		'No-project file-action guidance should ask the user to start or choose a project instead of showing a dead-end selection error'
+	);
+
+	const handlerStart = chat.indexOf('const handleProjectChatAction = async');
+	const handlerEnd = chat.indexOf('const addMessages', handlerStart);
+	const handler = chat.slice(handlerStart, handlerEnd);
+	const detectIndex = handler.indexOf('const action = detectProjectChatAction');
+	const noActionIndex = handler.indexOf('if (!action) return false');
+	const capabilitiesIndex = handler.indexOf('const capabilities = await getEnosDesktopBridgeCapabilities');
+	const restoreIndex = handler.indexOf('await restoreLastDeskProjectFolder()');
+	const noFolderIndex = handler.indexOf('if (!folderId)');
+	assert.ok(handlerStart > -1, 'Chat should have a project action handler');
+	assert.ok(detectIndex > -1, 'Chat should classify project action language');
+	assert.ok(noActionIndex > detectIndex, 'Non-project prompts should fall through to normal chat');
+	assert.ok(
+		detectIndex < capabilitiesIndex,
+		'Prompt classification should happen before capability checks so normal questions are not hijacked'
+	);
+	assert.ok(
+		restoreIndex > detectIndex && restoreIndex < noFolderIndex,
+		'Desk should try to restore a project anchor before showing no-project guidance'
 	);
 });
 
@@ -475,8 +595,8 @@ test('Desk project folders can digest local files into project chat context', ()
 	);
 	assert.match(
 		chat,
-		/Project context from the selected ENOS Desk project/,
-		'Digest should be injected as explicit project context, not as a user message'
+		/Saved project summary \(BACKGROUND ONLY/,
+		'Digest should be injected as explicit background context, not as a user message'
 	);
 	assert.match(
 		chat,
@@ -581,6 +701,26 @@ test('Desk project chats attach live local file action context before model call
 		chat,
 		/projectContextDigest[\s\S]*projectActionContext/,
 		'Saved digest should be added before live context so active folder context has final authority'
+	);
+	assert.match(
+		chat,
+		/isProjectFileFactsPrompt/,
+		'Chat completion should classify file-list/count prompts before injecting saved project context'
+	);
+	assert.match(
+		chat,
+		/projectContextDigest && !projectFileFactsRequested/,
+		'Saved project summaries should not be injected for file-list/count prompts'
+	);
+	assert.match(
+		chat,
+		/projectFileFactsRequested && !projectActionContext/,
+		'File-list/count prompts without live context should get the safe fallback path'
+	);
+	assert.match(
+		chat,
+		/live local project file listing is unavailable/,
+		'The safe fallback should refuse stale digest-only file facts'
 	);
 	assert.match(
 		localFileNav,
@@ -726,8 +866,8 @@ test('Desk chat write requests execute through the desktop bridge before model c
 	);
 	assert.match(
 		chat,
-		/bridge\.createProjectFile/,
-		'Chat write command handler should execute through the desktop bridge'
+		/executeDeskFileTool/,
+		'Chat write command handler should execute through the shared desktop bridge tool executor'
 	);
 	assert.match(
 		chat,
@@ -749,6 +889,7 @@ test('Desk chat write requests execute through the desktop bridge before model c
 test('Desk chat project actions route all base file operations before model calls', () => {
 	const chat = readFileSync('src/lib/components/chat/Chat.svelte', 'utf8');
 	const projectChatActions = readFileSync('src/lib/enos/projectChatActions.ts', 'utf8');
+	const deskFileTools = readFileSync('src/lib/enos/deskFileTools.ts', 'utf8');
 
 	assert.match(
 		projectChatActions,
@@ -770,18 +911,27 @@ test('Desk chat project actions route all base file operations before model call
 	}
 
 	assert.match(chat, /handleProjectChatAction/, 'Chat should use the generic project action handler');
+	assert.match(chat, /executeDeskFileTool/, 'Chat should delegate project file calls to the shared tool executor');
 	for (const method of [
 		'listProjectFiles',
 		'readProjectFile',
-		'createProjectFile',
 		'writeProjectFile',
 		'createProjectFolder',
 		'renameProjectEntry',
 		'deleteProjectEntry',
 		'revealProjectEntry'
 	]) {
-		assert.match(chat, new RegExp(`bridge\\.${method}`), `${method} should be executed by Chat`);
+		assert.match(
+			deskFileTools,
+			new RegExp(`bridge\\.${method}`),
+			`${method} should be executed by the shared Desk file tool executor`
+		);
 	}
+	assert.match(
+		deskFileTools,
+		/Create or overwrite a file/,
+		'The write_file tool should cover both create and overwrite flows'
+	);
 	assert.match(
 		chat,
 		/if \(await handleProjectChatAction\(userPrompt\)\) return/,

@@ -1150,6 +1150,7 @@
 					placement="bottom"
 				>
 					<button
+						id="sidebar-titlebar-toggle"
 						class="flex rounded-xl size-8.5 justify-center items-center hover:bg-gray-100/50 dark:hover:bg-gray-850/50 transition {isWindows
 							? 'cursor-pointer'
 							: 'cursor-[w-resize]'}"

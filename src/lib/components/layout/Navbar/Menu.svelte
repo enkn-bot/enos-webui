@@ -51,6 +51,7 @@
 	export let chat;
 	export let onClose: Function = () => {};
 	export let scrollToTop: (() => void) | null = null;
+	export let align = 'end';
 
 	let showFullMessages = false;
 
@@ -280,7 +281,7 @@
 			onClose();
 		}
 	}}
-	align="end"
+	align={align}
 	sideOffset={8}
 >
 	<slot />

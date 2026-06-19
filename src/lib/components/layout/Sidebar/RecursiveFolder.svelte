@@ -647,7 +647,7 @@
 				</button>
 
 				<div
-					class="absolute z-10 right-10 invisible group-hover:visible self-center flex items-center gap-1 dark:text-gray-300"
+					class="invisible group-hover:visible self-center flex items-center gap-1 dark:text-gray-300"
 				>
 					<FolderMenu
 						projectMode={isDeskSurface}

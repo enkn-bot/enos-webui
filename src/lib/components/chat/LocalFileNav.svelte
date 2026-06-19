@@ -514,7 +514,7 @@
 			{#if listing && listing.entries.length > 0}
 				<ul class="py-1">
 					{#each listing.entries as entry}
-						<li class="flex items-center gap-1 px-2 hover:bg-gray-50 dark:hover:bg-gray-800 {selectedFile?.path ===
+						<li class="flex items-center gap-2 pl-3 pr-3 hover:bg-gray-50 dark:hover:bg-gray-800 {selectedFile?.path ===
 						entry.path
 							? 'bg-gray-50 dark:bg-gray-800'
 							: ''}">

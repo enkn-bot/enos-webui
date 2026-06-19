@@ -950,6 +950,18 @@
 			}
 		}
 
+		// ENOS Desk hidden titlebar detection: let the web UI adapt padding/drag area.
+		if (typeof window !== 'undefined' && window.enosDesktop?.getTitleBarStyle) {
+			try {
+				const style = await window.enosDesktop.getTitleBarStyle();
+				if (style === 'hiddenInset') {
+					document.documentElement.setAttribute('data-enos-desk-titlebar', 'hidden');
+				}
+			} catch {
+				// ignore bridge errors
+			}
+		}
+
 		// Listen for messages on the BroadcastChannel
 		bc.onmessage = (event) => {
 			if (event.data === 'active') {

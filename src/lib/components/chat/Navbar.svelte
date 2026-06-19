@@ -1,9 +1,7 @@
 <script lang="ts">
-	import { getContext } from 'svelte';
-	import { toast } from 'svelte-sonner';
+	import { getContext, onMount } from 'svelte';
 
 	import {
-		WEBUI_NAME,
 		banners,
 		chatId,
 		config,
@@ -25,9 +23,7 @@
 	import Tooltip from '../common/Tooltip.svelte';
 	import Menu from '$lib/components/layout/Navbar/Menu.svelte';
 	import UserMenu from '$lib/components/layout/Sidebar/UserMenu.svelte';
-	import AdjustmentsHorizontal from '../icons/AdjustmentsHorizontal.svelte';
 
-	import PencilSquare from '../icons/PencilSquare.svelte';
 	import Banner from '../common/Banner.svelte';
 	import Sidebar from '../icons/Sidebar.svelte';
 
@@ -37,8 +33,9 @@
 	import EllipsisHorizontal from '../icons/EllipsisHorizontal.svelte';
 	import ChatPlus from '../icons/ChatPlus.svelte';
 	import ChatCheck from '../icons/ChatCheck.svelte';
-	import Knobs from '../icons/Knobs.svelte';
+	import ChevronDown from '../icons/ChevronDown.svelte';
 	import { WEBUI_API_BASE_URL } from '$lib/constants';
+	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 
 	const i18n = getContext('i18n');
 
@@ -49,6 +46,7 @@
 
 	export let chat;
 	export let history;
+	export let title = '';
 	export let selectedModels;
 	export let showModelSelector = true;
 
@@ -68,7 +66,18 @@
 	};
 
 	let showShareChatModal = false;
-	let showDownloadChatModal = false;
+	let isEnosDeskNavbar = false;
+
+	onMount(() => {
+		isEnosDeskNavbar = Boolean(getEnosDesktopBridge());
+	});
+
+	const normalizeTitle = (value) => (typeof value === 'string' ? value.trim() : '');
+	const chatTitleLabel = () =>
+		normalizeTitle(title) ||
+		normalizeTitle(chat?.chat?.title) ||
+		normalizeTitle(chat?.title) ||
+		$i18n.t('New Chat');
 </script>
 
 <ShareChatModal bind:show={showShareChatModal} chatId={$chatId} />
@@ -121,7 +130,34 @@
 			{$showSidebar ? 'ml-1' : ''}
 			"
 				>
-					{#if showModelSelector}
+					{#if isEnosDeskNavbar && shareEnabled && chat && (chat.id || $temporaryChatEnabled)}
+						<Menu
+							{chat}
+							{shareEnabled}
+							{scrollToTop}
+							align="start"
+							shareHandler={() => {
+								showShareChatModal = !showShareChatModal;
+							}}
+							archiveChatHandler={() => {
+								archiveChatHandler(chat.id);
+							}}
+							deleteChatHandler={() => {
+								deleteChatHandler(chat.id);
+							}}
+							{moveChatHandler}
+						>
+							<button
+								type="button"
+								id="chat-title-menu-button"
+								class="flex max-w-full items-center gap-1.5 rounded-xl px-2 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-850 transition"
+								aria-label={$i18n.t('Chat options')}
+							>
+								<span class="truncate">{chatTitleLabel()}</span>
+								<ChevronDown className="size-3 shrink-0" strokeWidth="2.5" />
+							</button>
+						</Menu>
+					{:else if showModelSelector}
 						<ModelSelector bind:selectedModels showSetDefault={!shareEnabled} />
 					{/if}
 				</div>

@@ -13,6 +13,22 @@ describe('detectProjectChatAction', () => {
 				now
 			})
 		).toEqual({ kind: 'list-directory', path: 'docs/superpowers' });
+
+		expect(
+			detectProjectChatAction({
+				prompt: 'Can you tell me the files in this folder, all of them?',
+				activePath: 'Director Global Strategy Lead',
+				now
+			})
+		).toEqual({ kind: 'list-directory', path: 'Director Global Strategy Lead' });
+
+		expect(
+			detectProjectChatAction({
+				prompt: 'How many files are in the current folder?',
+				activePath: 'Director Global Strategy Lead',
+				now
+			})
+		).toEqual({ kind: 'list-directory', path: 'Director Global Strategy Lead' });
 	});
 
 	test('routes explicit project file reads', () => {
