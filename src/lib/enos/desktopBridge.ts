@@ -12,6 +12,7 @@ export type EnosDesktopCapabilities = {
 	localProjectMutations: boolean;
 	localProjectReveal: boolean;
 	localProjectGitStatus: boolean;
+	localProjectGitWrite: boolean;
 };
 
 export type EnosDesktopWorkspace = {
@@ -87,10 +88,15 @@ export type EnosDesktopProjectActionRequest = {
 		| 'writeProjectFile'
 		| 'createProjectFolder'
 		| 'renameProjectEntry'
-		| 'deleteProjectEntry';
+		| 'deleteProjectEntry'
+		| 'stageProjectChanges'
+		| 'commitProjectChanges'
+		| 'createProjectBranch';
 	status: 'requires_confirmation';
 	path: string;
 	toPath?: string;
+	paths?: string[];
+	branch?: string;
 	bytes: number;
 	preview: string;
 };
@@ -102,10 +108,24 @@ export type EnosDesktopProjectActionResult = {
 		| 'createProjectFolder'
 		| 'renameProjectEntry'
 		| 'deleteProjectEntry'
-		| 'revealProjectEntry';
-	status: 'created' | 'written' | 'renamed' | 'trashed' | 'revealed';
+		| 'revealProjectEntry'
+		| 'stageProjectChanges'
+		| 'commitProjectChanges'
+		| 'createProjectBranch';
+	status:
+		| 'created'
+		| 'written'
+		| 'renamed'
+		| 'trashed'
+		| 'revealed'
+		| 'staged'
+		| 'committed'
+		| 'created_branch';
 	path: string;
 	toPath?: string;
+	paths?: string[];
+	branch?: string;
+	commit?: string;
 	bytes?: number;
 	modifiedAt?: string;
 };
@@ -173,6 +193,21 @@ export type EnosDesktopBridge = {
 		path: string
 	) => Promise<EnosDesktopProjectActionResult>;
 	getProjectGitStatus: (folderId: string) => Promise<EnosDesktopProjectGitStatus>;
+	gitStage: (
+		folderId: string,
+		paths: string[],
+		options?: EnosDesktopProjectActionOptions
+	) => Promise<EnosDesktopProjectActionRequest | EnosDesktopProjectActionResult>;
+	gitCommit: (
+		folderId: string,
+		message: string,
+		options?: EnosDesktopProjectActionOptions
+	) => Promise<EnosDesktopProjectActionRequest | EnosDesktopProjectActionResult>;
+	gitCreateBranch: (
+		folderId: string,
+		branchName: string,
+		options?: EnosDesktopProjectActionOptions
+	) => Promise<EnosDesktopProjectActionRequest | EnosDesktopProjectActionResult>;
 	/** Desk-local model call — available only in newer Electron builds. */
 	agentComplete?: (
 		messages: DeskChatMessage[],
@@ -221,3 +256,7 @@ export const canUseEnosLocalProjectFiles = (capabilities?: EnosDesktopCapabiliti
 export const canUseEnosLocalProjectMutations = (
 	capabilities?: EnosDesktopCapabilities | null
 ) => Boolean(canUseEnosLocalProjectFiles(capabilities) && capabilities?.localProjectMutations);
+
+export const canUseEnosLocalProjectGitWrite = (
+	capabilities?: EnosDesktopCapabilities | null
+) => Boolean(canUseEnosLocalProjectFiles(capabilities) && capabilities?.localProjectGitWrite);

@@ -51,6 +51,46 @@ const fakeBridge = (overrides: Record<string, any> = {}) =>
 			status: 'revealed',
 			path
 		})),
+		gitStage: vi.fn(async (_f: string, paths: string[], opts: any) =>
+			opts?.confirmed
+				? { action: 'stageProjectChanges', status: 'staged', path: paths.join(', '), paths }
+				: {
+						action: 'stageProjectChanges',
+						status: 'requires_confirmation',
+						path: paths.join(', '),
+						paths,
+						bytes: 0,
+						preview: paths.join('\n')
+					}
+		),
+		gitCommit: vi.fn(async (_f: string, message: string, opts: any) =>
+			opts?.confirmed
+				? { action: 'commitProjectChanges', status: 'committed', path: '.', commit: 'abc1234' }
+				: {
+						action: 'commitProjectChanges',
+						status: 'requires_confirmation',
+						path: '.',
+						bytes: message.length,
+						preview: message
+					}
+		),
+		gitCreateBranch: vi.fn(async (_f: string, branchName: string, opts: any) =>
+			opts?.confirmed
+				? {
+						action: 'createProjectBranch',
+						status: 'created_branch',
+						path: branchName,
+						branch: branchName
+					}
+				: {
+						action: 'createProjectBranch',
+						status: 'requires_confirmation',
+						path: branchName,
+						branch: branchName,
+						bytes: 0,
+						preview: ''
+					}
+		),
 		...overrides
 	}) as any;
 
@@ -62,6 +102,9 @@ describe('DESK_FILE_TOOLS contract', () => {
 				'create_folder',
 				'delete_entry',
 				'edit_file',
+				'git_commit',
+				'git_create_branch',
+				'git_stage',
 				'list_files',
 				'read_file',
 				'rename_entry',
@@ -213,5 +256,92 @@ describe('executeDeskFileTool', () => {
 		const res = await executeDeskFileTool({ bridge, folderId: 'F', name: 'git_status', args: {} });
 		expect(res.status).toBe('ok');
 		expect(res.status === 'ok' && res.summary.toLowerCase()).toContain('not a git');
+	});
+
+	test('git_stage surfaces confirmation, then stages paths when confirmed', async () => {
+		const bridge = fakeBridge();
+		const pending = await executeDeskFileTool({
+			bridge,
+			folderId: 'F',
+			name: 'git_stage',
+			args: { paths: ['src/app.ts', 'README.md'] }
+		});
+		expect(pending.status).toBe('requires_confirmation');
+
+		const done = await executeDeskFileTool({
+			bridge,
+			folderId: 'F',
+			name: 'git_stage',
+			args: { paths: ['src/app.ts', 'README.md'] },
+			confirmed: true
+		});
+		expect(bridge.gitStage).toHaveBeenLastCalledWith('F', ['src/app.ts', 'README.md'], {
+			confirmed: true
+		});
+		expect(done.status).toBe('ok');
+	});
+
+	test('git_commit surfaces confirmation, then commits with the supplied message', async () => {
+		const bridge = fakeBridge();
+		const pending = await executeDeskFileTool({
+			bridge,
+			folderId: 'F',
+			name: 'git_commit',
+			args: { message: 'commit staged changes' }
+		});
+		expect(pending.status).toBe('requires_confirmation');
+
+		const done = await executeDeskFileTool({
+			bridge,
+			folderId: 'F',
+			name: 'git_commit',
+			args: { message: 'commit staged changes' },
+			confirmed: true
+		});
+		expect(bridge.gitCommit).toHaveBeenLastCalledWith('F', 'commit staged changes', {
+			confirmed: true
+		});
+		expect(done.status).toBe('ok');
+	});
+
+	test('git_create_branch surfaces confirmation, then creates and switches branches', async () => {
+		const bridge = fakeBridge();
+		const pending = await executeDeskFileTool({
+			bridge,
+			folderId: 'F',
+			name: 'git_create_branch',
+			args: { branch_name: 'feature/git-tools' }
+		});
+		expect(pending.status).toBe('requires_confirmation');
+
+		const done = await executeDeskFileTool({
+			bridge,
+			folderId: 'F',
+			name: 'git_create_branch',
+			args: { branch_name: 'feature/git-tools' },
+			confirmed: true
+		});
+		expect(bridge.gitCreateBranch).toHaveBeenLastCalledWith('F', 'feature/git-tools', {
+			confirmed: true
+		});
+		expect(done.status).toBe('ok');
+	});
+
+	test('unsupported git operations are refused clearly and are not exposed as tools', async () => {
+		const names = DESK_FILE_TOOLS.map((t) => t.function.name);
+		expect(names).not.toContain('git_push');
+		expect(names).not.toContain('git_pull');
+		expect(names).not.toContain('git_merge');
+		expect(names).not.toContain('git_rebase');
+		expect(names).not.toContain('git_reset');
+
+		const res = await executeDeskFileTool({
+			bridge: fakeBridge(),
+			folderId: 'F',
+			name: 'git_push',
+			args: {}
+		});
+		expect(res.status).toBe('error');
+		expect(res.status === 'error' && res.message.toLowerCase()).toContain('unsupported git operation');
 	});
 });

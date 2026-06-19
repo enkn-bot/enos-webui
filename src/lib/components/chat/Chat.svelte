@@ -1905,6 +1905,9 @@
 		if (action === 'createProjectFolder') return $i18n.t('New Folder');
 		if (action === 'createProjectFile') return $i18n.t('New File');
 		if (action === 'writeProjectFile') return $i18n.t('Save');
+		if (action === 'stageProjectChanges') return $i18n.t('Stage');
+		if (action === 'commitProjectChanges') return $i18n.t('Commit');
+		if (action === 'createProjectBranch') return $i18n.t('Create Branch');
 		return $i18n.t('Project action');
 	};
 
@@ -1986,11 +1989,15 @@
 						`Active project folder: ${folderId}.\n\n` +
 						`You CAN and SHOULD use the tools to do real work: list_files, read_file, ` +
 						`write_file, edit_file, create_folder, rename_entry, delete_entry, reveal_entry, ` +
-						`git_status (read-only branch + changed files). ` +
+						`git_status (read-only branch + changed files), git_create_branch, git_stage, ` +
+						`and git_commit. ` +
 						`When the user asks you to create, write, edit, move, or delete files, DO IT by ` +
 						`calling the appropriate tool — never reply that you are unable to or that the ` +
 						`system does not permit it. Generate file contents yourself. The user is prompted ` +
-						`to confirm before any change is applied to disk, so act decisively.\n\n` +
+						`to confirm before any change is applied to disk, so act decisively. ` +
+						`For git, you may only check status, create a new local branch, stage paths, and ` +
+						`commit staged changes. Refuse push, fetch, pull, remote, merge, rebase, hard reset, ` +
+						`force, branch deletion, checkout of existing refs, stash drop, and config writes.\n\n` +
 						`FILE FACTS ARE GROUND TRUTH: when you list, count, or describe files, account for ` +
 						`EVERY file — never merge, deduplicate, or omit any, even different formats of one ` +
 						`document (a .html, .pdf and .png are THREE separate files) or system files. If a ` +

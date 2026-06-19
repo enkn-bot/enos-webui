@@ -26,7 +26,14 @@ export type DeskToolName =
 	| 'rename_entry'
 	| 'delete_entry'
 	| 'reveal_entry'
-	| 'git_status';
+	| 'git_status'
+	| 'git_stage'
+	| 'git_commit'
+	| 'git_create_branch';
+
+type DeskToolParameter =
+	| { type: 'string'; description: string }
+	| { type: 'array'; description: string; items: { type: 'string' } };
 
 export type DeskToolSpec = {
 	type: 'function';
@@ -35,13 +42,18 @@ export type DeskToolSpec = {
 		description: string;
 		parameters: {
 			type: 'object';
-			properties: Record<string, { type: string; description: string }>;
+			properties: Record<string, DeskToolParameter>;
 			required: string[];
 		};
 	};
 };
 
-const str = (description: string) => ({ type: 'string', description });
+const str = (description: string): DeskToolParameter => ({ type: 'string', description });
+const strArray = (description: string): DeskToolParameter => ({
+	type: 'array',
+	description,
+	items: { type: 'string' }
+});
 
 export const DESK_FILE_TOOLS: DeskToolSpec[] = [
 	{
@@ -161,6 +173,51 @@ export const DESK_FILE_TOOLS: DeskToolSpec[] = [
 				'Report the project\'s git state: current branch and changed/untracked files (read-only, no network). Use to orient before suggesting or making changes.',
 			parameters: { type: 'object', properties: {}, required: [] }
 		}
+	},
+	{
+		type: 'function',
+		function: {
+			name: 'git_stage',
+			description:
+				'Stage one or more project-relative paths with git add. This is local-only and always requires user confirmation before it mutates the repository.',
+			parameters: {
+				type: 'object',
+				properties: {
+					paths: strArray('Project-relative file or folder paths to stage.')
+				},
+				required: ['paths']
+			}
+		}
+	},
+	{
+		type: 'function',
+		function: {
+			name: 'git_commit',
+			description:
+				'Commit already-staged changes using the supplied non-empty message. This is local-only and always requires user confirmation.',
+			parameters: {
+				type: 'object',
+				properties: {
+					message: str('Commit message to pass to git commit -m.')
+				},
+				required: ['message']
+			}
+		}
+	},
+	{
+		type: 'function',
+		function: {
+			name: 'git_create_branch',
+			description:
+				'Create and switch to a new local branch with git checkout -b. Use only for new branch names; never for existing refs.',
+			parameters: {
+				type: 'object',
+				properties: {
+					branch_name: str('New branch name to create and switch to.')
+				},
+				required: ['branch_name']
+			}
+		}
 	}
 ];
 
@@ -172,6 +229,9 @@ export const describeDeskTool = (
 ): string => {
 	const p = typeof args.path === 'string' ? args.path : '';
 	const to = typeof args.to_path === 'string' ? args.to_path : '';
+	const paths = Array.isArray(args.paths) ? args.paths.filter((v) => typeof v === 'string') : [];
+	const gitPaths = paths.length > 0 ? paths.join(', ') : 'paths';
+	const branch = typeof args.branch_name === 'string' ? args.branch_name : '';
 	const verb = (running: string, done: string) => (phase === 'start' ? running : done);
 	switch (name) {
 		case 'list_files': return verb(`Listing ${p || 'files'}`, `Listed ${p || 'files'}`);
@@ -183,6 +243,9 @@ export const describeDeskTool = (
 		case 'delete_entry': return verb(`Deleting ${p}`, `Deleted ${p}`);
 		case 'reveal_entry': return verb(`Revealing ${p}`, `Revealed ${p}`);
 		case 'git_status': return verb('Checking git status', 'Checked git status');
+		case 'git_stage': return verb(`Staging ${gitPaths}`, `Staged ${gitPaths}`);
+		case 'git_commit': return verb('Committing staged changes', 'Committed staged changes');
+		case 'git_create_branch': return verb(`Creating branch ${branch}`, `Created branch ${branch}`);
 		default: return verb('Working', 'Done');
 	}
 };
@@ -219,6 +282,18 @@ const normalizeMutation = (
 const requireString = (args: Record<string, unknown>, key: string): string => {
 	const value = args[key];
 	if (typeof value !== 'string' || value.length === 0) {
+		throw new Error(`Missing required argument: ${key}`);
+	}
+	return value;
+};
+
+const requireStringArray = (args: Record<string, unknown>, key: string): string[] => {
+	const value = args[key];
+	if (
+		!Array.isArray(value) ||
+		value.length === 0 ||
+		value.some((item) => typeof item !== 'string' || item.length === 0)
+	) {
 		throw new Error(`Missing required argument: ${key}`);
 	}
 	return value;
@@ -313,7 +388,38 @@ export const executeDeskFileTool = async ({
 					data: git.statusLines.join('\n')
 				};
 			}
+			case 'git_stage': {
+				if (!bridge.gitStage) {
+					return { status: 'error', message: 'git staging is unavailable in this ENOS Desk build.' };
+				}
+				const paths = requireStringArray(args, 'paths');
+				return normalizeMutation(await bridge.gitStage(folderId, paths, options));
+			}
+			case 'git_commit': {
+				if (!bridge.gitCommit) {
+					return { status: 'error', message: 'git commit is unavailable in this ENOS Desk build.' };
+				}
+				const message = requireString(args, 'message');
+				return normalizeMutation(await bridge.gitCommit(folderId, message, options));
+			}
+			case 'git_create_branch': {
+				if (!bridge.gitCreateBranch) {
+					return {
+						status: 'error',
+						message: 'git branch creation is unavailable in this ENOS Desk build.'
+					};
+				}
+				const branchName = requireString(args, 'branch_name');
+				return normalizeMutation(await bridge.gitCreateBranch(folderId, branchName, options));
+			}
 			default:
+				if (name.startsWith('git_')) {
+					return {
+						status: 'error',
+						message:
+							'Unsupported git operation. ENOS Desk only allows git_status, git_stage, git_commit, and git_create_branch.'
+					};
+				}
 				return { status: 'error', message: `Unknown tool: ${name}` };
 		}
 	} catch (error) {

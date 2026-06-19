@@ -18,12 +18,12 @@ test('Desk local files uses the desktop bridge, not the old localhost companion 
 	);
 	assert.match(
 		chatControls,
-		/hasDesktopBridge\s*=\s*Boolean\(getEnosDesktopBridge\(\)\)/,
-		'Desk Files should detect the desktop bridge at runtime',
+		/getEnosDesktopBridgeCapabilities/,
+		'Desk Files should detect the desktop bridge through the capabilities handshake',
 	);
 	assert.match(
 		chatControls,
-		/showLocalFileNav\s*=\s*isDeskSurface\s*&&\s*hasDesktopBridge/,
+		/showLocalFileNav\s*=\s*isDeskSurface\s*&&\s*canUseEnosLocalProjectFiles\(desktopCapabilities\)/,
 		'The local file navigator should remain Desk-surface scoped',
 	);
 	assert.match(
