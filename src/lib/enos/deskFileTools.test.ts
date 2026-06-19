@@ -91,6 +91,23 @@ const fakeBridge = (overrides: Record<string, any> = {}) =>
 						preview: ''
 					}
 		),
+		gitClone: vi.fn(async (_f: string, repositoryUrl: string, targetPath: string, opts: any) =>
+			opts?.confirmed
+				? {
+						action: 'cloneProjectRepository',
+						status: 'cloned',
+						path: targetPath,
+						repositoryUrl
+					}
+				: {
+						action: 'cloneProjectRepository',
+						status: 'requires_confirmation',
+						path: targetPath,
+						repositoryUrl,
+						bytes: repositoryUrl.length,
+						preview: repositoryUrl
+					}
+		),
 		...overrides
 	}) as any;
 
@@ -102,6 +119,7 @@ describe('DESK_FILE_TOOLS contract', () => {
 				'create_folder',
 				'delete_entry',
 				'edit_file',
+				'git_clone',
 				'git_commit',
 				'git_create_branch',
 				'git_stage',
@@ -327,6 +345,32 @@ describe('executeDeskFileTool', () => {
 		expect(done.status).toBe('ok');
 	});
 
+	test('git_clone surfaces confirmation, then clones an HTTPS repository into a target path', async () => {
+		const bridge = fakeBridge();
+		const pending = await executeDeskFileTool({
+			bridge,
+			folderId: 'F',
+			name: 'git_clone',
+			args: { url: 'https://example.test/repo.git', target_path: 'vendor/repo' }
+		});
+		expect(pending.status).toBe('requires_confirmation');
+
+		const done = await executeDeskFileTool({
+			bridge,
+			folderId: 'F',
+			name: 'git_clone',
+			args: { url: 'https://example.test/repo.git', target_path: 'vendor/repo' },
+			confirmed: true
+		});
+		expect(bridge.gitClone).toHaveBeenLastCalledWith(
+			'F',
+			'https://example.test/repo.git',
+			'vendor/repo',
+			{ confirmed: true }
+		);
+		expect(done.status).toBe('ok');
+	});
+
 	test('unsupported git operations are refused clearly and are not exposed as tools', async () => {
 		const names = DESK_FILE_TOOLS.map((t) => t.function.name);
 		expect(names).not.toContain('git_push');
@@ -334,6 +378,7 @@ describe('executeDeskFileTool', () => {
 		expect(names).not.toContain('git_merge');
 		expect(names).not.toContain('git_rebase');
 		expect(names).not.toContain('git_reset');
+		expect(names).not.toContain('git_remote');
 
 		const res = await executeDeskFileTool({
 			bridge: fakeBridge(),
@@ -343,5 +388,6 @@ describe('executeDeskFileTool', () => {
 		});
 		expect(res.status).toBe('error');
 		expect(res.status === 'error' && res.message.toLowerCase()).toContain('unsupported git operation');
+		expect(res.status === 'error' && res.message).toContain('git_clone');
 	});
 });

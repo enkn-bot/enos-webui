@@ -13,6 +13,7 @@ export type EnosDesktopCapabilities = {
 	localProjectReveal: boolean;
 	localProjectGitStatus: boolean;
 	localProjectGitWrite: boolean;
+	localProjectGitClone: boolean;
 };
 
 export type EnosDesktopWorkspace = {
@@ -91,12 +92,14 @@ export type EnosDesktopProjectActionRequest = {
 		| 'deleteProjectEntry'
 		| 'stageProjectChanges'
 		| 'commitProjectChanges'
-		| 'createProjectBranch';
+		| 'createProjectBranch'
+		| 'cloneProjectRepository';
 	status: 'requires_confirmation';
 	path: string;
 	toPath?: string;
 	paths?: string[];
 	branch?: string;
+	repositoryUrl?: string;
 	bytes: number;
 	preview: string;
 };
@@ -111,7 +114,8 @@ export type EnosDesktopProjectActionResult = {
 		| 'revealProjectEntry'
 		| 'stageProjectChanges'
 		| 'commitProjectChanges'
-		| 'createProjectBranch';
+		| 'createProjectBranch'
+		| 'cloneProjectRepository';
 	status:
 		| 'created'
 		| 'written'
@@ -120,11 +124,13 @@ export type EnosDesktopProjectActionResult = {
 		| 'revealed'
 		| 'staged'
 		| 'committed'
-		| 'created_branch';
+		| 'created_branch'
+		| 'cloned';
 	path: string;
 	toPath?: string;
 	paths?: string[];
 	branch?: string;
+	repositoryUrl?: string;
 	commit?: string;
 	bytes?: number;
 	modifiedAt?: string;
@@ -208,6 +214,12 @@ export type EnosDesktopBridge = {
 		branchName: string,
 		options?: EnosDesktopProjectActionOptions
 	) => Promise<EnosDesktopProjectActionRequest | EnosDesktopProjectActionResult>;
+	gitClone: (
+		folderId: string,
+		repositoryUrl: string,
+		targetPath: string,
+		options?: EnosDesktopProjectActionOptions
+	) => Promise<EnosDesktopProjectActionRequest | EnosDesktopProjectActionResult>;
 	/** Desk-local model call — available only in newer Electron builds. */
 	agentComplete?: (
 		messages: DeskChatMessage[],
@@ -260,3 +272,7 @@ export const canUseEnosLocalProjectMutations = (
 export const canUseEnosLocalProjectGitWrite = (
 	capabilities?: EnosDesktopCapabilities | null
 ) => Boolean(canUseEnosLocalProjectFiles(capabilities) && capabilities?.localProjectGitWrite);
+
+export const canUseEnosLocalProjectGitClone = (
+	capabilities?: EnosDesktopCapabilities | null
+) => Boolean(canUseEnosLocalProjectFiles(capabilities) && capabilities?.localProjectGitClone);

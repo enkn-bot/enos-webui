@@ -29,7 +29,8 @@ export type DeskToolName =
 	| 'git_status'
 	| 'git_stage'
 	| 'git_commit'
-	| 'git_create_branch';
+	| 'git_create_branch'
+	| 'git_clone';
 
 type DeskToolParameter =
 	| { type: 'string'; description: string }
@@ -218,6 +219,22 @@ export const DESK_FILE_TOOLS: DeskToolSpec[] = [
 				required: ['branch_name']
 			}
 		}
+	},
+	{
+		type: 'function',
+		function: {
+			name: 'git_clone',
+			description:
+				'Clone an HTTPS git repository into a new project-relative subdirectory of the active workspace. This performs a shallow local clone and always requires user confirmation before network access.',
+			parameters: {
+				type: 'object',
+				properties: {
+					url: str('HTTPS repository URL to clone. Other schemes are refused.'),
+					target_path: str('New project-relative subdirectory to clone into.')
+				},
+				required: ['url', 'target_path']
+			}
+		}
 	}
 ];
 
@@ -232,6 +249,7 @@ export const describeDeskTool = (
 	const paths = Array.isArray(args.paths) ? args.paths.filter((v) => typeof v === 'string') : [];
 	const gitPaths = paths.length > 0 ? paths.join(', ') : 'paths';
 	const branch = typeof args.branch_name === 'string' ? args.branch_name : '';
+	const targetPath = typeof args.target_path === 'string' ? args.target_path : '';
 	const verb = (running: string, done: string) => (phase === 'start' ? running : done);
 	switch (name) {
 		case 'list_files': return verb(`Listing ${p || 'files'}`, `Listed ${p || 'files'}`);
@@ -246,6 +264,7 @@ export const describeDeskTool = (
 		case 'git_stage': return verb(`Staging ${gitPaths}`, `Staged ${gitPaths}`);
 		case 'git_commit': return verb('Committing staged changes', 'Committed staged changes');
 		case 'git_create_branch': return verb(`Creating branch ${branch}`, `Created branch ${branch}`);
+		case 'git_clone': return verb(`Cloning into ${targetPath}`, `Cloned into ${targetPath}`);
 		default: return verb('Working', 'Done');
 	}
 };
@@ -412,12 +431,23 @@ export const executeDeskFileTool = async ({
 				const branchName = requireString(args, 'branch_name');
 				return normalizeMutation(await bridge.gitCreateBranch(folderId, branchName, options));
 			}
+			case 'git_clone': {
+				if (!bridge.gitClone) {
+					return {
+						status: 'error',
+						message: 'git clone is unavailable in this ENOS Desk build.'
+					};
+				}
+				const repositoryUrl = requireString(args, 'url');
+				const targetPath = requireString(args, 'target_path');
+				return normalizeMutation(await bridge.gitClone(folderId, repositoryUrl, targetPath, options));
+			}
 			default:
 				if (name.startsWith('git_')) {
 					return {
 						status: 'error',
 						message:
-							'Unsupported git operation. ENOS Desk only allows git_status, git_stage, git_commit, and git_create_branch.'
+							'Unsupported git operation. ENOS Desk only allows git_status, git_stage, git_commit, git_create_branch, and git_clone.'
 					};
 				}
 				return { status: 'error', message: `Unknown tool: ${name}` };

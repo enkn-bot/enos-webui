@@ -1908,6 +1908,7 @@
 		if (action === 'stageProjectChanges') return $i18n.t('Stage');
 		if (action === 'commitProjectChanges') return $i18n.t('Commit');
 		if (action === 'createProjectBranch') return $i18n.t('Create Branch');
+		if (action === 'cloneProjectRepository') return $i18n.t('Clone');
 		return $i18n.t('Project action');
 	};
 
@@ -1990,14 +1991,16 @@
 						`You CAN and SHOULD use the tools to do real work: list_files, read_file, ` +
 						`write_file, edit_file, create_folder, rename_entry, delete_entry, reveal_entry, ` +
 						`git_status (read-only branch + changed files), git_create_branch, git_stage, ` +
-						`and git_commit. ` +
+						`git_commit, and git_clone. ` +
 						`When the user asks you to create, write, edit, move, or delete files, DO IT by ` +
 						`calling the appropriate tool — never reply that you are unable to or that the ` +
 						`system does not permit it. Generate file contents yourself. The user is prompted ` +
 						`to confirm before any change is applied to disk, so act decisively. ` +
-						`For git, you may only check status, create a new local branch, stage paths, and ` +
-						`commit staged changes. Refuse push, fetch, pull, remote, merge, rebase, hard reset, ` +
-						`force, branch deletion, checkout of existing refs, stash drop, and config writes.\n\n` +
+						`For git, you may only check status, create a new local branch, stage paths, ` +
+						`commit staged changes, and clone HTTPS repositories into new project-relative ` +
+						`subdirectories. Refuse ssh/git/file/http clone URLs, push, fetch, pull, remote, ` +
+						`merge, rebase, hard reset, force, branch deletion, checkout of existing refs, ` +
+						`stash drop, and config writes.\n\n` +
 						`FILE FACTS ARE GROUND TRUTH: when you list, count, or describe files, account for ` +
 						`EVERY file — never merge, deduplicate, or omit any, even different formats of one ` +
 						`document (a .html, .pdf and .png are THREE separate files) or system files. If a ` +
