@@ -40,6 +40,16 @@ test('Desk sidebar suppresses top-level Chats and binds selected Mac folders to 
 	);
 	assert.match(
 		sidebar,
+		/discoverLegacyDeskProjectIds/,
+		'Desk should discover legacy sidebar projects already bound to local Mac folders'
+	);
+	assert.match(
+		sidebar,
+		/legacyDeskItemIds/,
+		'Desk folder filtering should include locally bound legacy project ids'
+	);
+	assert.match(
+		sidebar,
 		/onLocalFolderPick=\{handleDeskLocalFolderPick\}/,
 		'The folder modal should receive the Desk local-folder picker handler'
 	);
@@ -951,6 +961,11 @@ test('Desk chat project actions route all base file operations before model call
 	assert.ok(
 		detectIndex < noBridgeIndex && detectIndex < noFolderIndex,
 		'Chat should classify capability/clarify prompts before bridge/folder guards so they cannot fall through to the model'
+	);
+	assert.match(
+		handler,
+		/if \(isDeskSurface\) \{[\s\S]*ENOS Desktop bridge is unavailable[\s\S]*return true/,
+		'Desk project actions must not fall through to the plain chat model when the desktop bridge is unavailable'
 	);
 });
 

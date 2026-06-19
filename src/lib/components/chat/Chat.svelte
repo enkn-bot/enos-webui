@@ -1947,7 +1947,15 @@
 			if (!action) return false;
 
 			if (!hasDesktopBridge) {
-				// Not in Electron — fall through to the normal chat pipeline.
+				if (isDeskSurface) {
+					await createLocalProjectActionMessage(
+						userPrompt,
+						'ENOS Desktop bridge is unavailable in this window, so I did not run any local file action. Restart ENOS Desk or update the desktop app, then try again.'
+					);
+					return true;
+				}
+
+				// Browser Chat has no local bridge; fall through to the normal chat pipeline.
 				return false;
 			}
 

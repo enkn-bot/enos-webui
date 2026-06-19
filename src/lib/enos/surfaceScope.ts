@@ -1,6 +1,7 @@
 export type EnosSurface = 'chat' | 'desk';
 
 type SurfaceScopedItem = {
+	id?: unknown;
 	meta?: {
 		surface?: unknown;
 		[key: string]: unknown;
@@ -19,14 +20,16 @@ export const surfaceFromIsDesk = (isDeskSurface: boolean): EnosSurface =>
 
 export const filterBySurface = <T extends SurfaceScopedItem>(
 	items: T[] | null | undefined,
-	surface: EnosSurface
+	surface: EnosSurface,
+	options: { legacyDeskItemIds?: Iterable<string> } = {}
 ): T[] => {
 	const list = Array.isArray(items) ? items : [];
+	const legacyDeskItemIds = new Set(options.legacyDeskItemIds ?? []);
 
 	return list.filter((item) => {
 		const surfaceTag = itemSurface(item);
 		if (surface === 'desk') {
-			return surfaceTag === 'desk';
+			return surfaceTag === 'desk' || (!surfaceTag && legacyDeskItemIds.has(String(item.id ?? '')));
 		}
 		return surfaceTag !== 'desk';
 	});

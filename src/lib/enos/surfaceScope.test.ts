@@ -13,6 +13,21 @@ describe('filterBySurface', () => {
 		expect(filterBySurface(items, 'desk').map((item) => item.id)).toEqual(['desk']);
 	});
 
+	test('Desk can include legacy projects explicitly adopted from local folder bindings', () => {
+		const items = [
+			{ id: 'desk', meta: { surface: 'desk' } },
+			{ id: 'chat', meta: { surface: 'chat' } },
+			{ id: 'bound-legacy' },
+			{ id: 'plain-legacy' }
+		];
+
+		expect(
+			filterBySurface(items, 'desk', { legacyDeskItemIds: ['bound-legacy'] }).map(
+				(item) => item.id
+			)
+		).toEqual(['desk', 'bound-legacy']);
+	});
+
 	test('Chat includes chat-tagged and legacy untagged items', () => {
 		const items = [
 			{ id: 'desk', meta: { surface: 'desk' } },

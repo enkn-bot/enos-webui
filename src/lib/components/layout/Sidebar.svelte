@@ -198,7 +198,10 @@
 		const allFolders = await getFolders(localStorage.token).catch((error) => {
 			return [];
 		});
-		const folderList = filterBySurface(allFolders, currentSurface);
+		const legacyDeskProjectIds = await discoverLegacyDeskProjectIds(allFolders);
+		const folderList = filterBySurface(allFolders, currentSurface, {
+			legacyDeskItemIds: legacyDeskProjectIds
+		});
 		_folders.set(folderList.sort((a, b) => b.updated_at - a.updated_at));
 
 		folders = {};
@@ -233,6 +236,30 @@
 				});
 			}
 		}
+	};
+
+	const discoverLegacyDeskProjectIds = async (allFolders = []) => {
+		if (!isDeskSurface) return [];
+		const bridge = getEnosDesktopBridge();
+		if (!bridge?.getWorkspace) return [];
+
+		const legacyFolders = allFolders.filter((folder) => {
+			const surface = folder?.meta?.surface;
+			return folder?.id && surface !== 'desk' && surface !== 'chat';
+		});
+
+		const ids = await Promise.all(
+			legacyFolders.map(async (folder) => {
+				try {
+					const workspace = await bridge.getWorkspace(folder.id);
+					return workspace ? folder.id : null;
+				} catch {
+					return null;
+				}
+			})
+		);
+
+		return ids.filter(Boolean);
 	};
 
 	const saveProjectDigestForFolder = async (folderId, folder = null) => {
