@@ -65,11 +65,9 @@ html, body, button, input, textarea, select {
   letter-spacing: 0.01em;
 }
 
-/* 4. Hide native integration and tools buttons (CSS wins over Svelte re-renders) */
-#integration-menu-button,
-button[aria-label="Available Tools"] {
-  display: none !important;
-}
+/* 4. RESTORED (de-nerf 2026-06-20): integration menu + Available Tools toggle
+   host base web search / tools. Hiding them nerfed base parity (user could not
+   reach the web-search toggle). Keep base controls visible; build additively. */
 
 /* 5. Hide assistant response orb and model name header */
 img.assistant-message-profile-image {
@@ -80,11 +78,8 @@ img.assistant-message-profile-image {
   display: none !important;
 }
 
-/* 6. Hide navbar Controls button and UserMenu (user circle) */
-button[aria-label="Controls"],
-button[aria-label="User menu"] {
-  display: none !important;
-}
+/* 6. RESTORED (de-nerf 2026-06-20): Controls pane + User menu are base controls.
+   Hiding them was collateral nerf. Restore to base; surface-shaping stays additive. */
 
 /* 5. Welcome greeting injected by enos-surface.mjs */
 [data-enos-welcome-hidden] {
