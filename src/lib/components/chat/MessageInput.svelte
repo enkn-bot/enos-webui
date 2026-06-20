@@ -2130,7 +2130,13 @@
 										{/if}
 
 										{#if !history?.currentId || history.messages[history.currentId]?.done == true}
-											<!-- enos: TerminalMenu (cloud icon) hidden -->
+											<!-- Terminal Server Selector -->
+											{@const hasDirectToolServerAccess =
+												$_user?.role === 'admin' ||
+												($_user?.permissions?.features?.direct_tool_servers ?? true)}
+											{#if terminalCapableModels.length > 0 && (($terminalServers ?? []).some((t) => t.id) || (hasDirectToolServerAccess && (($terminalServers ?? []).some((t) => !t.id) || ($settings?.terminalServers ?? []).some((s) => s.url))))}
+												<TerminalMenu bind:show={showTerminalMenu} />
+											{/if}
 
 											{#if $_user?.role === 'admin' || ($_user?.permissions?.chat?.stt ?? true)}
 												<!-- {$i18n.t('Record voice')} -->

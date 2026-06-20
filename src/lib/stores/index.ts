@@ -74,7 +74,7 @@ export const skills = writable(null);
 export const functions = writable(null);
 
 export const toolServers = writable([]);
-export const terminalServers = writable([]);
+export const terminalServers: Writable<TerminalServerEntry[]> = writable([]);
 
 // Persistent Pyodide worker for code interpreter FS
 export const pyodideWorker: Writable<Worker | null> = writable(null);
@@ -183,6 +183,8 @@ type OllamaModelDetails = {
 type Settings = {
 	pinnedModels?: never[];
 	toolServers?: never[];
+	terminalServers?: TerminalServerConfig[];
+	enos?: EnosSettings;
 	detectArtifacts?: boolean;
 	showUpdateToast?: boolean;
 	showChangelog?: boolean;
@@ -247,6 +249,25 @@ type Settings = {
 	num_batch?: string;
 	num_keep?: string;
 	options?: ModelOptions;
+};
+
+type TerminalServerConfig = {
+	url?: string;
+	key?: string;
+	name?: string;
+	enabled?: boolean;
+	auth_type?: string;
+	path?: string;
+	[key: string]: unknown;
+};
+
+type TerminalServerEntry = TerminalServerConfig & {
+	id?: string;
+};
+
+type EnosSettings = {
+	scopeSidebarChatsBySurface?: boolean;
+	[key: string]: unknown;
 };
 
 type ModelOptions = {

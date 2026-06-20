@@ -121,7 +121,7 @@
 	$: sidebarChats = filterBySurface($chats ?? [], currentSurface);
 	$: sidebarPinnedChats = filterBySurface($pinnedChats ?? [], currentSurface);
 	$: hasDesktopBridge = browser && Boolean(getEnosDesktopBridge());
-	$: showDeskChats = !isDeskSurface;
+	$: showDeskChats = !(isDeskSurface && ($settings?.enos?.scopeSidebarChatsBySurface ?? false));
 
 	const isMenuItemVisible = (id) => {
 		switch (id) {

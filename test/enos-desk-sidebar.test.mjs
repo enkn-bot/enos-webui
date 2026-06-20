@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-test('Desk sidebar suppresses top-level Chats and binds selected Mac folders to sidebar folders', () => {
+test('Desk sidebar scopes top-level Chats by opt-in setting and binds selected Mac folders to sidebar folders', () => {
 	const sidebar = readFileSync('src/lib/components/layout/Sidebar.svelte', 'utf8');
 	const folderModal = readFileSync(
 		'src/lib/components/layout/Sidebar/Folders/FolderModal.svelte',
@@ -20,8 +20,13 @@ test('Desk sidebar suppresses top-level Chats and binds selected Mac folders to 
 	assert.match(sidebar, /isDeskSurface/, 'Sidebar should identify the ENOS Desk surface');
 	assert.match(
 		sidebar,
+		/showDeskChats\s*=\s*!\(isDeskSurface && \(\$settings\?\.enos\?\.scopeSidebarChatsBySurface \?\? false\)\)/,
+		'Desk should show top-level Chats by default and hide them only when surface scoping is enabled'
+	);
+	assert.doesNotMatch(
+		sidebar,
 		/showDeskChats\s*=\s*!\s*isDeskSurface/,
-		'Desk should suppress the top-level Chats section without affecting Chat'
+		'Desk should not always suppress the top-level Chats section'
 	);
 	assert.match(
 		sidebar,

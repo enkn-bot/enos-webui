@@ -134,7 +134,7 @@ export function responseAvatarPolicy(surfaceKey, marker) {
 }
 
 export function chatTerminalCloudPolicy(surfaceKey, isTerminalCloud) {
-  return surfaceKey === "chat" && isTerminalCloud ? { visible: false, reason: "chat-hides-terminal-cloud" } : { visible: true, reason: "surface-visible" };
+  return { visible: true, reason: "surface-visible" };
 }
 
 export function topLeftPlusPolicy(surfaceKey, marker) {
@@ -1132,11 +1132,6 @@ function applyInteractivePolicy(document, surface) {
     }
 
     const terminalLabel = terminalLabelForSurface(surface.key, text);
-
-    if (terminalLabel === null) {
-      markHidden(element, "chat-hides-terminal");
-      continue;
-    }
 
     if (typeof terminalLabel === "string") {
       unhideIfSurfaceOwned(element);
