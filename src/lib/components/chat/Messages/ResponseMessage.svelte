@@ -839,13 +839,8 @@
 							class="w-full flex flex-col relative {edit ? 'hidden' : ''}"
 							id="response-content-container"
 						>
-							{#if message.content === '' && !message.done && !message.error}
-								<div
-									class="min-h-8 py-1.5 text-sm font-medium text-gray-500 dark:text-gray-400"
-									aria-live="polite"
-								>
-									<span class="shimmer">{$i18n.t('Thinking…')}</span>
-								</div>
+							{#if message.content === '' && !message.done && !message.error && !hasVisibleStatus}
+								<Skeleton />
 							{:else if message.content && message.error !== true}
 								<!-- always show message contents even if there's an error -->
 								<!-- unless message.error === true which is legacy error handling, where the error message is stored in message.content -->

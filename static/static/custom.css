@@ -85,23 +85,3 @@ button[aria-label="Controls"],
 button[aria-label="User menu"] {
   display: none !important;
 }
-
-/* 5. Welcome greeting injected by enos-surface.mjs */
-[data-enos-welcome-hidden] {
-  display: none !important;
-}
-#enos-welcome-greeting {
-  width: 100%;
-  text-align: center;
-  font-family: "Anthropic Serif", Georgia, "Times New Roman", serif !important;
-  font-size: 1.875rem;
-  line-height: 1.25;
-  font-weight: 400;
-  letter-spacing: 0.005em;
-  color: rgb(31 41 55);
-  padding: 0 1rem;
-  margin-bottom: 3rem;
-}
-.dark #enos-welcome-greeting {
-  color: rgb(243 244 246);
-}

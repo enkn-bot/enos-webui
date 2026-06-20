@@ -3,7 +3,6 @@
 	const i18n = getContext('i18n');
 
 	import Markdown from './Markdown.svelte';
-	import CaveatNotice from './CaveatNotice.svelte';
 	import {
 		artifactCode,
 		chatId,
@@ -90,30 +89,6 @@
 	export let onSourceClick = (e) => {};
 	export let onTaskClick = (e) => {};
 	export let onSetInputText = (text) => {};
-
-	// ENOS caveat handling: detect the verbose backend caveat at the end of a message
-	// and render it as a compact, collapsible notice instead of a long italic paragraph.
-	const CAVEAT_MARKER = '\n\n*Caveat:';
-
-	/** @param {string} text */
-	const extractCaveat = (text) => {
-		const idx = text.lastIndexOf(CAVEAT_MARKER);
-		if (idx === -1) return { body: text, caveat: null };
-		// Only treat it as the backend caveat if the suffix is exactly *Caveat: ...*
-		// with nothing after the closing asterisk except whitespace.
-		const match = text.slice(idx + 2).match(/^\*Caveat:\s*(.+?)\*\s*$/s);
-		if (!match) return { body: text, caveat: null };
-		return {
-			body: text.slice(0, idx),
-			caveat: match[1].trim()
-		};
-	};
-
-	$: caveatResult = (content ?? '').endsWith('*') || done
-		? extractCaveat(content ?? '')
-		: { body: content ?? '', caveat: null };
-	$: bodyContent = caveatResult.body;
-	$: caveatText = caveatResult.caveat;
 
 	let contentContainerElement;
 	let floatingButtonsElement;
@@ -251,10 +226,10 @@
 		<Markdown
 			{id}
 			content={model?.info?.meta?.capabilities?.citations === false
-				? replaceOutsideCode(bodyContent, (segment) =>
+				? replaceOutsideCode(content, (segment) =>
 						segment.replace(/\s*(\[(?:\d+(?:#[^,\]\s]+)?(?:,\s*\d+(?:#[^,\]\s]+)?)*)\])+/g, '')
 					)
-				: bodyContent}
+				: content}
 			{model}
 			{save}
 			{preview}
@@ -287,20 +262,14 @@
 				await showEmbeds.set(false);
 			}}
 		/>
-		{#if caveatText}
-			<CaveatNotice caveatText={caveatText} />
-		{/if}
 	{:else}
-		{@const extracted = extractDetailsBlocks(bodyContent)}
+		{@const extracted = extractDetailsBlocks(content)}
 		{#if extracted.detailsContent}
 			<!-- Render structural blocks (tool calls, reasoning, etc.) through Markdown -->
 			<Markdown {id} content={extracted.detailsContent} {done} />
 		{/if}
 		{#if extracted.plainContent}
 			<div class="whitespace-pre-wrap">{extracted.plainContent}</div>
-		{/if}
-		{#if caveatText}
-			<CaveatNotice caveatText={caveatText} />
 		{/if}
 	{/if}
 </div>

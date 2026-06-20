@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-test('unfinished empty assistant responses render animated shimmer text', () => {
+test('unfinished empty assistant responses use base skeleton unless visible status is present', () => {
 	const responseMessage = readFileSync(
 		'src/lib/components/chat/Messages/ResponseMessage.svelte',
 		'utf8'
@@ -10,19 +10,20 @@ test('unfinished empty assistant responses render animated shimmer text', () => 
 
 	assert.match(
 		responseMessage,
-		/message\.content === '' && !message\.done && !message\.error/,
-		'ResponseMessage should have an explicit loading branch for empty unfinished assistant messages'
-	);
-	assert.doesNotMatch(
-		responseMessage,
 		/message\.content === '' && !message\.done && !message\.error && !hasVisibleStatus/,
-		'The loading shimmer must not disappear during buffered tool/evidence turns that expose status'
+		'ResponseMessage should only show the base skeleton when there is no visible status'
 	);
 	assert.match(
 		responseMessage,
-		/class="[^"]*shimmer[^"]*"/,
-		'Generating assistant messages should use the shared animated text-gradient shimmer'
+		/<Skeleton \/>/,
+		'Empty unfinished assistant messages should render the base Skeleton placeholder'
 	);
+	assert.doesNotMatch(
+		responseMessage,
+		/class="[^"]*shimmer[^"]*"/,
+		'ResponseMessage should not add a second textual thinking layer'
+	);
+	assert.doesNotMatch(responseMessage, /Thinking…|Thinking\.\.\./, 'Thinking copy should not be rendered');
 });
 
 test('source tray keeps favicon chips and source count visible', () => {

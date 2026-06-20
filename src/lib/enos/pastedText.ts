@@ -1,4 +1,3 @@
-export const LONG_USER_TEXT_LIMIT = 900;
 export const PASTED_TEXT_PREVIEW_LIMIT = 220;
 
 const PASTED_TEXT_NAME_PATTERN = /^Pasted_Text_\d+\.txt$/;
@@ -44,5 +43,3 @@ export const getPastedTextPreview = (text = '', limit = PASTED_TEXT_PREVIEW_LIMI
 	if (normalized.length <= limit) return normalized;
 	return `${normalized.slice(0, Math.max(0, limit)).trimEnd()}...`;
 };
-
-export const shouldCollapseUserText = (text = '') => String(text ?? '').length >= LONG_USER_TEXT_LIMIT;

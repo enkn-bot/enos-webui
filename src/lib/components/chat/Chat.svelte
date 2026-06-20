@@ -117,18 +117,8 @@
 	import Sidebar from '../icons/Sidebar.svelte';
 	import Image from '../common/Image.svelte';
 	import { getBanners } from '$lib/apis/configs';
-	import {
-		getEnosDesktopBridge
-	} from '$lib/enos/desktopBridge';
+	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 	import { buildProjectActionContext } from '$lib/enos/projectActions';
-	import {
-		detectProjectChatAction,
-		formatProjectWriteFailure,
-		isProjectFileFactsPrompt,
-		shouldEmitProjectFileFactsUnavailableGuard,
-		shouldInjectSavedProjectDigest,
-		shouldRouteProjectFileFactsToDeskAgent
-	} from '$lib/enos/projectChatActions';
 	import { runDeskAgentLoop } from '$lib/enos/deskAgentLoop';
 	import { DESK_FILE_TOOLS, describeDeskTool, executeDeskFileTool } from '$lib/enos/deskFileTools';
 	import { groundingLine } from '$lib/enos/grounding';
@@ -1934,49 +1924,14 @@
 
 	const handleProjectChatAction = async (userPrompt) => {
 		try {
+			if (!isDeskSurface()) return false;
+
 			await hydrateProjectFolderFromChat(chat);
 			await restoreLastDeskProjectFolder();
 			const bridge = getEnosDesktopBridge();
 			const folderId = activeProjectFolderId();
 			const hasDesktopBridge = hasProjectListBridge(bridge);
-			const projectFileFactsRequested = Boolean(folderId) && isProjectFileFactsPrompt(userPrompt);
-			const action = detectProjectChatAction({
-				prompt: userPrompt,
-				activePath: activeProjectPathForFolder(folderId)
-			});
-			if (!action) return false;
-
-			if (!hasDesktopBridge) {
-				if (isDeskSurface) {
-					await createLocalProjectActionMessage(
-						userPrompt,
-						'ENOS Desktop bridge is unavailable in this window, so I did not run any local file action. Restart ENOS Desk or update the desktop app, then try again.'
-					);
-					return true;
-				}
-
-				// Browser Chat has no local bridge; fall through to the normal chat pipeline.
-				return false;
-			}
-
-			if (!folderId) {
-				await createLocalProjectActionMessage(
-					userPrompt,
-					'Start a new project first. Local file actions need an active ENOS Desk project folder. Choose an existing project in the sidebar, or create a new project from a local folder.'
-				);
-				return true;
-			}
-
-			const routeFileFactsToAgent = shouldRouteProjectFileFactsToDeskAgent({
-				projectFileFactsRequested,
-				hasDesktopBridge,
-				hasActiveProjectFolder: Boolean(folderId)
-			});
-
-			if (action.kind === 'capability' || action.kind === 'clarify') {
-				await createLocalProjectActionMessage(userPrompt, action.message);
-				return true;
-			}
+			if (!hasDesktopBridge || !folderId) return false;
 
 			// Carry the last N turns of chat history so follow-up questions have context.
 			const HISTORY_TURNS = 6;
@@ -2010,26 +1965,25 @@
 						`repositories into new project-relative subdirectories. Refuse ssh/git/file/http clone URLs, push, fetch, pull, remote, ` +
 						`merge, rebase, hard reset, force, branch deletion, checkout of existing refs, ` +
 						`stash drop, and config writes.\n\n` +
-						`FILE FACTS ARE GROUND TRUTH: when you list, count, or describe files, account for ` +
+						`FILE FACTS ARE GROUND TRUTH: when the user asks you to list, count, or describe files, account for ` +
 						`EVERY file — never merge, deduplicate, or omit any, even different formats of one ` +
 						`document (a .html, .pdf and .png are THREE separate files) or system files. If a ` +
-						`${routeFileFactsToAgent ? `The current user request is a file-listing/count question; call list_files before answering. ` : ''}` +
-						`listing matters, call list_files for the authoritative set. The user may act on ` +
-						`this, so completeness is safety-critical.`
+						`listing matters, call list_files for the authoritative set before answering. The user ` +
+						`may act on this, so completeness is safety-critical.`
 				},
 				...priorMessages,
 				{ role: 'user' as const, content: userPrompt }
 			];
 
 			const complete = async (msgs, tools) => {
-					if (bridge.agentCompleteStream) {
-						liveContent = '';
-						return bridge.agentCompleteStream(msgs, tools, uuidv4(), (delta) => {
-							if (!delta) return;
-							liveContent += delta;
-							setLiveContent(liveContent);
-						});
-					}
+				if (bridge.agentCompleteStream) {
+					liveContent = '';
+					return bridge.agentCompleteStream(msgs, tools, uuidv4(), (delta) => {
+						if (!delta) return;
+						liveContent += delta;
+						setLiveContent(liveContent);
+					});
+				}
 				if (!bridge.agentComplete) throw new Error('Desk agent endpoint not available — update ENOS Desk.');
 				return bridge.agentComplete(msgs, tools);
 			};
@@ -2059,17 +2013,17 @@
 			};
 
 			// Live prose streaming: completion tokens are appended to the in-progress
-				// message as they arrive (reset per round; outcome.content stays final).
-				let liveContent = '';
-				const setLiveContent = (text) => {
-					const m = history.messages[responseMessageId];
-					if (!m) return;
-					m.content = text;
-					history.messages[responseMessageId] = m;
-					history = history;
-				};
+			// message as they arrive (reset per round; outcome.content stays final).
+			let liveContent = '';
+			const setLiveContent = (text) => {
+				const m = history.messages[responseMessageId];
+				if (!m) return;
+				m.content = text;
+				history.messages[responseMessageId] = m;
+				history = history;
+			};
 
-				const onEvent = (ev) => {
+			const onEvent = (ev) => {
 				if (ev.type === 'tool_start') {
 					statusHistory.push({
 						action: 'enos_desk',
@@ -2111,9 +2065,10 @@
 		} catch (error) {
 			console.error('[enos desk agent]', error);
 			toast.error($i18n.t('Project file action failed'));
+			const detail = error instanceof Error ? error.message : String(error);
 			await createLocalProjectActionMessage(
 				userPrompt,
-				formatProjectWriteFailure('project', error)
+				`Project file action failed.\n\n${detail}`
 			);
 			return true;
 		}
@@ -2810,8 +2765,6 @@
 			regenerationPrompt ?? userMessage?.merged?.content ?? userMessage?.content ?? ''
 		);
 		const activeProjectFilePath = activeProjectId ? activeProjectPathForFolder(activeProjectId) : '.';
-		const projectFileFactsRequested =
-			Boolean(activeProjectId) && isProjectFileFactsPrompt(projectActionPrompt);
 		const projectBridge = getEnosDesktopBridge();
 		const hasDesktopBridge = hasProjectListBridge(projectBridge);
 		const projectActionContext = await buildProjectActionContext({
@@ -2821,27 +2774,12 @@
 			prompt: projectActionPrompt
 		});
 
-		if (shouldInjectSavedProjectDigest({ projectContextDigest, projectFileFactsRequested })) {
+		if (projectContextDigest) {
 			messages = [
 				...messages,
 				{
 					role: 'system',
 					content: `Saved project summary (BACKGROUND ONLY — may be stale or INCOMPLETE; it can omit binary/large/hidden files). Use it for high-level orientation about what the project is.\nNEVER answer a question about which files exist, how many files there are, or a folder's contents from this saved summary. For any file listing, count, or contents question, use the "Live local project context" listing below (or call list_files) — that is the complete, authoritative, current file set. If neither is available, say so rather than guessing.\n\n${projectContextDigest}`
-				}
-			];
-		} else if (
-			shouldEmitProjectFileFactsUnavailableGuard({
-				projectFileFactsRequested,
-				hasDesktopBridge,
-				projectActionContext
-			})
-		) {
-			messages = [
-				...messages,
-				{
-					role: 'system',
-					content:
-						'The user asked for current project file facts, but the live local project file listing is unavailable in this request. Do not answer from a saved project summary or earlier chat text. Say ENOS Desk needs the live project folder listing to answer safely, then ask the user to retry or reselect the project folder.'
 				}
 			];
 		} else if (activeProjectId && !projectActionContext) {

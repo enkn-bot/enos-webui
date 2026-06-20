@@ -9,7 +9,7 @@ import type {
  *
  * These are OpenAI-format function specs the model can call, plus an executor
  * that runs each call against the local Electron bridge (`window.enosDesktop`).
- * This replaces the brittle regex intent-parser (`projectChatActions.ts`): the
+ * This replaces the brittle legacy intent parser: the
  * model decides *which* tool to call and supplies generated content directly,
  * so any phrasing and multi-step work is handled by reasoning, not matching.
  *

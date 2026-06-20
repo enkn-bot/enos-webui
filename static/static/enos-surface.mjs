@@ -98,44 +98,6 @@ export function consumeComposerModelOrbEvent(event) {
   event?.preventDefault?.(); event?.stopPropagation?.(); event?.stopImmediatePropagation?.();
 }
 
-/* Empty-state welcome greeting — time/day-aware, in the spirit of claude.ai's
-   rotating hero. `firstName` is woven in when known. One greeting is picked per
-   page load (cached by the caller) so it never flickers as the surface
-   re-applies on DOM mutations. Pure + deterministic given `rng`. */
-export function composeWelcomeGreeting(date = new Date(), firstName = "", rng = Math.random) {
-  const name = String(firstName || "").trim();
-  const withName = (text) => {
-    if (!name) return text;
-    const match = String(text || "").match(/^(.+?)([.!?])?$/);
-    if (!match) return text;
-    const [, body, punctuation] = match;
-    return punctuation ? `${body}, ${name}${punctuation}` : `${body}, ${name}`;
-  };
-  const hour = date.getHours();
-  const day = date.getDay(); // 0 Sun .. 6 Sat
-  const pool = [];
-
-  if (hour >= 5 && hour < 12) {
-    pool.push(withName("Good morning."), withName("Good morning."), "Ready when you are.");
-  } else if (hour >= 12 && hour < 17) {
-    pool.push(withName("Good afternoon."), withName("How's your day?"), withName("Good afternoon."));
-  } else if (hour >= 17 && hour < 22) {
-    pool.push(withName("Good evening."), withName("Evening."), withName("Good evening."));
-  } else {
-    pool.push("Hello, night owl.", withName("What's on your mind tonight?"), "Burning the midnight oil?");
-  }
-
-  if (day === 5) pool.push(withName("That Friday feeling."), withName("Happy Friday!"));
-  if (day === 6 || day === 0) {
-    pool.push(withName("Welcome to the weekend."), withName(`Happy ${day === 6 ? "Saturday!" : "Sunday!"}`));
-  }
-  pool.push(withName("Welcome."), name ? `${name} returns!` : "Welcome back!", withName("Back at it."));
-
-  const roll = Number(rng());
-  const idx = Math.min(pool.length - 1, Math.max(0, Math.floor((Number.isFinite(roll) ? roll : 0) * pool.length)));
-  return pool[idx];
-}
-
 function finiteNumber(value, fallback) {
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;
@@ -1220,119 +1182,12 @@ function hideTopModelDefaultChrome(document, surface) {
   }
 }
 
-let enosUserFirstName = "";
-let enosGreetingText = null;
-
-function loadUserFirstName(windowObject, onLoaded) {
-  try {
-    const token = windowObject.localStorage?.token;
-    const fetchFn = windowObject.fetch;
-    if (!token || typeof fetchFn !== "function") return;
-    fetchFn("/api/v1/auths/", { headers: { authorization: `Bearer ${token}` } })
-      .then((response) => (response && response.ok ? response.json() : null))
-      .then((profile) => {
-        const first = String(profile?.name || "").trim().split(/\s+/)[0] || "";
-        if (first && first !== enosUserFirstName) {
-          enosUserFirstName = first;
-          enosGreetingText = null; // recompute greeting now that the name is known
-          onLoaded?.();
-        }
-      })
-      .catch(() => {});
-  } catch (_error) {
-    /* best-effort: greeting falls back to a name-less variant */
-  }
-}
-
-function findWelcomeNameRow(document) {
-  // OWUI's empty-state hero nests the model avatar + name, its description, AND
-  // the composer as siblings under one container. We must hide ONLY the
-  // avatar+name row (and the description), never an ancestor that also wraps the
-  // composer — doing so removes the input box. Start at the model-name label and
-  // climb only as far as ancestors that still exclude any form/textarea.
-  const pane = document.getElementById("chat-pane");
-  // If the chat pane hasn't rendered yet, wait for the next mutation pass
-  // instead of falling back to document and accidentally matching sidebar text.
-  if (!pane) return undefined;
-  // If messages exist, the chat is not in empty state — no welcome row to replace.
-  const hasMessages = pane.querySelector(
-    '[id^="message-"]:not([id^="message-input"]):not([id^="message-edit"])',
-  );
-  if (hasMessages) return undefined;
-  let name;
-  for (const element of pane.querySelectorAll(".line-clamp-1")) {
-    if (
-      element instanceof HTMLElement &&
-      !element.closest("[data-message-id]") &&
-      !element.closest("form") &&
-      (element.textContent || "").trim()
-    ) {
-      name = element;
-      break;
-    }
-  }
-  if (!name) return undefined;
-
-  let block = name;
-  let current = name.parentElement;
-  for (let depth = 0; depth < 6 && current instanceof HTMLElement; depth += 1) {
-    if (current.id === "chat-pane" || current === pane) break;
-    if (current.querySelector("form, textarea")) break; // climbing further would swallow the composer
-    block = current;
-    current = current.parentElement;
-  }
-  return block;
-}
-
-function ensureWelcomeGreeting(document, surface) {
-  const existing = document.getElementById("enos-welcome-greeting");
-  if (surface.key !== "chat" && surface.key !== "desk") {
-    existing?.remove();
-    return;
-  }
-
-  const block = findWelcomeNameRow(document);
-  if (!(block instanceof HTMLElement) || !(block.parentElement instanceof HTMLElement)) {
-    existing?.remove();
-    return;
-  }
-
-  const parent = block.parentElement;
-  block.dataset.enosWelcomeHidden = "true";
-
-  // Hide the model-description sibling (a plain text block) but keep the composer
-  // (has a form/textarea) and any interactive siblings (suggestions, controls).
-  for (const sibling of parent.children) {
-    if (!(sibling instanceof HTMLElement)) continue;
-    if (sibling === block || sibling.id === "enos-welcome-greeting") continue;
-    if (sibling.querySelector("form, textarea, button, a, [role='button']")) continue;
-    sibling.dataset.enosWelcomeHidden = "true";
-  }
-
-  if (enosGreetingText === null) {
-    enosGreetingText = composeWelcomeGreeting(new Date(), enosUserFirstName);
-  }
-
-  const greeting = existing instanceof HTMLElement ? existing : document.createElement("div");
-  greeting.id = "enos-welcome-greeting";
-  if (greeting.textContent !== enosGreetingText) greeting.textContent = enosGreetingText;
-  if (greeting.parentElement !== parent || block.previousElementSibling !== greeting) {
-    parent.insertBefore(greeting, block);
-  }
-}
-
 function resetSurfaceOwnedMutations(document) {
-  document.getElementById("enos-welcome-greeting")?.remove();
   document.getElementById(COMPOSER_MODEL_ORBS_ID)?.remove();
 
   for (const element of document.querySelectorAll("[data-enos-surface-hidden]")) {
     if (!(element instanceof HTMLElement)) continue;
     unhideIfSurfaceOwned(element);
-  }
-
-  for (const element of document.querySelectorAll("[data-enos-welcome-hidden]")) {
-    if (!(element instanceof HTMLElement)) continue;
-    delete element.dataset.enosWelcomeHidden;
   }
 }
 
@@ -1370,7 +1225,6 @@ function applySurface(document, surface) {
   }
   ensureDeskSidePaneButton(document, surface);
   removeLegacyComposerModelOrbs(document);
-  ensureWelcomeGreeting(document, surface);
   removeModelsPlaygroundNav(document);
   suppressRightPanels(document, surface);
 }
@@ -1388,7 +1242,6 @@ export function initSurface(windowObject = globalThis.window) {
       : (callback) => windowObject.setTimeout(callback, 16);
   const scheduleRun = createRunCoalescer(run, schedule);
   run();
-  loadUserFirstName(windowObject, scheduleRun);
 
   const observer = new windowObject.MutationObserver(scheduleRun);
   const observeBody = () => {

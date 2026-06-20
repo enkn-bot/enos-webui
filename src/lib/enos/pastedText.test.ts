@@ -4,8 +4,7 @@ import {
 	getPastedTextContent,
 	getPastedTextPreview,
 	getTextStats,
-	isPastedTextFile,
-	shouldCollapseUserText
+	isPastedTextFile
 } from './pastedText';
 
 describe('pasted text helpers', () => {
@@ -32,14 +31,9 @@ describe('pasted text helpers', () => {
 		);
 	});
 
-	test('builds compact previews and stats for collapsed cards', () => {
+	test('builds compact previews and stats for pasted text attachments', () => {
 		const text = ['first line', 'second line', 'third line'].join('\n');
 		expect(getPastedTextPreview(text, 18)).toBe('first line second...');
 		expect(getTextStats(text)).toEqual({ chars: 33, lines: 3 });
-	});
-
-	test('collapses long user prompts but leaves short prompts alone', () => {
-		expect(shouldCollapseUserText('short note')).toBe(false);
-		expect(shouldCollapseUserText('x'.repeat(1000))).toBe(true);
 	});
 });

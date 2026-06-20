@@ -17,7 +17,7 @@
 	import Image from '$lib/components/common/Image.svelte';
 	import DeleteConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
 	import PastedTextCard from '../PastedTextCard.svelte';
-	import { isPastedTextFile, shouldCollapseUserText } from '$lib/enos/pastedText';
+	import { isPastedTextFile } from '$lib/enos/pastedText';
 
 	import localizedFormat from 'dayjs/plugin/localizedFormat';
 
@@ -372,28 +372,21 @@
 			{:else if message.content !== ''}
 				<div class="w-full">
 					<div class="flex {($settings?.chatBubble ?? true) ? 'justify-end pb-1' : 'w-full'}">
-						{#if shouldCollapseUserText(message.content)}
-							<PastedTextCard
-								content={message.content}
-								title="Pasted prompt"
-								className={($settings?.chatBubble ?? true) ? 'max-w-[90%]' : 'w-full'}
-							/>
-						{:else}
-							<div
-								class="rounded-3xl {($settings?.chatBubble ?? true)
-									? `max-w-[90%] px-4 py-1.5  bg-gray-50 dark:bg-gray-850 ${
-											message.files ? 'rounded-tr-lg' : ''
-										}`
-									: ' w-full'}"
-							>
-								{#if message.content}
-									{#if $settings?.renderMarkdownInUserMessages ?? true}
-										<Markdown
-											id={`${chatId}-${message.id}`}
-											content={message.content}
-											{editCodeBlock}
-											{topPadding}
-										/>
+						<div
+							class="rounded-3xl {($settings?.chatBubble ?? true)
+								? `max-w-[90%] px-4 py-1.5  bg-gray-50 dark:bg-gray-850 ${
+										message.files ? 'rounded-tr-lg' : ''
+									}`
+								: ' w-full'}"
+						>
+							{#if message.content}
+								{#if $settings?.renderMarkdownInUserMessages ?? true}
+									<Markdown
+										id={`${chatId}-${message.id}`}
+										content={message.content}
+										{editCodeBlock}
+										{topPadding}
+									/>
 									{:else}
 										<div class="whitespace-pre-wrap" dir={$settings?.chatDirection ?? 'auto'}>
 											{message.content}
@@ -401,7 +394,6 @@
 									{/if}
 								{/if}
 							</div>
-						{/if}
 					</div>
 				</div>
 			{/if}

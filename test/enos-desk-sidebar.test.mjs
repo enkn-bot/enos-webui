@@ -215,10 +215,10 @@ test('Electron hidden titlebar keeps the web sidebar layout untouched', () => {
 test('Desk chat reload restores a project anchor before showing no-project guidance', () => {
 	const chat = readFileSync('src/lib/components/chat/Chat.svelte', 'utf8');
 
-	assert.match(
+	assert.doesNotMatch(
 		chat,
 		/detectProjectChatAction/,
-		'Desk chat handling should classify file/project intent before taking over a prompt'
+		'Desk chat handling should not classify file/project intent with the legacy regex router'
 	);
 	assert.match(
 		chat,
@@ -269,21 +269,17 @@ test('Desk chat reload restores a project anchor before showing no-project guida
 	const handlerStart = chat.indexOf('const handleProjectChatAction = async');
 	const handlerEnd = chat.indexOf('const addMessages', handlerStart);
 	const handler = chat.slice(handlerStart, handlerEnd);
-	const detectIndex = handler.indexOf('const action = detectProjectChatAction');
-	const noActionIndex = handler.indexOf('if (!action) return false');
-	const noBridgeIndex = handler.indexOf('if (!hasDesktopBridge)');
 	const restoreIndex = handler.indexOf('await restoreLastDeskProjectFolder()');
-	const noFolderIndex = handler.indexOf('if (!folderId)');
+	const availabilityIndex = handler.indexOf('if (!hasDesktopBridge || !folderId) return false');
+	const loopIndex = handler.indexOf('runDeskAgentLoop');
 	assert.ok(handlerStart > -1, 'Chat should have a project action handler');
-	assert.ok(detectIndex > -1, 'Chat should classify project action language');
-	assert.ok(noActionIndex > detectIndex, 'Non-project prompts should fall through to normal chat');
 	assert.ok(
-		noActionIndex < noBridgeIndex,
-		'Non-project prompts should fall through before bridge checks so normal questions are not hijacked'
+		availabilityIndex > -1,
+		'Prompts should fall through to normal chat when the bridge or project folder is unavailable'
 	);
 	assert.ok(
-		restoreIndex > -1 && restoreIndex < detectIndex && restoreIndex < noFolderIndex,
-		'Desk should restore a project anchor before classifying folder-relative prompts or showing no-project guidance'
+		restoreIndex > -1 && restoreIndex < availabilityIndex && restoreIndex < loopIndex,
+		'Desk should restore a project anchor before deciding whether to run the model/tool loop'
 	);
 });
 
@@ -712,25 +708,25 @@ test('Desk project chats attach live local file action context before model call
 		/projectContextDigest[\s\S]*projectActionContext/,
 		'Saved digest should be added before live context so active folder context has final authority'
 	);
-	assert.match(
+	assert.doesNotMatch(
 		chat,
 		/isProjectFileFactsPrompt/,
-		'Chat completion should classify file-list/count prompts before injecting saved project context'
+		'Chat completion should not classify file-list/count prompts with regex before injecting context'
 	);
-	assert.match(
+	assert.doesNotMatch(
 		chat,
 		/shouldInjectSavedProjectDigest/,
-		'Saved project summaries should not be injected for file-list/count prompts'
+		'Saved project summaries should not depend on a regex helper gate'
 	);
-	assert.match(
+	assert.doesNotMatch(
 		chat,
 		/shouldEmitProjectFileFactsUnavailableGuard/,
-		'File-list/count prompts without live context should get the safe fallback path'
+		'File-list/count prompts should not use a regex helper fallback path'
 	);
 	assert.match(
 		chat,
-		/live local project file listing is unavailable/,
-		'The safe fallback should refuse stale digest-only file facts'
+		/NEVER answer a question about which files exist/,
+		'The saved digest instruction should still refuse stale digest-only file facts'
 	);
 	assert.match(
 		localFileNav,
@@ -855,70 +851,59 @@ test('Desk Files pane exposes permissioned project file actions and local Git aw
 	);
 });
 
-test('Desk chat write requests execute through the desktop bridge before model calls', () => {
+test('Desk chat requests use the model-driven desktop tool loop without regex interception', () => {
 	const chat = readFileSync('src/lib/components/chat/Chat.svelte', 'utf8');
-	const projectChatActions = readFileSync('src/lib/enos/projectChatActions.ts', 'utf8');
 
 	assert.match(
-		projectChatActions,
-		/detectProjectChatAction/,
-		'Project chat actions should detect simple write/create-file requests'
-	);
-	assert.match(
-		projectChatActions,
-		/createTestFilePath/,
-		'Project chat actions should create a deterministic project-scoped test-file path'
+		chat,
+		/if \(!isDeskSurface\(\)\) return false/,
+		'Browser Chat should fall through to the normal chat pipeline'
 	);
 	assert.match(
 		chat,
 		/handleProjectChatAction/,
-		'Chat submit path should have a project write command handler'
+		'Chat submit path should have a Desk project tool-loop handler'
+	);
+	assert.match(
+		chat,
+		/runDeskAgentLoop/,
+		'Desk project prompts should be handled by the model/tool loop'
+	);
+	assert.match(
+		chat,
+		/tools: DESK_FILE_TOOLS/,
+		'Desk agent should receive the full file toolset'
 	);
 	assert.match(
 		chat,
 		/executeDeskFileTool/,
-		'Chat write command handler should execute through the shared desktop bridge tool executor'
+		'Desk tool calls should execute through the shared desktop bridge tool executor'
 	);
 	assert.match(
 		chat,
 		/window\.confirm/,
-		'Chat write command handler should ask before mutating unless the bridge profile allows it'
-	);
-	assert.match(
-		chat,
-		/await createLocalProjectActionMessage/,
-		'Handled project write requests should create a local assistant response instead of calling the model'
+		'Desk tool mutations should keep the confirmation gate'
 	);
 	assert.match(
 		chat,
 		/if \(await handleProjectChatAction\(userPrompt\)\) return/,
 		'Chat submit handler should stop before submitPrompt when a project write command was handled'
 	);
+	assert.doesNotMatch(
+		chat,
+		/detectProjectChatAction|isProjectFileFactsPrompt/,
+		'Desk chat should not classify semantic project intent with regex helpers'
+	);
+	assert.doesNotMatch(
+		chat,
+		/ENOS Desktop bridge is unavailable|Start a new project first/,
+		'Missing bridge/folder states should fall through instead of emitting canned assistant text'
+	);
 });
 
-test('Desk chat project actions route all base file operations before model calls', () => {
+test('Desk chat tool loop offers all base file operations through the shared executor', () => {
 	const chat = readFileSync('src/lib/components/chat/Chat.svelte', 'utf8');
-	const projectChatActions = readFileSync('src/lib/enos/projectChatActions.ts', 'utf8');
 	const deskFileTools = readFileSync('src/lib/enos/deskFileTools.ts', 'utf8');
-
-	assert.match(
-		projectChatActions,
-		/export const detectProjectChatAction/,
-		'Project chat actions should expose a single deterministic router'
-	);
-	for (const kind of [
-		'list-directory',
-		'read-file',
-		'create-file',
-		'write-file',
-		'create-folder',
-		'rename-entry',
-		'delete-entry',
-		'reveal-entry',
-		'clarify'
-	]) {
-		assert.match(projectChatActions, new RegExp(`kind: '${kind}'`), `${kind} should be routable`);
-	}
 
 	assert.match(chat, /handleProjectChatAction/, 'Chat should use the generic project action handler');
 	assert.match(chat, /executeDeskFileTool/, 'Chat should delegate project file calls to the shared tool executor');
@@ -951,21 +936,21 @@ test('Desk chat project actions route all base file operations before model call
 	const handlerStart = chat.indexOf('const handleProjectChatAction = async');
 	const handlerEnd = chat.indexOf('const submitHandler', handlerStart);
 	const handler = chat.slice(handlerStart, handlerEnd);
-	const detectIndex = handler.indexOf('const action = detectProjectChatAction');
-	const noBridgeIndex = handler.indexOf('if (!hasDesktopBridge)');
-	const noFolderIndex = handler.indexOf('if (!folderId)');
 	assert.ok(handlerStart > -1, 'Chat should have a project action handler');
-	assert.ok(detectIndex > -1, 'Chat should classify project action language');
-	assert.ok(noBridgeIndex > -1, 'Chat should fall through when the desktop bridge is missing');
-	assert.ok(noFolderIndex > -1, 'Chat should handle missing project selection locally');
-	assert.ok(
-		detectIndex < noBridgeIndex && detectIndex < noFolderIndex,
-		'Chat should classify capability/clarify prompts before bridge/folder guards so they cannot fall through to the model'
+	assert.match(
+		handler,
+		/if \(!hasDesktopBridge \|\| !folderId\) return false/,
+		'Desk project prompts should fall through when the bridge or project folder is unavailable'
 	);
 	assert.match(
 		handler,
-		/if \(isDeskSurface\) \{[\s\S]*ENOS Desktop bridge is unavailable[\s\S]*return true/,
-		'Desk project actions must not fall through to the plain chat model when the desktop bridge is unavailable'
+		/runDeskAgentLoop\(\{[\s\S]*tools: DESK_FILE_TOOLS[\s\S]*executeTool[\s\S]*confirm/,
+		'Desk project prompts should go through the model-driven tool loop with confirmation'
+	);
+	assert.doesNotMatch(
+		handler,
+		/const action = detect/,
+		'Desk project prompts should not be gated by a deterministic semantic classifier'
 	);
 });
 

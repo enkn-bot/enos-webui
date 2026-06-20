@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-test('large pasted text renders as an expandable card in composer and sent messages', () => {
+test('pasted text card is limited to explicit pasted-text file attachments', () => {
 	const card = readFileSync('src/lib/components/chat/PastedTextCard.svelte', 'utf8');
 	const messageInput = readFileSync('src/lib/components/chat/MessageInput.svelte', 'utf8');
 	const userMessage = readFileSync('src/lib/components/chat/Messages/UserMessage.svelte', 'utf8');
@@ -32,20 +32,20 @@ test('large pasted text renders as an expandable card in composer and sent messa
 		/isPastedTextFile\(file\)/,
 		'Composer should render pasted text files with the special card'
 	);
-	assert.match(
+	assert.doesNotMatch(
 		messageInput,
 		/shouldCollapseUserText\(prompt\)/,
-		'Composer should collapse long raw prompt text before it floods the input'
+		'Composer should not collapse raw prompt text with a length threshold'
 	);
-	assert.match(
+	assert.doesNotMatch(
 		messageInput,
-		/Edit text/,
-		'Composer collapsed prompt card should provide an explicit edit path'
+		/composerPromptCollapsed|Full text is attached|Pasted prompt/,
+		'Composer should not show a non-file pasted prompt card'
 	);
-	assert.match(
+	assert.doesNotMatch(
 		messageInput,
 		/class:hidden=\{composerPromptCollapsed\}/,
-		'Composer should hide the rich text editor while the pasted prompt card is collapsed'
+		'Composer should keep the rich text editor visible for long prompt text'
 	);
 
 	assert.match(
@@ -53,10 +53,15 @@ test('large pasted text renders as an expandable card in composer and sent messa
 		/import PastedTextCard/,
 		'User messages should import the pasted text card'
 	);
-	assert.match(
+	assert.doesNotMatch(
 		userMessage,
 		/shouldCollapseUserText\(message\.content\)/,
-		'Long user text should be collapsed by default'
+		'Submitted user message content should render plainly instead of collapsing by length'
+	);
+	assert.doesNotMatch(
+		userMessage,
+		/content=\{message\.content\}[\s\S]*title="Pasted prompt"/,
+		'Submitted user message content should not be wrapped in a pasted prompt card'
 	);
 	assert.match(
 		userMessage,

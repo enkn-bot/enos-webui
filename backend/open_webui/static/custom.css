@@ -80,23 +80,3 @@ img.assistant-message-profile-image {
 
 /* 6. RESTORED (de-nerf 2026-06-20): Controls pane + User menu are base controls.
    Hiding them was collateral nerf. Restore to base; surface-shaping stays additive. */
-
-/* 5. Welcome greeting injected by enos-surface.mjs */
-[data-enos-welcome-hidden] {
-  display: none !important;
-}
-#enos-welcome-greeting {
-  width: 100%;
-  text-align: center;
-  font-family: "Anthropic Serif", Georgia, "Times New Roman", serif !important;
-  font-size: 1.875rem;
-  line-height: 1.25;
-  font-weight: 400;
-  letter-spacing: 0.005em;
-  color: rgb(31 41 55);
-  padding: 0 1rem;
-  margin-bottom: 3rem;
-}
-.dark #enos-welcome-greeting {
-  color: rgb(243 244 246);
-}
