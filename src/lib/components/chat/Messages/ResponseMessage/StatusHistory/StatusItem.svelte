@@ -9,7 +9,11 @@
 	export let done = false;
 </script>
 
-{#if !status?.hidden}
+{#if !status?.hidden && status?.description !== 'No search query generated'}
+	<!-- enos: suppress the base "No search query generated" status. ENOS runs
+	     web-search query-generation on every turn (web-search-primary), so for
+	     non-search answers (known facts) the query step returns empty and base
+	     would surface this noise. Real searches still render normally. -->
 	<div class="status-description flex items-center gap-2 py-0.5 w-full text-left">
 		{#if status?.action === 'web_search' && (status?.urls || status?.items)}
 			<WebSearchResults {status}>
