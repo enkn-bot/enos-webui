@@ -107,7 +107,8 @@
 			{:else}
 				<div
 					id="enos-welcome-greeting"
-					class="mb-6 @md:mb-8 max-w-2xl px-5 text-center text-3xl @md:text-4xl font-medium tracking-normal text-gray-900 dark:text-gray-50"
+					class="mb-6 @md:mb-8 max-w-2xl px-5 text-center text-3xl @md:text-4xl font-normal tracking-normal text-gray-900 dark:text-gray-50"
+					style="font-family: 'Anthropic Serif', Georgia, 'Times New Roman', serif;"
 					in:fade={{ duration: 100 }}
 				>
 					{welcomeGreeting}
