@@ -45,10 +45,17 @@ All requested items SHIPPED + deployed live EXCEPT the last fix (folder/chat→t
 - Deploy: frontend = `npm run build` → `rsync -az --delete-after build/ soraia-a1:/home/ubuntu/open-webui/build/` → restart. enos-surface.mjs/custom.css served from branding/ mounts (scp separately + bump ?v= in src/app.html). build/ is whole-dir bind-mount → no index.html auth-loop. Users may need hard-refresh (web) — Electron picks up on restart.
 - Codex stalls at the FINAL report/commit step repeatedly; work + (usually) commits land. Always verify on-disk + commit if needed.
 
-## Next steps
-1. User verifies folder/chat→tray in Electron (Desk: click BMO/a chat → Files tray opens + caret toggles). If broken → instrument click handlers (see open loop).
-2. Cross-surface: confirm chat-surface folder/chat click opens a sensible tray (chat has no local files → Overview/Controls). Codex flagged this as needing a decision if no meaningful chat tray content.
-3. Nothing pushed to origin (both branches ahead). Push when user asks.
+## Shipped since this doc was written (committed + deployed, 60 tests green)
+- `c9edc64c9` desk workspace badge derives from OPEN CHAT's folder (not sticky selectedFolder); shows bound source; `kind:'local'` stamped. vitest scoped to src/.
+- `dc7492037` badge labeled by env: `Local:`/`Repo:`/`Cloud:` + name (workspaceKindLabel).
+- `12cb3916d` sidebar: Projects add = folder+ (NewFolderAlt); Chats row New Chat (PencilSquare) → startNewChatHandler. Folder.svelte gained configurable `addIcon`.
+- `c9db7fb62` font pass: `.enos-display` serif token class (greeting + project title), hardcoded 'Anthropic Serif' removed, guard test. Dead @font-face left (deferred prune).
+
+## Remaining desk pieces (folded in — do before/with backend roadmap)
+1. **Bind existing project to a workspace (close the "select workspace" loop).** Today binding only happens at folder CREATION (Sidebar.svelte:375-382 `bridge.bindWorkspaceToFolder` + `saveProjectDigestForFolder` → sets `data.project_context_source` {rootName, kind:'local'}). DeskWorkspacePicker.selectLocal (`src/lib/components/enos/DeskWorkspacePicker.svelte:56`) just opens the create-folder modal → existing projects (e.g. "Microsoft") can never bind → badge stays "Select workspace…". FIX: when a project is open/selected, picker "Local" binds THAT folder (extract shared `bindLocalWorkspace(folderId)` util reused by Sidebar + picker; needs Electron native-dialog test). Cloud: selectDirect/selectSystem set selectedTerminalId but DON'T set the folder's project_context_source → badge won't show Cloud; decide badge cloud-state source. GitHub = coming soon.
+2. **Surface split + legacy chat migration (the big one).** Decision locked: scope chats per surface (folders already are). Backfill `meta.surface` on existing chats: untagged→`chat`, chats inside a desk-bound project→`desk`. Then revert the show-all folder-chat stopgap (`RecursiveFolder.setFolderItems`) to surface-scoped. New chats already self-tag.
+3. Earlier open loop: verify folder/chat→tray in Electron (deployed, unverified).
+4. Nothing pushed to origin (both branches ahead). Push when user asks.
 
 ## Commands to resume
 ```bash
