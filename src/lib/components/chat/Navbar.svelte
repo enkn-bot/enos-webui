@@ -32,6 +32,8 @@
 	import ChatPlus from '../icons/ChatPlus.svelte';
 	import ChatCheck from '../icons/ChatCheck.svelte';
 	import ChevronDown from '../icons/ChevronDown.svelte';
+	import Plus from '../icons/Plus.svelte';
+	import DeskWorkspacePicker from '$lib/components/enos/DeskWorkspacePicker.svelte';
 
 	const i18n = getContext('i18n');
 
@@ -68,6 +70,7 @@
 	let editingTitle = false;
 	let titleDraft = '';
 	let titleInputElement: HTMLInputElement;
+	let showDeskWorkspacePicker = false;
 
 	onMount(() => {
 		isDeskSurface = window.location.hostname === 'enosdesk.duckdns.org';
@@ -80,6 +83,9 @@
 		normalizeTitle(chat?.title) ||
 		$i18n.t('New Chat');
 	const deskWorkspaceLabel = () => normalizeTitle(deskWorkspaceName) || $i18n.t('Select workspace…');
+
+	$: deskWorkspaceNameLabel = normalizeTitle(deskWorkspaceName);
+	$: hasDeskWorkspace = Boolean(deskWorkspaceNameLabel);
 
 	const beginTitleRename = async () => {
 		if (!isDeskSurface) return;
@@ -214,16 +220,21 @@
 					<!-- <div class="md:hidden flex self-center w-[1px] h-5 mx-2 bg-gray-300 dark:bg-stone-700" /> -->
 
 					{#if isDeskSurface}
-						<button
-							id="desk-workspace-status-button"
-							type="button"
-							class="max-w-[12rem] flex cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition text-sm"
-							on:click={() => {
-								showControls.set(true);
-							}}
-						>
-							<span class="truncate">{deskWorkspaceLabel()}</span>
-						</button>
+						<DeskWorkspacePicker bind:show={showDeskWorkspacePicker}>
+							<button
+								id="desk-workspace-status-button"
+								type="button"
+								class="max-w-[12rem] flex items-center gap-1.5 cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition text-sm"
+								aria-label={deskWorkspaceLabel()}
+							>
+								{#if hasDeskWorkspace}
+									<span class="truncate max-w-[10rem]">{deskWorkspaceNameLabel}</span>
+								{:else}
+									<Plus className="size-4 shrink-0" strokeWidth="2" />
+									<span class="truncate">{deskWorkspaceLabel()}</span>
+								{/if}
+							</button>
+						</DeskWorkspacePicker>
 					{/if}
 
 					{#if $user?.role === 'user' ? ($user?.permissions?.chat?.temporary ?? true) && !($user?.permissions?.chat?.temporary_enforced ?? false) : true}

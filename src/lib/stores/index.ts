@@ -107,6 +107,7 @@ export const showFileNavPath: Writable<string | null> = writable(null);
 export const showFileNavDir: Writable<string | null> = writable(null);
 export const showLocalFileFolderId: Writable<string | null> = writable(null);
 export const showLocalFilePath: Writable<string> = writable('.');
+export const showDeskFolderPicker: Writable<boolean> = writable(false);
 export const selectedTerminalId: Writable<string | null> = writable(null);
 
 export const artifactCode = writable(null);

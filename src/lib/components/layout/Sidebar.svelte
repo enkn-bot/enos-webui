@@ -33,7 +33,8 @@
 		activeChatIds,
 		showControls,
 		showFileNavPath,
-		showLocalFileFolderId
+		showLocalFileFolderId,
+		showDeskFolderPicker
 	} from '$lib/stores';
 	import { onMount, getContext, tick, onDestroy } from 'svelte';
 
@@ -123,6 +124,10 @@
 	$: sidebarPinnedChats = filterBySurface($pinnedChats ?? [], currentSurface);
 	$: hasDesktopBridge = browser && Boolean(getEnosDesktopBridge());
 	$: showDeskChats = !(isDeskSurface && ($settings?.enos?.scopeSidebarChatsBySurface ?? false));
+	$: if ($showDeskFolderPicker) {
+		showCreateFolderModal = true;
+		showDeskFolderPicker.set(false);
+	}
 
 	const isMenuItemVisible = (id) => {
 		switch (id) {
