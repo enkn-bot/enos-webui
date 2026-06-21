@@ -19,7 +19,7 @@
 	     would surface this noise. Real searches still render normally. -->
 		<div class="status-description flex items-center gap-2 py-0.5 w-full text-left">
 			{#if isPending}
-				<EnosOrb {modelId} className="size-4 shrink-0" />
+				<EnosOrb {modelId} className="size-6 shrink-0" />
 			{/if}
 			{#if status?.action === 'web_search' && (status?.urls || status?.items)}
 			<WebSearchResults {status}>

@@ -6,14 +6,14 @@
 </script>
 
 <span
-	class="relative flex {size === 'md'
-		? 'size-3 my-2'
+	class="relative flex items-center {size === 'md'
+		? 'size-9 my-1'
 		: size === 'xs'
-			? 'size-1.5 my-1'
-			: 'size-2 my-1'} mx-1"
+			? 'size-6'
+			: 'size-7'} -mx-1.5"
 >
 	<EnosOrb
 		{modelId}
-		className={size === 'md' ? 'size-5' : size === 'xs' ? 'size-3' : 'size-4'}
+		className={size === 'md' ? 'size-9' : size === 'xs' ? 'size-6' : 'size-7'}
 	/>
 </span>

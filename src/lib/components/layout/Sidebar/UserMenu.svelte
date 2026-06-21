@@ -21,6 +21,7 @@
 
 	import Dropdown from '$lib/components/common/Dropdown.svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
+	import UserAvatar from '$lib/components/enos/UserAvatar.svelte';
 	import ArchiveBox from '$lib/components/icons/ArchiveBox.svelte';
 	import QuestionMarkCircle from '$lib/components/icons/QuestionMarkCircle.svelte';
 	import Map from '$lib/components/icons/Map.svelte';
@@ -127,11 +128,7 @@
 			{#if profile}
 				<div class=" flex gap-3.5 w-full p-2.5 items-center">
 					<div class=" items-center flex shrink-0">
-							<img
-								src={`${WEBUI_API_BASE_URL}/users/${$user?.id}/profile/image`}
-								class=" size-10 object-cover rounded-full bg-[var(--enos-brand-sage)]"
-								alt="profile"
-							/>
+							<UserAvatar name={$user?.name} className="size-10" />
 					</div>
 
 					<div class=" flex flex-col w-full flex-1">

@@ -85,6 +85,7 @@
 	import HotkeyHint from '../common/HotkeyHint.svelte';
 	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 	import { filterBySurface, surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
+	import UserAvatar from '$lib/components/enos/UserAvatar.svelte';
 
 	const BREAKPOINT = 768;
 	const DEFAULT_PINNED_ITEMS = ['notes', 'workspace'];
@@ -1118,12 +1119,7 @@
 								aria-label={$i18n.t('User menu')}
 							>
 								<div class="self-center relative">
-										<img
-											src={`${WEBUI_API_BASE_URL}/users/${$user?.id}/profile/image`}
-											class=" size-7 object-cover rounded-full bg-[var(--enos-brand-sage)]"
-											alt={$i18n.t('Open User Profile Menu')}
-											aria-label={$i18n.t('Open User Profile Menu')}
-										/>
+										<UserAvatar name={$user?.name} className="size-7" />
 
 									{#if $config?.features?.enable_user_status}
 										<div class="absolute -bottom-0.5 -right-0.5">
@@ -1789,12 +1785,7 @@
 								aria-label={$i18n.t('User menu')}
 							>
 								<div class=" self-center mr-3 relative flex-shrink-0">
-										<img
-											src={`${WEBUI_API_BASE_URL}/users/${$user?.id}/profile/image`}
-											class=" size-7 object-cover rounded-full bg-[var(--enos-brand-sage)]"
-											alt={$i18n.t('Open User Profile Menu')}
-											aria-label={$i18n.t('Open User Profile Menu')}
-										/>
+										<UserAvatar name={$user?.name} className="size-7" />
 
 									{#if $config?.features?.enable_user_status}
 										<div class="absolute -bottom-0.5 -right-0.5">
