@@ -17,6 +17,7 @@
 		mobile,
 		requestTrayOpenForSurface,
 		selectedFolder,
+		settings,
 		showLocalFileFolderId,
 		showSidebar
 	} from '$lib/stores';
@@ -421,7 +422,11 @@
 				toast.error(`${error}`);
 				return [];
 			});
-			chats = filterBySurface(folderChats, currentSurface);
+			// Mirror top-level sidebar: show all folder chats by default; only scope
+			// by surface when the user explicitly opts in. Strict filtering hid every
+			// legacy/untagged chat on desk -> folder appeared empty when opened.
+			const scope = $settings?.enos?.scopeSidebarChatsBySurface ?? false;
+			chats = scope ? filterBySurface(folderChats, currentSurface) : folderChats;
 		} else {
 			chats = null;
 		}
