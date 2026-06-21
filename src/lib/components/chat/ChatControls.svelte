@@ -232,8 +232,27 @@
 		}
 	};
 
+	// While we programmatically open/resize the pane it can transition through a
+	// "collapsed" (size 0) state — the pane starts at defaultSize={0} and opening
+	// also restructures the layout (e.g. when $selectedFolder flips). paneforge fires
+	// onCollapse for those transient collapses, which would otherwise immediately close
+	// the tray we just opened. Suppress onCollapse-driven close during that window only;
+	// genuine user closes (the X button, dragging the resizer shut) happen outside it.
+	let suppressCollapseClose = false;
+	let suppressCollapseTimer: ReturnType<typeof setTimeout> | null = null;
+	const guardCollapseDuringOpen = () => {
+		suppressCollapseClose = true;
+		if (suppressCollapseTimer) clearTimeout(suppressCollapseTimer);
+		suppressCollapseTimer = setTimeout(() => {
+			suppressCollapseClose = false;
+			suppressCollapseTimer = null;
+		}, 300);
+	};
+
 	export const openPane = () => {
 		if (!pane) return;
+
+		guardCollapseDuringOpen();
 
 		const container = document.getElementById('chat-container');
 		if (parseInt(localStorage?.chatControlsSize) && container) {
@@ -263,6 +282,8 @@
 		if (!tab) {
 			return !isWaitingForTrayTab(requestedTab);
 		}
+
+		guardCollapseDuringOpen();
 
 		activeTab = tab;
 		savedTab = tab;
@@ -377,6 +398,7 @@
 		return () => {
 			isDestroyed = true;
 			paneReady = false;
+			if (suppressCollapseTimer) clearTimeout(suppressCollapseTimer);
 			resizeObserver?.disconnect();
 			if (!largeScreen) {
 				showControls.set(false);
@@ -526,7 +548,7 @@
 			}
 		}}
 		onCollapse={() => {
-			if (paneReady) showControls.set(false);
+			if (paneReady && !suppressCollapseClose) showControls.set(false);
 		}}
 		collapsible={true}
 		class="z-10 bg-white dark:bg-gray-850"
