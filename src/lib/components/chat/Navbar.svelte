@@ -38,6 +38,7 @@
 	import Github from '$lib/components/icons/Github.svelte';
 	import Plus from '../icons/Plus.svelte';
 	import DeskWorkspacePicker from '$lib/components/enos/DeskWorkspacePicker.svelte';
+	import { workspaceKindLabel } from '$lib/enos/workspaceBadge';
 
 	const i18n = getContext('i18n');
 
@@ -93,6 +94,7 @@
 
 	$: deskWorkspaceDisplayName = normalizeTitle(deskWorkspace?.name);
 	$: hasDeskWorkspace = Boolean(deskWorkspaceDisplayName);
+	$: deskWorkspaceKindLabel = $i18n.t(workspaceKindLabel(deskWorkspace?.kind));
 
 	const beginTitleRename = async () => {
 		if (!isDeskSurface) return;
@@ -244,7 +246,10 @@
 									{:else}
 										<Folder className="size-4 shrink-0" strokeWidth="2" />
 									{/if}
-									<span class="truncate max-w-[10rem]">{deskWorkspaceDisplayName}</span>
+									<span class="truncate max-w-[12rem]">
+										<span class="text-gray-400 dark:text-gray-500">{deskWorkspaceKindLabel}:</span>
+										{deskWorkspaceDisplayName}
+									</span>
 								{:else}
 									<Plus className="size-4 shrink-0" strokeWidth="2" />
 									<span class="truncate">{deskWorkspaceLabel()}</span>

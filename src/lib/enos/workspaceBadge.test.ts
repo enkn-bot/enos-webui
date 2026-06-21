@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { workspaceBadgeFromFolder, workspaceBadgeLabel } from './workspaceBadge';
+import { workspaceBadgeFromFolder, workspaceBadgeLabel, workspaceKindLabel } from './workspaceBadge';
 
 describe('workspaceBadgeFromFolder', () => {
 	test('defaults a bound local folder to kind local when only rootName exists', () => {
@@ -41,6 +41,16 @@ describe('workspaceBadgeFromFolder', () => {
 				}
 			})
 		).toEqual({ kind: null, name: '' });
+	});
+});
+
+describe('workspaceKindLabel', () => {
+	test('maps each kind to its environment label and falls back', () => {
+		expect(workspaceKindLabel('local')).toBe('Local');
+		expect(workspaceKindLabel('github')).toBe('Repo');
+		expect(workspaceKindLabel('cloud')).toBe('Cloud');
+		expect(workspaceKindLabel(null)).toBe('Workspace');
+		expect(workspaceKindLabel(undefined)).toBe('Workspace');
 	});
 });
 
