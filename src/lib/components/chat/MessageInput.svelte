@@ -1325,30 +1325,20 @@
 													{/if}
 												</div>
 												<div class=" absolute -top-1 -right-1">
-													<button
-														class=" bg-white text-black border border-white rounded-full {($settings?.highContrastMode ??
-														false)
-															? ''
-															: 'outline-hidden focus:outline-hidden group-hover:visible invisible transition'}"
-														type="button"
-														aria-label={$i18n.t('Remove file')}
-														on:click={() => {
-															files.splice(fileIdx, 1);
-															files = files;
-														}}
-													>
-														<svg
-															xmlns="http://www.w3.org/2000/svg"
-															viewBox="0 0 20 20"
-															fill="currentColor"
-															aria-hidden="true"
-															class="size-4"
+														<button
+															class=" bg-white text-black border border-white rounded-full {($settings?.highContrastMode ??
+															false)
+																? ''
+																: 'outline-hidden focus:outline-hidden group-hover:visible invisible transition'}"
+															type="button"
+															aria-label={$i18n.t('Remove file')}
+															on:click={() => {
+																files.splice(fileIdx, 1);
+																files = files;
+															}}
 														>
-															<path
-																d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"
-															/>
-														</svg>
-													</button>
+															<XMark className="size-4" />
+														</button>
 												</div>
 											</div>
 										{:else if isPastedTextFile(file)}

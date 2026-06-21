@@ -58,4 +58,28 @@ describe('ENOS Desk UI source guardrails', () => {
 			"const DEFAULT_CONTROL_TAB_ORDER = ['controls', 'files', 'overview'] satisfies ControlTab[];"
 		);
 	});
+
+	test('visible chrome uses canonical close and menu icons for clear duplicates', () => {
+		const chatControls = read('src/lib/components/chat/ChatControls.svelte');
+		const chatItem = read('src/lib/components/layout/Sidebar/ChatItem.svelte');
+		const messageInput = read('src/lib/components/chat/MessageInput.svelte');
+		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
+
+		expect(chatControls).toContain("import XMark from '../icons/XMark.svelte';");
+		expect(chatControls.match(/<XMark className="size-4"/g)?.length).toBe(2);
+		expect(chatControls).not.toContain('M6 18 18 6M6 6l12 12');
+
+		expect(chatItem).toContain(
+			"import EllipsisHorizontal from '$lib/components/icons/EllipsisHorizontal.svelte';"
+		);
+		expect(chatItem.match(/<EllipsisHorizontal className="w-4 h-4"/g)?.length).toBe(2);
+		expect(chatItem).not.toContain('M2 8a1.5');
+
+		expect(messageInput).toContain('<XMark className="size-4" />');
+		expect(messageInput).not.toContain('M6.28 5.22a.75.75 0 00-1.06 1.06');
+
+		expect(sidebar).toContain("import XMark from '../icons/XMark.svelte';");
+		expect(sidebar).toContain('<XMark className="size-3.5" strokeWidth="2" />');
+		expect(sidebar).not.toContain('M6 18 18 6M6 6l12 12');
+	});
 });

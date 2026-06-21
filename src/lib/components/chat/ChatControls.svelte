@@ -40,6 +40,7 @@
 	import LocalFileNav from './LocalFileNav.svelte';
 	import PyodideFileNav from './PyodideFileNav.svelte';
 	import Overview from './Overview.svelte';
+	import XMark from '../icons/XMark.svelte';
 	import {
 		canUseEnosLocalProjectFiles,
 		getEnosDesktopBridgeCapabilities,
@@ -382,35 +383,26 @@
 					<!-- Shared surface tabs -->
 					<div class="flex flex-col h-full min-h-0">
 						<!-- Tab bar -->
-							<div class="flex items-center justify-between px-2 pt-2 pb-2 shrink-0">
-								<div class="flex gap-1 min-w-0 overflow-x-auto scrollbar-hidden">
-									{#each visibleControlTabs as tab}
-										<button
-											class="px-2.5 py-1 text-sm rounded-lg transition whitespace-nowrap {activeTab ===
+						<div class="flex items-center justify-between px-2 pt-2 pb-2 shrink-0">
+							<div class="flex gap-1 min-w-0 overflow-x-auto scrollbar-hidden">
+								{#each visibleControlTabs as tab}
+									<button
+										class="px-2.5 py-1 text-sm rounded-lg transition whitespace-nowrap {activeTab ===
 											tab
 												? 'bg-gray-100 dark:bg-gray-800 font-medium text-gray-900 dark:text-white'
 												: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
-											on:click={() => selectControlTab(tab)}
-										>
-											{$i18n.t(controlTabLabel(tab))}
-										</button>
-									{/each}
+										on:click={() => selectControlTab(tab)}
+									>
+										{$i18n.t(controlTabLabel(tab))}
+									</button>
+								{/each}
 							</div>
 							<button
 								class="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition text-gray-500 dark:text-gray-400"
 								on:click={() => showControls.set(false)}
 								aria-label={$i18n.t('Close')}
 							>
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="1.5"
-									class="size-4"
-								>
-									<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-								</svg>
+								<XMark className="size-4" strokeWidth="1.5" />
 							</button>
 						</div>
 
@@ -533,16 +525,7 @@
 									on:click={() => showControls.set(false)}
 									aria-label={$i18n.t('Close')}
 								>
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="1.5"
-										class="size-4"
-									>
-										<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-									</svg>
+									<XMark className="size-4" strokeWidth="1.5" />
 								</button>
 							</div>
 
