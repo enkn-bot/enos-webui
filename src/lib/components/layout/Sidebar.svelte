@@ -136,9 +136,10 @@
 	$: sidebarChats = filterChatsBySurface($chats ?? [], currentSurface, deskFolderIds);
 	$: sidebarPinnedChats = filterChatsBySurface($pinnedChats ?? [], currentSurface, deskFolderIds);
 	$: hasDesktopBridge = browser && Boolean(getEnosDesktopBridge());
-	// Desk has its own loose chats — always render the Chats section (contents are
-	// surface-scoped above). Previously hidden entirely on desk when scoping was on.
-	$: showDeskChats = true;
+	// Desk is project-first: no standalone loose Chats section. Chats on desk live
+	// inside projects (new chat -> active project). Loose chatting lives on enoschat.
+	// The Chats section renders only on the chat surface.
+	$: showDeskChats = !isDeskSurface;
 	$: if ($showDeskFolderPicker) {
 		showCreateFolderModal = true;
 		showDeskFolderPicker.set(false);

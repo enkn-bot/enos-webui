@@ -18,8 +18,8 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(sidebar).toContain('deskFolderIds = allFolders');
 		expect(sidebar).toContain("folder?.meta?.surface === 'desk'");
 		expect(sidebar).toContain('Boolean(folder?.data?.project_context_source)');
-		// Desk Chats section always renders (desk has its own loose chats).
-		expect(sidebar).toContain('$: showDeskChats = true;');
+		// Desk is project-first: no standalone loose Chats section (chat surface only).
+		expect(sidebar).toContain('$: showDeskChats = !isDeskSurface;');
 		// Stores hold raw chats; the old opt-in scoping helper is gone.
 		expect(sidebar).not.toContain('scopeSidebarChats(');
 		expect(sidebar).not.toContain('shouldScopeSidebarChatsBySurface');
