@@ -32,6 +32,10 @@
 	import ChatPlus from '../icons/ChatPlus.svelte';
 	import ChatCheck from '../icons/ChatCheck.svelte';
 	import ChevronDown from '../icons/ChevronDown.svelte';
+	import Cloud from '$lib/components/icons/Cloud.svelte';
+	import Computer from '$lib/components/icons/Computer.svelte';
+	import Folder from '$lib/components/icons/Folder.svelte';
+	import Github from '$lib/components/icons/Github.svelte';
 	import Plus from '../icons/Plus.svelte';
 	import DeskWorkspacePicker from '$lib/components/enos/DeskWorkspacePicker.svelte';
 
@@ -47,7 +51,10 @@
 	export let title = '';
 	export let selectedModels;
 	export let showModelSelector = true;
-	export let deskWorkspaceName = '';
+	export let deskWorkspace: { kind: 'local' | 'cloud' | 'github' | null; name: string } = {
+		kind: null,
+		name: ''
+	};
 
 	export let onSaveTempChat: () => {};
 	export let onRenameChat: (title: string) => void | Promise<void> = () => {};
@@ -82,10 +89,10 @@
 		normalizeTitle(chat?.chat?.title) ||
 		normalizeTitle(chat?.title) ||
 		$i18n.t('New Chat');
-	const deskWorkspaceLabel = () => normalizeTitle(deskWorkspaceName) || $i18n.t('Select workspace…');
+	const deskWorkspaceLabel = () => normalizeTitle(deskWorkspace?.name) || $i18n.t('Select workspace…');
 
-	$: deskWorkspaceNameLabel = normalizeTitle(deskWorkspaceName);
-	$: hasDeskWorkspace = Boolean(deskWorkspaceNameLabel);
+	$: deskWorkspaceDisplayName = normalizeTitle(deskWorkspace?.name);
+	$: hasDeskWorkspace = Boolean(deskWorkspaceDisplayName);
 
 	const beginTitleRename = async () => {
 		if (!isDeskSurface) return;
@@ -228,7 +235,16 @@
 								aria-label={deskWorkspaceLabel()}
 							>
 								{#if hasDeskWorkspace}
-									<span class="truncate max-w-[10rem]">{deskWorkspaceNameLabel}</span>
+									{#if deskWorkspace?.kind === 'local'}
+										<Computer className="size-4 shrink-0" strokeWidth="2" />
+									{:else if deskWorkspace?.kind === 'cloud'}
+										<Cloud className="size-4 shrink-0" strokeWidth="2" />
+									{:else if deskWorkspace?.kind === 'github'}
+										<Github className="size-4 shrink-0" strokeWidth="2" />
+									{:else}
+										<Folder className="size-4 shrink-0" strokeWidth="2" />
+									{/if}
+									<span class="truncate max-w-[10rem]">{deskWorkspaceDisplayName}</span>
 								{:else}
 									<Plus className="size-4 shrink-0" strokeWidth="2" />
 									<span class="truncate">{deskWorkspaceLabel()}</span>

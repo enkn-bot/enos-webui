@@ -123,6 +123,7 @@
 	import { DESK_FILE_TOOLS, describeDeskTool, executeDeskFileTool } from '$lib/enos/deskFileTools';
 	import { groundingLine } from '$lib/enos/grounding';
 	import { surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
+	import { workspaceBadgeFromFolder } from '$lib/enos/workspaceBadge';
 
 	export let chatIdProp = '';
 
@@ -1792,6 +1793,12 @@
 		}
 		return null;
 	};
+
+	let deskChatFolder: any = null;
+	let deskWorkspaceBadge = workspaceBadgeFromFolder(null);
+
+	$: deskChatFolder = ($folders, knownProjectFolderById(projectFolderIdFromChat(chat)));
+	$: deskWorkspaceBadge = workspaceBadgeFromFolder(deskChatFolder);
 
 	const isDeskSurface = () =>
 		typeof window !== 'undefined' && window.location.hostname === 'enosdesk.duckdns.org';
@@ -3509,11 +3516,7 @@
 							{deleteChatHandler}
 							{moveChatHandler}
 							onRenameChat={renameChatHandler}
-							deskWorkspaceName={String(
-								$selectedFolder?.data?.project_context_source?.rootName ??
-									$selectedFolder?.name ??
-									''
-							).trim()}
+							deskWorkspace={deskWorkspaceBadge}
 							onSaveTempChat={async () => {
 								try {
 									if (!history?.currentId || !Object.keys(history.messages).length) {

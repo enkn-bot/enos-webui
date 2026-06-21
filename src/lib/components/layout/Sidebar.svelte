@@ -288,6 +288,7 @@
 				project_context_digest: digest.text,
 				project_context_updated_at: digest.generatedAt,
 				project_context_source: {
+					kind: 'local',
 					rootName: digest.rootName,
 					fileCount: digest.fileCount,
 					sampledFileCount: digest.sampledFileCount,

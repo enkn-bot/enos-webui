@@ -23,6 +23,11 @@ export default defineConfig({
 	build: {
 		sourcemap: true
 	},
+	// Scope vitest to src/ — test/*.test.mjs are node:test files run via `node --test`,
+	// not vitest, and would otherwise fail collection with "No test suite found".
+	test: {
+		include: ['src/**/*.{test,spec}.{js,ts}']
+	},
 	worker: {
 		format: 'es'
 	},
