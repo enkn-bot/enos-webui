@@ -433,12 +433,10 @@
 			keywords: [
 				'about app',
 				'about me',
-				'about open webui',
 				'about page',
 				'about us',
 				'aboutapp',
 				'aboutme',
-				'aboutopenwebui',
 				'aboutpage',
 				'aboutus',
 				'check for updates',
@@ -464,10 +462,6 @@
 				'terms of use',
 				'termsandconditions',
 				'termsofuse',
-				'timothy jae ryang baek',
-				'timothy j baek',
-				'timothyjaeryangbaek',
-				'timothyjbaek',
 				'twitter',
 				'update info',
 				'updateinfo',
@@ -475,6 +469,16 @@
 				'versioninfo'
 			]
 		}
+	];
+
+	const BASIC_USER_TABS = [
+		'general',
+		'interface',
+		'personalization',
+		'audio',
+		'data_controls',
+		'account',
+		'about'
 	];
 
 	let availableSettings = [];
@@ -485,6 +489,8 @@
 
 	const getAvailableSettings = () => {
 		return allSettings.filter((tab) => {
+			if ($user?.role !== 'admin' && !BASIC_USER_TABS.includes(tab.id)) return false;
+
 			if (tab.id === 'connections') {
 				return $config?.features?.enable_direct_connections;
 			}

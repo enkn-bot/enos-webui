@@ -217,11 +217,7 @@
 								</div>
 
 								{#if $config?.license_metadata}
-									<a
-										href="https://docs.openwebui.com/enterprise"
-										target="_blank"
-										class="text-gray-500 mt-0.5"
-									>
+									<div class="text-gray-500 mt-0.5">
 										<span class=" capitalize text-black dark:text-white"
 											>{$config?.license_metadata?.type}
 											license</span
@@ -234,24 +230,20 @@
 										<span class=" font-medium text-black dark:text-white"
 											>{$config?.license_metadata?.seats ?? 'Unlimited'} users.</span
 										>
-									</a>
+									</div>
 									{#if $config?.license_metadata?.html}
 										<div class="mt-0.5">
 											{@html DOMPurify.sanitize($config?.license_metadata?.html)}
 										</div>
 									{/if}
 								{:else}
-									<a
-										class=" text-xs hover:underline"
-										href="https://docs.openwebui.com/enterprise"
-										target="_blank"
-									>
+									<div class="text-xs">
 										<span class="text-gray-500">
 											{$i18n.t(
 												'Upgrade to a licensed plan for enhanced capabilities, including custom theming and branding, and dedicated support.'
 											)}
 										</span>
-									</a>
+									</div>
 								{/if}
 							</div>
 
@@ -383,15 +375,6 @@
 									bind:value={adminConfig.API_KEYS_ALLOWED_ENDPOINTS}
 								/>
 
-								<div class="mt-2 text-xs text-gray-400 dark:text-gray-500">
-									<a
-										href="https://docs.openwebui.com/reference/api-endpoints"
-										target="_blank"
-										class=" text-gray-300 font-medium underline"
-									>
-										{$i18n.t('To learn more about available endpoints, visit our documentation.')}
-									</a>
-								</div>
 							</div>
 						{/if}
 					{/if}
@@ -424,14 +407,7 @@
 								>
 									<div>
 										<span class=" font-medium">{$i18n.t('Warning')}:</span>
-										<span
-											><a
-												href="https://docs.openwebui.com/reference/env-configuration#jwt_expires_in"
-												target="_blank"
-												class=" underline"
-												>{$i18n.t('No expiration can pose security risks.')}
-											</a></span
-										>
+										<span>{$i18n.t('No expiration can pose security risks.')}</span>
 									</div>
 								</div>
 							</div>
