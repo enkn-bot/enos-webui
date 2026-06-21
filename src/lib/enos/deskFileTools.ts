@@ -3,6 +3,7 @@ import type {
 	EnosDesktopProjectActionRequest,
 	EnosDesktopProjectActionResult
 } from '$lib/enos/desktopBridge';
+import { processWebSearch, queryCollection } from '$lib/apis/retrieval';
 
 /**
  * ENOS Desk file-tool contract (Phase 1 of native tool-calling).
@@ -26,6 +27,7 @@ export type DeskToolName =
 	| 'rename_entry'
 	| 'delete_entry'
 	| 'reveal_entry'
+	| 'web_search'
 	| 'git_status'
 	| 'git_log'
 	| 'git_diff'
@@ -171,6 +173,19 @@ export const DESK_FILE_TOOLS: DeskToolSpec[] = [
 	{
 		type: 'function',
 		function: {
+			name: 'web_search',
+			description:
+				'Use this for current events, real-time info, news, scores, prices, recent events, or anything you do not know from training data.',
+			parameters: {
+				type: 'object',
+				properties: { query: str('Search query to send to web search.') },
+				required: ['query']
+			}
+		}
+	},
+	{
+		type: 'function',
+		function: {
 			name: 'git_status',
 			description:
 				'Report the project\'s git state: current branch and changed/untracked files (read-only, no network). Use to orient before suggesting or making changes.',
@@ -286,6 +301,7 @@ export const describeDeskTool = (
 		case 'rename_entry': return verb(`Renaming ${p} → ${to}`, `Renamed ${p} → ${to}`);
 		case 'delete_entry': return verb(`Deleting ${p}`, `Deleted ${p}`);
 		case 'reveal_entry': return verb(`Revealing ${p}`, `Revealed ${p}`);
+		case 'web_search': return verb('Searching the web', 'Searched the web');
 		case 'git_status': return verb('Checking git status', 'Checked git status');
 		case 'git_log': return verb('Reading git log', 'Read git log');
 		case 'git_diff': return verb(`Reading git diff${p ? ` for ${p}` : ''}`, `Read git diff${p ? ` for ${p}` : ''}`);
@@ -311,6 +327,7 @@ type ExecuteArgs = {
 	folderId: string;
 	name: string;
 	args: Record<string, unknown>;
+	token?: string;
 	/** Set true once the user has approved the pending mutation. */
 	confirmed?: boolean;
 };
@@ -346,11 +363,66 @@ const requireStringArray = (args: Record<string, unknown>, key: string): string[
 	return value;
 };
 
+const WEB_SEARCH_UNAVAILABLE = 'Web search is not available.';
+const WEB_SEARCH_RESULT_LIMIT = 5;
+const WEB_SEARCH_CHUNK_LIMIT = 800;
+
+const textValue = (value: unknown): string => {
+	if (typeof value === 'string') return value;
+	if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+	return '';
+};
+
+const firstTextValue = (record: Record<string, unknown>, keys: string[]): string => {
+	for (const key of keys) {
+		const text = textValue(record[key]);
+		if (text) return text;
+	}
+	return '';
+};
+
+const truncateWebSearchChunk = (text: string): string =>
+	text.length > WEB_SEARCH_CHUNK_LIMIT ? `${text.slice(0, WEB_SEARCH_CHUNK_LIMIT - 3)}...` : text;
+
+const firstArray = (value: unknown): unknown[] => {
+	if (!Array.isArray(value)) return [];
+	return Array.isArray(value[0]) ? value[0] : value;
+};
+
+const extractRetrievedWebSearchChunks = (documents: unknown): string[] =>
+	firstArray(documents)
+		.filter((chunk): chunk is string => typeof chunk === 'string' && chunk.trim().length > 0)
+		.slice(0, WEB_SEARCH_RESULT_LIMIT);
+
+const getRetrievedWebSearchMetadata = (
+	metadatas: unknown,
+	index: number
+): Record<string, unknown> => {
+	const metadata = firstArray(metadatas)[index];
+	return metadata && typeof metadata === 'object' ? (metadata as Record<string, unknown>) : {};
+};
+
+const formatRetrievedWebSearchChunks = (value: unknown): string => {
+	if (!value || typeof value !== 'object') return WEB_SEARCH_UNAVAILABLE;
+	const record = value as Record<string, unknown>;
+	const chunks = extractRetrievedWebSearchChunks(record.documents);
+	if (chunks.length === 0) return WEB_SEARCH_UNAVAILABLE;
+
+	return chunks
+		.map((chunk, index) => {
+			const metadata = getRetrievedWebSearchMetadata(record.metadatas, index);
+			const source = firstTextValue(metadata, ['source', 'link', 'title']) || 'unknown';
+			return `[source: ${source}]\n${truncateWebSearchChunk(chunk.trim())}`;
+		})
+		.join('\n\n');
+};
+
 export const executeDeskFileTool = async ({
 	bridge,
 	folderId,
 	name,
 	args,
+	token = '',
 	confirmed = false
 }: ExecuteArgs): Promise<DeskToolResult> => {
 	const options = { confirmed };
@@ -419,6 +491,48 @@ export const executeDeskFileTool = async ({
 				const path = requireString(args, 'path');
 				const result = await bridge.revealProjectEntry(folderId, path);
 				return { status: 'ok', summary: `${result.status} ${result.path}` };
+			}
+			case 'web_search': {
+				const query = requireString(args, 'query');
+				if (!token) {
+					return {
+						status: 'ok',
+						summary: WEB_SEARCH_UNAVAILABLE,
+						data: WEB_SEARCH_UNAVAILABLE
+					};
+				}
+				try {
+					const search = await processWebSearch(token, query);
+					if (!search?.collection_name) {
+						return {
+							status: 'ok',
+							summary: WEB_SEARCH_UNAVAILABLE,
+							data: WEB_SEARCH_UNAVAILABLE
+						};
+					}
+
+					const retrieved = await queryCollection(
+						token,
+						search.collection_name,
+						query,
+						WEB_SEARCH_RESULT_LIMIT
+					);
+					const data = formatRetrievedWebSearchChunks(retrieved);
+					return {
+						status: 'ok',
+						summary:
+							data === WEB_SEARCH_UNAVAILABLE
+								? WEB_SEARCH_UNAVAILABLE
+								: 'Web search results returned.',
+						data
+					};
+				} catch {
+					return {
+						status: 'ok',
+						summary: WEB_SEARCH_UNAVAILABLE,
+						data: WEB_SEARCH_UNAVAILABLE
+					};
+				}
 			}
 			case 'git_status': {
 				if (!bridge.getProjectGitStatus) {

@@ -1,4 +1,13 @@
-import { describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
+
+const processWebSearchMock = vi.hoisted(() => vi.fn());
+const queryCollectionMock = vi.hoisted(() => vi.fn());
+
+vi.mock('$lib/apis/retrieval', () => ({
+	processWebSearch: processWebSearchMock,
+	queryCollection: queryCollectionMock
+}));
+
 import {
 	DESK_FILE_TOOLS,
 	executeDeskFileTool,
@@ -124,6 +133,11 @@ const fakeBridge = (overrides: Record<string, any> = {}) =>
 	}) as any;
 
 describe('DESK_FILE_TOOLS contract', () => {
+	beforeEach(() => {
+		processWebSearchMock.mockReset();
+		queryCollectionMock.mockReset();
+	});
+
 	test('exposes the full agentic file toolset', () => {
 		const names = DESK_FILE_TOOLS.map((t) => t.function.name).sort();
 		expect(names).toEqual(
@@ -142,7 +156,8 @@ describe('DESK_FILE_TOOLS contract', () => {
 				'rename_entry',
 				'reveal_entry',
 				'write_file',
-				'git_status'
+				'git_status',
+				'web_search'
 			].sort()
 		);
 	});
@@ -155,9 +170,24 @@ describe('DESK_FILE_TOOLS contract', () => {
 			'new_text'
 		]);
 	});
+
+	test('web_search requires a query string parameter', () => {
+		const tool = toolByName('web_search' as DeskToolName);
+		expect(tool).toBeDefined();
+		expect(tool!.function.parameters.required).toEqual(['query']);
+		expect(tool!.function.parameters.properties.query).toEqual({
+			type: 'string',
+			description: expect.any(String)
+		});
+	});
 });
 
 describe('executeDeskFileTool', () => {
+	beforeEach(() => {
+		processWebSearchMock.mockReset();
+		queryCollectionMock.mockReset();
+	});
+
 	test('list_files dispatches to the bridge and summarizes entries', async () => {
 		const bridge = fakeBridge();
 		const res = await executeDeskFileTool({
@@ -433,5 +463,143 @@ describe('executeDeskFileTool', () => {
 		expect(res.status === 'error' && res.message.toLowerCase()).toContain('unsupported git operation');
 		expect(res.status === 'error' && res.message).toContain('git_clone');
 		expect(res.status === 'error' && res.message).toContain('git_diff');
+	});
+});
+
+describe('executeDeskFileTool web_search', () => {
+	beforeEach(() => {
+		processWebSearchMock.mockReset();
+		queryCollectionMock.mockReset();
+	});
+
+	test('runs web search, queries the returned collection, and returns retrieved chunks', async () => {
+		processWebSearchMock.mockResolvedValue({
+			status: true,
+			collection_name: 'web-abc',
+			filenames: ['https://x.com/a']
+		});
+		queryCollectionMock.mockResolvedValue({
+			documents: [['Belgium won 2-1 in stoppage time.']],
+			metadatas: [[{ source: 'https://x.com/a', title: 'Match report' }]],
+			distances: [[0.1]]
+		});
+
+		const res = await executeDeskFileTool({
+			bridge: fakeBridge(),
+			folderId: 'F',
+			name: 'web_search',
+			args: { query: 'belgium game' },
+			token: 'TOKEN'
+		});
+
+		expect(processWebSearchMock).toHaveBeenCalledWith('TOKEN', 'belgium game');
+		expect(queryCollectionMock).toHaveBeenCalledWith('TOKEN', 'web-abc', 'belgium game', 5);
+		expect(processWebSearchMock.mock.invocationCallOrder[0]).toBeLessThan(
+			queryCollectionMock.mock.invocationCallOrder[0]
+		);
+		expect(res.status).toBe('ok');
+		expect(res.status === 'ok' && String(res.data)).toContain(
+			'Belgium won 2-1 in stoppage time.'
+		);
+		expect(res.status === 'ok' && String(res.data)).toContain('https://x.com/a');
+	});
+
+	test('does not call any desktop bridge method', async () => {
+		processWebSearchMock.mockResolvedValue({
+			status: true,
+			collection_name: 'web-news',
+			filenames: ['https://example.test/news']
+		});
+		queryCollectionMock.mockResolvedValue({
+			documents: [['Latest update.']],
+			metadatas: [[{ source: 'https://example.test/news', title: 'News' }]],
+			distances: [[0.1]]
+		});
+		const bridge = fakeBridge();
+
+		await executeDeskFileTool({
+			bridge,
+			folderId: 'F',
+			name: 'web_search',
+			args: { query: 'latest news' },
+			token: 'TOKEN'
+		});
+
+		for (const method of Object.values(bridge)) {
+			if (vi.isMockFunction(method)) {
+				expect(method).not.toHaveBeenCalled();
+			}
+		}
+	});
+
+	test('returns graceful text when token is missing', async () => {
+		const res = await executeDeskFileTool({
+			bridge: fakeBridge(),
+			folderId: 'F',
+			name: 'web_search',
+			args: { query: 'latest scores' }
+		});
+
+		expect(processWebSearchMock).not.toHaveBeenCalled();
+		expect(queryCollectionMock).not.toHaveBeenCalled();
+		expect(res.status).toBe('ok');
+		expect(res.status === 'ok' && res.data).toBe('Web search is not available.');
+	});
+
+	test('returns graceful text when processWebSearch returns no collection', async () => {
+		processWebSearchMock.mockResolvedValue(null);
+
+		const res = await executeDeskFileTool({
+			bridge: fakeBridge(),
+			folderId: 'F',
+			name: 'web_search',
+			args: { query: 'latest scores' },
+			token: 'TOKEN'
+		});
+
+		expect(processWebSearchMock).toHaveBeenCalledWith('TOKEN', 'latest scores');
+		expect(queryCollectionMock).not.toHaveBeenCalled();
+		expect(res.status).toBe('ok');
+		expect(res.status === 'ok' && res.data).toBe('Web search is not available.');
+	});
+
+	test('returns graceful text when queryCollection returns no documents', async () => {
+		processWebSearchMock.mockResolvedValue({
+			status: true,
+			collection_name: 'web-empty',
+			filenames: []
+		});
+		queryCollectionMock.mockResolvedValue({
+			documents: [[]],
+			metadatas: [[]],
+			distances: [[]]
+		});
+
+		const res = await executeDeskFileTool({
+			bridge: fakeBridge(),
+			folderId: 'F',
+			name: 'web_search',
+			args: { query: 'latest scores' },
+			token: 'TOKEN'
+		});
+
+		expect(queryCollectionMock).toHaveBeenCalledWith('TOKEN', 'web-empty', 'latest scores', 5);
+		expect(res.status).toBe('ok');
+		expect(res.status === 'ok' && res.data).toBe('Web search is not available.');
+	});
+
+	test('returns graceful text when processWebSearch throws', async () => {
+		processWebSearchMock.mockRejectedValue(new Error('offline'));
+
+		const res = await executeDeskFileTool({
+			bridge: fakeBridge(),
+			folderId: 'F',
+			name: 'web_search',
+			args: { query: 'latest scores' },
+			token: 'TOKEN'
+		});
+
+		expect(res.status).toBe('ok');
+		expect(res.status === 'ok' && res.data).toBe('Web search is not available.');
 	});
 });

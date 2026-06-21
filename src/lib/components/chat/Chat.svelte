@@ -1968,8 +1968,11 @@
 						`Active project folder: ${folderId}.\n\n` +
 						`You CAN and SHOULD use the tools to do real work: list_files, read_file, ` +
 						`write_file, edit_file, create_folder, rename_entry, delete_entry, reveal_entry, ` +
-						`git_status (read-only branch + changed files), git_log, git_diff, ` +
+						`web_search, git_status (read-only branch + changed files), git_log, git_diff, ` +
 						`git_create_branch, git_stage, git_commit, and git_clone. ` +
+						`When the user asks about current events, real-time info, news, scores, prices, ` +
+						`recent events, or anything you do not know from training data, call web_search ` +
+						`instead of refusing. Do not expose internal tool or system names in final answers. ` +
 						`When the user asks you to create, write, edit, move, or delete files, DO IT by ` +
 						`calling the appropriate tool — never reply that you are unable to or that the ` +
 						`system does not permit it. Generate file contents yourself. The user is prompted ` +
@@ -2003,7 +2006,7 @@
 			};
 
 			const executeTool = (name, args, confirmed) =>
-				executeDeskFileTool({ bridge, folderId, name, args, confirmed });
+				executeDeskFileTool({ bridge, folderId, name, args, confirmed, token: localStorage.token });
 
 			const confirm = async ({ result }) => {
 				const msg = projectActionConfirmationMessage(result.request);
