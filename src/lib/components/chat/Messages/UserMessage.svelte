@@ -141,7 +141,7 @@
 				src={user?.id
 					? `${WEBUI_API_BASE_URL}/users/${user.id}/profile/image`
 					: `${WEBUI_BASE_URL}/static/favicon.png`}
-				className={'size-8 user-message-profile-image'}
+				className={'size-8 user-message-profile-image bg-[var(--enos-brand-sage)]'}
 			/>
 		</div>
 	{/if}

@@ -45,7 +45,6 @@
 	import Image from '$lib/components/common/Image.svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import RateComment from './RateComment.svelte';
-	import Spinner from '$lib/components/common/Spinner.svelte';
 	import WebSearchResults from './ResponseMessage/WebSearchResults.svelte';
 	import Sparkles from '$lib/components/icons/Sparkles.svelte';
 
@@ -708,9 +707,9 @@
 			<div>
 				<div class="chat-{message.role} w-full min-w-full markdown-prose">
 					<div>
-						{#if model?.info?.meta?.capabilities?.status_updates ?? true}
-							<StatusHistory statusHistory={message?.statusHistory} />
-						{/if}
+							{#if model?.info?.meta?.capabilities?.status_updates ?? true}
+								<StatusHistory statusHistory={message?.statusHistory} modelId={message.model} />
+							{/if}
 
 						{#if displayFiles.length > 0}
 							<div
@@ -839,8 +838,8 @@
 							class="w-full flex flex-col relative {edit ? 'hidden' : ''}"
 							id="response-content-container"
 						>
-							{#if message.content === '' && !message.done && !message.error && !hasVisibleStatus}
-								<Skeleton />
+								{#if message.content === '' && !message.done && !message.error && !hasVisibleStatus}
+									<Skeleton modelId={message.model} />
 							{:else if message.content && message.error !== true}
 								<!-- always show message contents even if there's an error -->
 								<!-- unless message.error === true which is legacy error handling, where the error message is stored in message.content -->

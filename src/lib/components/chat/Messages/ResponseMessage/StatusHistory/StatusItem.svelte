@@ -3,10 +3,13 @@
 	const i18n = getContext('i18n');
 	import WebSearchResults from '../WebSearchResults.svelte';
 	import Search from '$lib/components/icons/Search.svelte';
-	import { t } from 'i18next';
+	import EnosOrb from '$lib/components/common/EnosOrb.svelte';
 
 	export let status = null;
 	export let done = false;
+	export let modelId = null;
+
+	$: isPending = (done || status?.done) === false;
 </script>
 
 {#if !status?.hidden && status?.description !== 'No search query generated'}
@@ -14,8 +17,11 @@
 	     web-search query-generation on every turn (web-search-primary), so for
 	     non-search answers (known facts) the query step returns empty and base
 	     would surface this noise. Real searches still render normally. -->
-	<div class="status-description flex items-center gap-2 py-0.5 w-full text-left">
-		{#if status?.action === 'web_search' && (status?.urls || status?.items)}
+		<div class="status-description flex items-center gap-2 py-0.5 w-full text-left">
+			{#if isPending}
+				<EnosOrb {modelId} className="size-4 shrink-0" />
+			{/if}
+			{#if status?.action === 'web_search' && (status?.urls || status?.items)}
 			<WebSearchResults {status}>
 				<div class="flex flex-col justify-center -space-y-0.5">
 					<div

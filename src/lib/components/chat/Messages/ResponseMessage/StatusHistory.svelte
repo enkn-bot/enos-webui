@@ -5,6 +5,7 @@
 	import StatusItem from './StatusHistory/StatusItem.svelte';
 	import equal from 'fast-deep-equal';
 	export let statusHistory = [];
+	export let modelId = null;
 	export let expand = false;
 
 	let showHistory = true;
@@ -39,7 +40,7 @@
 				}}
 			>
 				<div class="flex items-start gap-2">
-					<StatusItem {status} />
+						<StatusItem {status} {modelId} />
 				</div>
 			</button>
 
@@ -64,7 +65,7 @@
 										{/if}
 									</div>
 
-									<StatusItem {status} done={true} />
+										<StatusItem {status} {modelId} done={true} />
 								</div>
 							{/each}
 						</div>

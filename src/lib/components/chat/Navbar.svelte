@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getContext, onMount } from 'svelte';
+	import { getContext, onMount, tick } from 'svelte';
 
 	import {
 		banners,
@@ -7,7 +7,6 @@
 		config,
 		mobile,
 		settings,
-		showArchivedChats,
 		showControls,
 		showSidebar,
 		temporaryChatEnabled,
@@ -22,7 +21,6 @@
 	import ModelSelector from '../chat/ModelSelector.svelte';
 	import Tooltip from '../common/Tooltip.svelte';
 	import Menu from '$lib/components/layout/Navbar/Menu.svelte';
-	import UserMenu from '$lib/components/layout/Sidebar/UserMenu.svelte';
 
 	import Banner from '../common/Banner.svelte';
 	import Sidebar from '../icons/Sidebar.svelte';
@@ -34,8 +32,6 @@
 	import ChatPlus from '../icons/ChatPlus.svelte';
 	import ChatCheck from '../icons/ChatCheck.svelte';
 	import ChevronDown from '../icons/ChevronDown.svelte';
-	import { WEBUI_API_BASE_URL } from '$lib/constants';
-	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 
 	const i18n = getContext('i18n');
 
@@ -49,8 +45,10 @@
 	export let title = '';
 	export let selectedModels;
 	export let showModelSelector = true;
+	export let deskWorkspaceName = '';
 
 	export let onSaveTempChat: () => {};
+	export let onRenameChat: (title: string) => void | Promise<void> = () => {};
 	export let archiveChatHandler: (id: string) => void;
 	export let deleteChatHandler: (id: string) => void;
 	export let moveChatHandler: (id: string, folderId: string) => void;
@@ -66,10 +64,13 @@
 	};
 
 	let showShareChatModal = false;
-	let isEnosDeskNavbar = false;
+	let isDeskSurface = false;
+	let editingTitle = false;
+	let titleDraft = '';
+	let titleInputElement: HTMLInputElement;
 
 	onMount(() => {
-		isEnosDeskNavbar = Boolean(getEnosDesktopBridge());
+		isDeskSurface = window.location.hostname === 'enosdesk.duckdns.org';
 	});
 
 	const normalizeTitle = (value) => (typeof value === 'string' ? value.trim() : '');
@@ -78,6 +79,32 @@
 		normalizeTitle(chat?.chat?.title) ||
 		normalizeTitle(chat?.title) ||
 		$i18n.t('New Chat');
+	const deskWorkspaceLabel = () => normalizeTitle(deskWorkspaceName) || $i18n.t('Select workspace…');
+
+	const beginTitleRename = async () => {
+		if (!isDeskSurface) return;
+		titleDraft = chatTitleLabel();
+		editingTitle = true;
+		await tick();
+		titleInputElement?.focus();
+		titleInputElement?.select();
+	};
+
+	const commitTitleRename = async () => {
+		const nextTitle = normalizeTitle(titleDraft);
+		if (!nextTitle || nextTitle === chatTitleLabel()) {
+			editingTitle = false;
+			titleDraft = chatTitleLabel();
+			return;
+		}
+		await onRenameChat(nextTitle);
+		editingTitle = false;
+	};
+
+	const cancelTitleRename = () => {
+		editingTitle = false;
+		titleDraft = chatTitleLabel();
+	};
 </script>
 
 <ShareChatModal bind:show={showShareChatModal} chatId={$chatId} />
@@ -130,33 +157,54 @@
 			{$showSidebar ? 'ml-1' : ''}
 			"
 				>
-					{#if isEnosDeskNavbar && shareEnabled && chat && (chat.id || $temporaryChatEnabled)}
-						<Menu
-							{chat}
-							{shareEnabled}
-							{scrollToTop}
-							align="start"
-							shareHandler={() => {
-								showShareChatModal = !showShareChatModal;
-							}}
-							archiveChatHandler={() => {
-								archiveChatHandler(chat.id);
-							}}
-							deleteChatHandler={() => {
-								deleteChatHandler(chat.id);
-							}}
-							{moveChatHandler}
-						>
-							<button
-								type="button"
-								id="chat-title-menu-button"
-								class="flex max-w-full items-center gap-1.5 rounded-xl px-2 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-850 transition"
-								aria-label={$i18n.t('Chat options')}
+					{#if isDeskSurface && shareEnabled && chat && (chat.id || $temporaryChatEnabled)}
+						{#if editingTitle}
+							<input
+								bind:this={titleInputElement}
+								bind:value={titleDraft}
+								id="chat-title-rename-input"
+								class="max-w-full w-64 rounded-xl px-2 py-1.5 text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-850 border border-gray-200 dark:border-gray-700 outline-hidden"
+								aria-label={$i18n.t('Rename chat')}
+								on:keydown={(event) => {
+									if (event.key === 'Enter') {
+										event.preventDefault();
+										commitTitleRename();
+									} else if (event.key === 'Escape') {
+										event.preventDefault();
+										cancelTitleRename();
+									}
+								}}
+								on:blur={commitTitleRename}
+							/>
+						{:else}
+							<Menu
+								{chat}
+								{shareEnabled}
+								{scrollToTop}
+								align="start"
+								shareHandler={() => {
+									showShareChatModal = !showShareChatModal;
+								}}
+								archiveChatHandler={() => {
+									archiveChatHandler(chat.id);
+								}}
+								deleteChatHandler={() => {
+									deleteChatHandler(chat.id);
+								}}
+								{moveChatHandler}
 							>
-								<span class="truncate">{chatTitleLabel()}</span>
-								<ChevronDown className="size-3 shrink-0" strokeWidth="2.5" />
-							</button>
-						</Menu>
+								<button
+									type="button"
+									id="chat-title-menu-button"
+									class="flex max-w-full items-center gap-1.5 rounded-xl px-2 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-850 transition"
+									aria-label={$i18n.t('Chat options')}
+									on:dblclick|preventDefault|stopPropagation={beginTitleRename}
+								>
+									<span class="truncate">{chatTitleLabel()}</span>
+									<ChevronDown className="size-3 shrink-0" strokeWidth="2.5" />
+								</button>
+							</Menu>
+						{/if}
 					{:else if showModelSelector}
 						<ModelSelector bind:selectedModels showSetDefault={!shareEnabled} />
 					{/if}
@@ -164,6 +212,19 @@
 
 				<div id="navbar-right-actions" class="self-start flex flex-none items-center text-gray-600 dark:text-gray-400">
 					<!-- <div class="md:hidden flex self-center w-[1px] h-5 mx-2 bg-gray-300 dark:bg-stone-700" /> -->
+
+					{#if isDeskSurface}
+						<button
+							id="desk-workspace-status-button"
+							type="button"
+							class="max-w-[12rem] flex cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition text-sm"
+							on:click={() => {
+								showControls.set(true);
+							}}
+						>
+							<span class="truncate">{deskWorkspaceLabel()}</span>
+						</button>
+					{/if}
 
 					{#if $user?.role === 'user' ? ($user?.permissions?.chat?.temporary ?? true) && !($user?.permissions?.chat?.temporary_enforced ?? false) : true}
 						{#if !chat?.id}
@@ -262,7 +323,7 @@
 						</Menu>
 					{/if}
 
-					{#if $user?.role === 'admin' || ($user?.permissions.chat?.controls ?? true)}
+					{#if isDeskSurface && ($user?.role === 'admin' || ($user?.permissions.chat?.controls ?? true))}
 						<Tooltip content={$i18n.t('Controls')}>
 							<button
 								class=" flex cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition"
@@ -276,34 +337,6 @@
 								</div>
 							</button>
 						</Tooltip>
-					{/if}
-
-					{#if $user !== undefined && $user !== null}
-						<UserMenu
-							className="w-[240px]"
-							role={$user?.role}
-							help={true}
-							on:show={(e) => {
-								if (e.detail === 'archived-chat') {
-									showArchivedChats.set(true);
-								}
-							}}
-						>
-							<button
-								type="button"
-								class="select-none flex rounded-xl p-1.5 w-full hover:bg-gray-50 dark:hover:bg-gray-850 transition"
-								aria-label={$i18n.t('User menu')}
-							>
-								<div class=" self-center">
-									<img
-										src={`${WEBUI_API_BASE_URL}/users/${$user?.id}/profile/image`}
-										class="size-6 object-cover rounded-full"
-										alt=""
-										draggable="false"
-									/>
-								</div>
-							</button>
-						</UserMenu>
 					{/if}
 				</div>
 			</div>

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-test('chat navbar exposes the chat title action menu only on ENOS Desk', () => {
+test('chat navbar exposes Desk title actions and workspace status only on ENOS Desk', () => {
 	const navbar = readFileSync('src/lib/components/chat/Navbar.svelte', 'utf8');
 	const chat = readFileSync('src/lib/components/chat/Chat.svelte', 'utf8');
 	const menu = readFileSync('src/lib/components/layout/Navbar/Menu.svelte', 'utf8');
@@ -15,13 +15,13 @@ test('chat navbar exposes the chat title action menu only on ENOS Desk', () => {
 	);
 	assert.match(
 		navbar,
-		/getEnosDesktopBridge/,
-		'Navbar should gate the chat title menu on the ENOS Desk bridge'
+		/window\.location\.hostname === 'enosdesk\.duckdns\.org'/,
+		'Navbar should gate Desk-only header UI on the ENOS Desk hostname'
 	);
 	assert.match(
 		navbar,
-		/let isEnosDeskNavbar = false/,
-		'Navbar should default to the normal web behavior until Desk is detected'
+		/let isDeskSurface = false/,
+		'Navbar should default to the normal web behavior until Desk hostname detection runs'
 	);
 	assert.match(
 		navbar,
@@ -45,13 +45,53 @@ test('chat navbar exposes the chat title action menu only on ENOS Desk', () => {
 	);
 	assert.match(
 		navbar,
+		/export let onRenameChat/,
+		'Navbar should accept an inline rename callback for Desk title editing'
+	);
+	assert.match(
+		navbar,
+		/export let deskWorkspaceName/,
+		'Navbar should accept the selected Desk workspace label'
+	);
+	assert.match(
+		navbar,
 		/id="chat-title-menu-button"/,
 		'Navbar should expose a dedicated chat title menu trigger'
 	);
 	assert.match(
 		navbar,
-		/{#if isEnosDeskNavbar && shareEnabled && chat && \(chat\.id \|\| \$temporaryChatEnabled\)}[\s\S]*<Menu[\s\S]*id="chat-title-menu-button"/,
+		/{#if isDeskSurface && shareEnabled && chat && \(chat\.id \|\| \$temporaryChatEnabled\)}[\s\S]*<Menu[\s\S]*id="chat-title-menu-button"/,
 		'The chat title trigger should reuse the existing chat action menu only on Desk'
+	);
+	assert.match(
+		navbar,
+		/on:dblclick\|preventDefault\|stopPropagation=\{beginTitleRename\}/,
+		'The Desk title trigger should enter inline rename on double-click'
+	);
+	assert.match(
+		navbar,
+		/id="chat-title-rename-input"/,
+		'The Desk title should expose an inline rename input'
+	);
+	assert.match(
+		navbar,
+		/id="desk-workspace-status-button"[\s\S]*\{deskWorkspaceLabel\(\)\}/,
+		'Desk should show the selected workspace name or selection prompt in the top-right'
+	);
+	assert.match(
+		navbar,
+		/Select workspace…/,
+		'Desk should show a pre-selection workspace prompt when no workspace is selected'
+	);
+	assert.doesNotMatch(
+		navbar,
+		/<UserMenu|WEBUI_API_BASE_URL/,
+		'Navbar should not render the header user avatar/menu'
+	);
+	assert.match(
+		navbar,
+		/{#if isDeskSurface && \(\$user\?\.role === 'admin' \|\| \(\$user\?\.permissions\.chat\?\.controls \?\? true\)\)}/,
+		'The top-right controls/expand button should remain Desk-only'
 	);
 	assert.match(
 		menu,
@@ -87,5 +127,15 @@ test('chat navbar exposes the chat title action menu only on ENOS Desk', () => {
 		navbarInvocation,
 		/showModelSelector={false}/,
 		'Chat should keep the existing web behavior of hiding the navbar model selector'
+	);
+	assert.match(
+		navbarInvocation,
+		/onRenameChat=\{renameChatHandler\}/,
+		'Chat should wire Desk inline rename through the existing chat API'
+	);
+	assert.match(
+		navbarInvocation,
+		/deskWorkspaceName=\{String\(/,
+		'Chat should pass the selected Desk workspace label into Navbar'
 	);
 });

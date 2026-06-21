@@ -112,7 +112,7 @@
 	import Placeholder from './Placeholder.svelte';
 	import FilesOverlay from './MessageInput/FilesOverlay.svelte';
 	import NotificationToast from '../NotificationToast.svelte';
-	import Spinner from '../common/Spinner.svelte';
+	import EnosOrb from '../common/EnosOrb.svelte';
 	import Tooltip from '../common/Tooltip.svelte';
 	import Sidebar from '../icons/Sidebar.svelte';
 	import Image from '../common/Image.svelte';
@@ -354,6 +354,11 @@
 
 		const model = atSelectedModel ?? $models.find((m) => m.id === selectedModels[0]);
 		if (model) {
+			const canUseWebSearch =
+				model.info?.meta?.capabilities?.['web_search'] !== false &&
+				$config?.features?.enable_web_search &&
+				($user?.role === 'admin' || $user?.permissions?.features?.web_search);
+
 			// Set Default Tools
 			if (model?.info?.meta?.toolIds) {
 				const defaultIds = [
@@ -415,32 +420,28 @@
 					imageGenerationEnabled = model.info.meta.defaultFeatureIds.includes('image_generation');
 				}
 
-				if (
-					model.info?.meta?.capabilities?.['web_search'] &&
-					$config?.features?.enable_web_search &&
-					($user?.role === 'admin' || $user?.permissions?.features?.web_search)
-				) {
-					webSearchEnabled = model.info.meta.defaultFeatureIds.includes('web_search');
+					if (
+						model.info?.meta?.capabilities?.['code_interpreter'] &&
+						$config?.features?.enable_code_interpreter &&
+						($user?.role === 'admin' || $user?.permissions?.features?.code_interpreter)
+					) {
+						codeInterpreterEnabled = model.info.meta.defaultFeatureIds.includes('code_interpreter');
+					}
 				}
 
-				if (
-					model.info?.meta?.capabilities?.['code_interpreter'] &&
-					$config?.features?.enable_code_interpreter &&
-					($user?.role === 'admin' || $user?.permissions?.features?.code_interpreter)
-				) {
-					codeInterpreterEnabled = model.info.meta.defaultFeatureIds.includes('code_interpreter');
+				// Set Default Terminal — only if the referenced terminal actually exists
+				if (model?.info?.meta?.terminalId) {
+					const tid = model.info.meta.terminalId;
+					if (isTerminalAvailable(tid)) {
+						selectedTerminalId.set(tid);
+					}
 				}
-			}
 
-			// Set Default Terminal — only if the referenced terminal actually exists
-			if (model?.info?.meta?.terminalId) {
-				const tid = model.info.meta.terminalId;
-				if (isTerminalAvailable(tid)) {
-					selectedTerminalId.set(tid);
+				if (canUseWebSearch) {
+					webSearchEnabled = true;
 				}
 			}
-		}
-	};
+		};
 
 	const showMessage = async (message, scroll = true) => {
 		const _chatId = JSON.parse(JSON.stringify($chatId));
@@ -1165,8 +1166,8 @@
 						}
 					}
 				}
-			}
-		});
+				}
+			});
 
 		artifactContents.set(contents);
 	};
@@ -3291,6 +3292,24 @@
 		}
 	};
 
+	const renameChatHandler = async (title: string) => {
+		const nextTitle = title.trim();
+		if (!nextTitle) {
+			toast.error($i18n.t('Title cannot be an empty string.'));
+			return;
+		}
+
+		if ($chatId && !$temporaryChatEnabled) {
+			chat = await updateChatById(localStorage.token, $chatId, {
+				title: nextTitle
+			});
+			currentChatPage.set(1);
+			await chats.set(await getChatList(localStorage.token, $currentChatPage));
+		}
+
+		chatTitle.set(nextTitle);
+	};
+
 	const saveControls = async () => {
 		if (!$chatId || $temporaryChatEnabled) return;
 		const loaded = chat?.chat ?? {};
@@ -3479,22 +3498,28 @@
 								timestamp: Date.now()
 							}
 						}}
-						{history}
-						title={$chatTitle}
-						bind:selectedModels
-						showModelSelector={false}
-						shareEnabled={!!history.currentId}
-						{initNewChat}
-						scrollToTop={!isNearTop ? scrollToTop : null}
-						{archiveChatHandler}
-						{deleteChatHandler}
-						{moveChatHandler}
-						onSaveTempChat={async () => {
-							try {
-								if (!history?.currentId || !Object.keys(history.messages).length) {
-									toast.error($i18n.t('No conversation to save'));
-									return;
-								}
+							{history}
+							title={$chatTitle}
+							bind:selectedModels
+							showModelSelector={false}
+							shareEnabled={!!history.currentId}
+							{initNewChat}
+							scrollToTop={!isNearTop ? scrollToTop : null}
+							{archiveChatHandler}
+							{deleteChatHandler}
+							{moveChatHandler}
+							onRenameChat={renameChatHandler}
+							deskWorkspaceName={String(
+								$selectedFolder?.data?.project_context_source?.rootName ??
+									$selectedFolder?.name ??
+									''
+							).trim()}
+							onSaveTempChat={async () => {
+								try {
+									if (!history?.currentId || !Object.keys(history.messages).length) {
+										toast.error($i18n.t('No conversation to save'));
+										return;
+									}
 								const messages = createMessagesList(history, history.currentId);
 								const title =
 									messages.find((m) => m.role === 'user')?.content ?? $i18n.t('New Chat');
@@ -3716,17 +3741,17 @@
 					{showMessage}
 					{eventTarget}
 					{codeInterpreterEnabled}
-				/>
-			</PaneGroup>
-		</div>
-	{:else if loading}
-		<div class=" flex items-center justify-center h-full w-full">
-			<div class="m-auto">
-				<Spinner className="size-5" />
+					/>
+				</PaneGroup>
 			</div>
-		</div>
-	{/if}
-</div>
+		{:else if loading}
+			<div class=" flex items-center justify-center h-full w-full">
+				<div class="m-auto">
+					<EnosOrb tone="all" className="size-8" />
+				</div>
+			</div>
+		{/if}
+	</div>
 
 <style>
 	::-webkit-scrollbar {

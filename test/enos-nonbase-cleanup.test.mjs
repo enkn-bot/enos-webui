@@ -42,10 +42,21 @@ test('surface script no longer injects a random welcome greeting over the base p
 	);
 });
 
-test('orphaned ENOS orb loader component is removed', () => {
+test('ENOS orb loader component has live loading-state ownership', () => {
+	const skeleton = readFileSync('src/lib/components/chat/Messages/Skeleton.svelte', 'utf8');
+	const statusItem = readFileSync(
+		'src/lib/components/chat/Messages/ResponseMessage/StatusHistory/StatusItem.svelte',
+		'utf8'
+	);
+
 	assert.equal(
 		existsSync('src/lib/components/common/EnosOrb.svelte'),
-		false,
-		'EnosOrb should be deleted while it has no live imports'
+		true,
+		'EnosOrb should exist now that loader states import it'
+	);
+	assert.match(
+		skeleton + statusItem,
+		/EnosOrb/,
+		'EnosOrb should have live imports in model response/tool loading states'
 	);
 });

@@ -15,8 +15,8 @@ test('unfinished empty assistant responses use base skeleton unless visible stat
 	);
 	assert.match(
 		responseMessage,
-		/<Skeleton \/>/,
-		'Empty unfinished assistant messages should render the base Skeleton placeholder'
+		/<Skeleton modelId=\{message\.model\} \/>/,
+		'Empty unfinished assistant messages should render the model-keyed Skeleton placeholder'
 	);
 	assert.doesNotMatch(
 		responseMessage,
