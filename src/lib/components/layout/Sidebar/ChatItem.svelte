@@ -6,6 +6,7 @@
 </script>
 
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { toast } from 'svelte-sonner';
 	import { goto, invalidate, invalidateAll } from '$app/navigation';
 	import { onMount, getContext, createEventDispatcher, tick } from 'svelte';
@@ -35,10 +36,9 @@
 		currentChatPage,
 		tags,
 		selectedFolder,
-		showControls,
-		showFileNavPath,
 		showLocalFileFolderId,
-		activeChatIds
+		activeChatIds,
+		requestTrayOpenForSurface
 	} from '$lib/stores';
 
 	import ChatMenu from './ChatMenu.svelte';
@@ -67,8 +67,8 @@
 
 	export let selected = false;
 	export let shiftKey = false;
-	export let projectFolder = null;
-	export let openFilesOnSelect = false;
+		export let projectFolder = null;
+		export let openFilesOnSelect = false;
 
 	export let onDragEnd = () => {};
 
@@ -283,7 +283,7 @@
 		onDragEnd(event);
 	};
 
-	const onClickOutside = (event) => {
+		const onClickOutside = (event) => {
 		if (!itemElement.contains(event.target)) {
 			if (confirmEdit) {
 				if (chatTitle !== title) {
@@ -293,30 +293,35 @@
 				confirmEdit = false;
 				chatTitle = '';
 			}
-		}
-	};
+			}
+		};
 
-	const selectProjectContext = () => {
-		if (projectFolder?.id) {
-			selectedFolder.set(projectFolder);
-			showLocalFileFolderId.set(projectFolder.id);
-			openFilesPaneOnSelect();
-			return;
-		}
+		$: isDeskSurface = browser && window.location.hostname === 'enosdesk.duckdns.org';
 
-		selectedFolder.set(null);
-		showLocalFileFolderId.set(null);
-		openFilesPaneOnSelect();
-	};
+		const requestTrayOpenOnSelect = () => {
+			if (isDeskSurface && !openFilesOnSelect) return;
 
-	const openFilesPaneOnSelect = () => {
-		if (!openFilesOnSelect) return;
+			requestTrayOpenForSurface(isDeskSurface);
+		};
 
-		showControls.set(true);
-		showFileNavPath.set('.');
-	};
+		const selectProjectContext = () => {
+			if (projectFolder?.id) {
+				selectedFolder.set(projectFolder);
+				if (isDeskSurface) {
+					showLocalFileFolderId.set(projectFolder.id);
+				}
+				requestTrayOpenOnSelect();
+				return;
+			}
 
-	onMount(() => {
+			selectedFolder.set(null);
+			if (isDeskSurface) {
+				showLocalFileFolderId.set(null);
+			}
+			requestTrayOpenOnSelect();
+		};
+
+		onMount(() => {
 		const el = itemElement;
 		if (!el) return;
 

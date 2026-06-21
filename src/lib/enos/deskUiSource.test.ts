@@ -83,27 +83,37 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(sidebar).not.toContain('M6 18 18 6M6 6l12 12');
 	});
 
-	test('Desk folder and chat selection opens Files without changing non-Desk chat rows', () => {
+	test('sidebar folder and chat selection use a pending tray request across surfaces', () => {
 		const recursiveFolder = read('src/lib/components/layout/Sidebar/RecursiveFolder.svelte');
 		const chatItem = read('src/lib/components/layout/Sidebar/ChatItem.svelte');
-		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
+		const chatControls = read('src/lib/components/chat/ChatControls.svelte');
+		const stores = read('src/lib/stores/index.ts');
 
-		expect(recursiveFolder).toMatch(
-			/const openDeskFilesPane = \(\) => \{[\s\S]*if \(!isDeskSurface\) return;[\s\S]*showControls\.set\(true\);[\s\S]*showFileNavPath\.set\('\.'\);[\s\S]*\};/
+		expect(stores).toContain('export const pendingTrayOpen: Writable<PendingTrayOpenTab | null>');
+		expect(stores).toContain(
+			"export const trayTabForSurface = (isDeskSurface: boolean): PendingTrayOpenTab =>\n\tisDeskSurface ? 'files' : 'default';"
+		);
+
+		expect(chatControls).toContain('pendingTrayOpen');
+		expect(chatControls).toContain('export const openTray = async');
+		expect(chatControls).toMatch(/const tab = resolveTrayTab\(requestedTab\);[\s\S]*showControls\.set\(true\);[\s\S]*openPane\(\);/);
+		expect(chatControls).toMatch(/if \(visibleControlTabs\.length === 0\) \{[\s\S]*showControls\.set\(false\);[\s\S]*\}/);
+		expect(chatControls).toMatch(/if \(\$selectedTerminalId && showFilesTab\) \{[\s\S]*activeTab = 'files';[\s\S]*showControls\.set\(true\);[\s\S]*\}/);
+
+		expect(recursiveFolder).toContain(
+			"requestTrayOpenForSurface(isDeskSurface);"
 		);
 		expect(recursiveFolder).toMatch(
-			/if \(isDeskSurface\) \{[\s\S]*open = !open;[\s\S]*isExpandedUpdateDebounceHandler\(\);[\s\S]*\}/
+			/clickTimer = setTimeout\(async \(\) => \{[\s\S]*open = !open;[\s\S]*isExpandedUpdateDebounceHandler\(\);[\s\S]*await selectProjectFolderHandler\(\{ openFiles: true \}\);/
 		);
-		expect(recursiveFolder).toContain('await selectProjectFolderHandler({ openFiles: true });');
+		expect(recursiveFolder).not.toContain('(e) => e.stopPropagation();');
 
 		expect(chatItem).toContain('export let openFilesOnSelect = false;');
 		expect(chatItem).toMatch(
-			/const openFilesPaneOnSelect = \(\) => \{[\s\S]*if \(!openFilesOnSelect\) return;[\s\S]*showControls\.set\(true\);[\s\S]*showFileNavPath\.set\('\.'\);[\s\S]*\};/
+			/const requestTrayOpenOnSelect = \(\) => \{[\s\S]*if \(isDeskSurface && !openFilesOnSelect\) return;[\s\S]*requestTrayOpenForSurface\(isDeskSurface\);[\s\S]*\};/
 		);
 		expect(chatItem).toMatch(
-			/on:click=\{\(\) => \{[\s\S]*selectProjectContext\(\);/
+			/const selectProjectContext = \(\) => \{[\s\S]*requestTrayOpenOnSelect\(\);[\s\S]*\};/
 		);
-		expect(sidebar.match(/openFilesOnSelect=\{isDeskSurface\}/g)?.length).toBeGreaterThanOrEqual(2);
-		expect(recursiveFolder).toContain('openFilesOnSelect={isDeskSurface}');
 	});
 });

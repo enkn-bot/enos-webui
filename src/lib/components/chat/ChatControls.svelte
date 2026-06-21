@@ -1,5 +1,7 @@
 <script context="module" lang="ts">
-	type ControlTab = 'overview' | 'controls' | 'files';
+	import type { ControlPaneTab, PendingTrayOpenTab } from '$lib/stores';
+
+	type ControlTab = ControlPaneTab;
 	let savedTab: ControlTab | null = null;
 </script>
 
@@ -22,6 +24,7 @@
 		settings,
 		showFileNavPath,
 		showLocalFileFolderId,
+		pendingTrayOpen,
 		selectedFolder,
 		selectedTerminalId,
 		user
@@ -84,9 +87,10 @@
 	let defaultControlTab: ControlTab = 'controls';
 	let controlTabOrder: ControlTab[] = DEFAULT_CONTROL_TAB_ORDER;
 	let visibleControlTabs: ControlTab[] = [];
-	let desktopCapabilities: EnosDesktopCapabilities | null = null;
+	let desktopCapabilities: EnosDesktopCapabilities | null | undefined = undefined;
 	let canApplyInitialTab = false;
 	let hasAppliedInitialTab = false;
+	let applyingPendingTrayOpen = false;
 
 	$: hasMessages = history?.messages && Object.keys(history.messages).length > 0;
 
@@ -229,8 +233,10 @@
 	};
 
 	export const openPane = () => {
-		if (parseInt(localStorage?.chatControlsSize)) {
-			const container = document.getElementById('chat-container');
+		if (!pane) return;
+
+		const container = document.getElementById('chat-container');
+		if (parseInt(localStorage?.chatControlsSize) && container) {
 			let size = Math.floor(
 				(parseInt(localStorage?.chatControlsSize) / container.clientWidth) * 100
 			);
@@ -239,6 +245,54 @@
 			pane.resize(minSize);
 		}
 	};
+
+	const resolveTrayTab = (requestedTab: PendingTrayOpenTab): ControlTab | null => {
+		if (requestedTab === 'default') {
+			return visibleControlTabs[0] ?? null;
+		}
+
+		return visibleControlTabs.includes(requestedTab) ? requestedTab : null;
+	};
+
+	const isWaitingForTrayTab = (requestedTab: PendingTrayOpenTab) =>
+		requestedTab === 'files' && isDeskSurface && desktopCapabilities === undefined;
+
+	export const openTray = async (requestedTab: PendingTrayOpenTab = 'default') => {
+		const tab = resolveTrayTab(requestedTab);
+
+		if (!tab) {
+			return !isWaitingForTrayTab(requestedTab);
+		}
+
+		activeTab = tab;
+		savedTab = tab;
+		showControls.set(true);
+
+		await tick();
+
+		if (pane && largeScreen) {
+			openPane();
+		}
+
+		return true;
+	};
+
+	const consumePendingTrayOpen = async (requestedTab: PendingTrayOpenTab) => {
+		if (applyingPendingTrayOpen || !paneReady) return;
+
+		applyingPendingTrayOpen = true;
+		const handled = await openTray(requestedTab);
+		if (handled && $pendingTrayOpen === requestedTab) {
+			pendingTrayOpen.set(null);
+		}
+		applyingPendingTrayOpen = false;
+	};
+
+	$: if (paneReady && $pendingTrayOpen) {
+		visibleControlTabs;
+		desktopCapabilities;
+		void consumePendingTrayOpen($pendingTrayOpen);
+	}
 
 	const handleMediaQuery = async (e) => {
 		if (e.matches) {

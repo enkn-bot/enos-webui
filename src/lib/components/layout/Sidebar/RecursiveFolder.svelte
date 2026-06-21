@@ -15,9 +15,8 @@
 	import {
 		chatId,
 		mobile,
+		requestTrayOpenForSurface,
 		selectedFolder,
-		showControls,
-		showFileNavPath,
 		showLocalFileFolderId,
 		showSidebar
 	} from '$lib/stores';
@@ -383,37 +382,31 @@
 		}, 500);
 	};
 
-	const openDeskFilesPane = () => {
-		if (!isDeskSurface) return;
+		const selectProjectFolderHandler = async ({ openFiles = false } = {}) => {
+			const folder = await getFolderById(localStorage.token, folderId).catch((error) => {
+				toast.error(`${error}`);
+				return null;
+			});
 
-		showControls.set(true);
-		showFileNavPath.set('.');
-	};
-
-	const selectProjectFolderHandler = async ({ openFiles = false } = {}) => {
-		const folder = await getFolderById(localStorage.token, folderId).catch((error) => {
-			toast.error(`${error}`);
-			return null;
-		});
-
-		if (folder) {
-			await selectedFolder.set(folder);
-		}
-
-		if (isDeskSurface) {
-			showLocalFileFolderId.set(folderId);
-			if (openFiles) {
-				openDeskFilesPane();
+			if (folder) {
+				await selectedFolder.set(folder);
 			}
-		}
-	};
+
+			if (isDeskSurface) {
+				showLocalFileFolderId.set(folderId);
+			}
+
+			if (openFiles) {
+				requestTrayOpenForSurface(isDeskSurface);
+			}
+		};
 
 	const startProjectChatHandler = async (e = null) => {
 		e?.stopPropagation?.();
 		e?.preventDefault?.();
 
 		await selectProjectFolderHandler();
-		await goto('/');
+							await goto('/');
 
 		if ($mobile) {
 			showSidebar.set(!$showSidebar);
@@ -577,21 +570,19 @@
 						clickTimer = null;
 					}
 					renameHandler();
-				}}
-				on:click={async (e) => {
-					(e) => e.stopPropagation();
-					if (clickTimer) {
-						clearTimeout(clickTimer);
-						clickTimer = null;
+					}}
+					on:click={async (e) => {
+						e.stopPropagation();
+						if (clickTimer) {
+							clearTimeout(clickTimer);
+							clickTimer = null;
 					}
 
-					clickTimer = setTimeout(async () => {
-						if (isDeskSurface) {
+						clickTimer = setTimeout(async () => {
 							open = !open;
 							isExpandedUpdateDebounceHandler();
-						}
 
-						await selectProjectFolderHandler({ openFiles: true });
+							await selectProjectFolderHandler({ openFiles: true });
 
 						await goto('/');
 

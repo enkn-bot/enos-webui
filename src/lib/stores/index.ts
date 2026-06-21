@@ -109,6 +109,17 @@ export const showLocalFileFolderId: Writable<string | null> = writable(null);
 export const showLocalFilePath: Writable<string> = writable('.');
 export const showDeskFolderPicker: Writable<boolean> = writable(false);
 export const selectedTerminalId: Writable<string | null> = writable(null);
+export type ControlPaneTab = 'overview' | 'controls' | 'files';
+export type PendingTrayOpenTab = ControlPaneTab | 'default';
+export const pendingTrayOpen: Writable<PendingTrayOpenTab | null> = writable(null);
+export const trayTabForSurface = (isDeskSurface: boolean): PendingTrayOpenTab =>
+	isDeskSurface ? 'files' : 'default';
+export const requestTrayOpen = (tab: PendingTrayOpenTab) => {
+	pendingTrayOpen.set(tab);
+};
+export const requestTrayOpenForSurface = (isDeskSurface: boolean) => {
+	requestTrayOpen(trayTabForSurface(isDeskSurface));
+};
 
 export const artifactCode = writable(null);
 export const artifactContents = writable(null);
