@@ -51,11 +51,21 @@ All requested items SHIPPED + deployed live EXCEPT the last fix (folder/chat→t
 - `12cb3916d` sidebar: Projects add = folder+ (NewFolderAlt); Chats row New Chat (PencilSquare) → startNewChatHandler. Folder.svelte gained configurable `addIcon`.
 - `c9db7fb62` font pass: `.enos-display` serif token class (greeting + project title), hardcoded 'Anthropic Serif' removed, guard test. Dead @font-face left (deferred prune).
 
-## Remaining desk pieces (folded in — do before/with backend roadmap)
+## Also shipped (backend roadmap, 2026-06-21)
+- `c7da0349a` settings de-brand + role gating: OWUI links scrubbed (user+admin Settings), stats filename `open-webui-stats-`→`enos-stats-`, About keywords cleaned; `BASIC_USER_TABS` gate in SettingsModal.getAvailableSettings() → non-admins see Account/Interface/General/Personalization/Audio/Data Controls/About, Connections/Tools/Advanced admin-only. 64 tests green, deployed.
+
+## ACTIVE next pieces — NOT abandoned; sequence below
+These two were only parked because the user said "back to backend roadmap" after the UI round; they are queued, not dropped. Do them when we hit the desk part of backend work.
 1. **Bind existing project to a workspace (close the "select workspace" loop).** Today binding only happens at folder CREATION (Sidebar.svelte:375-382 `bridge.bindWorkspaceToFolder` + `saveProjectDigestForFolder` → sets `data.project_context_source` {rootName, kind:'local'}). DeskWorkspacePicker.selectLocal (`src/lib/components/enos/DeskWorkspacePicker.svelte:56`) just opens the create-folder modal → existing projects (e.g. "Microsoft") can never bind → badge stays "Select workspace…". FIX: when a project is open/selected, picker "Local" binds THAT folder (extract shared `bindLocalWorkspace(folderId)` util reused by Sidebar + picker; needs Electron native-dialog test). Cloud: selectDirect/selectSystem set selectedTerminalId but DON'T set the folder's project_context_source → badge won't show Cloud; decide badge cloud-state source. GitHub = coming soon.
 2. **Surface split + legacy chat migration (the big one).** Decision locked: scope chats per surface (folders already are). Backfill `meta.surface` on existing chats: untagged→`chat`, chats inside a desk-bound project→`desk`. Then revert the show-all folder-chat stopgap (`RecursiveFolder.setFolderItems`) to surface-scoped. New chats already self-tag.
 3. Earlier open loop: verify folder/chat→tray in Electron (deployed, unverified).
-4. Nothing pushed to origin (both branches ahead). Push when user asks.
+
+## Backend roadmap (tracked)
+- **Update/rollback policy (manual-only, never auto)** — build a check-for-updates step (`git fetch upstream --tags`, compare to package.json base) surfaced on demand; formalize keep-last-X immutable GHCR `v0.9.6-enos-N` tags + one pristine base tag as revert points. Auto-update already off (`ENABLE_VERSION_UPDATE_CHECK=false`). Full design: memory `project_enos_update_policy`.
+- **Backend de-brand pass 2** — API paths (`/ollama`,`/openai`), `version` in `/api/config`+`/api/version` still fingerprint OWUI. STANDING RULE: OWUI is never identified; re-scrub after any upstream merge.
+- **Latency/TTFT** (V2 buffered-pipeline, worst ~48.9s); **surface/context self-awareness** (parked, memory `project_enos_surface_context`).
+
+- Nothing pushed to origin (both branches ahead). Push when user asks.
 
 ## Commands to resume
 ```bash
