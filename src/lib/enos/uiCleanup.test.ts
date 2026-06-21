@@ -72,4 +72,32 @@ describe('ENOS UI cleanup source ownership', () => {
 		expect(statusItem).toContain('<EnosOrb');
 		expect(chat).toContain('<EnosOrb tone="all"');
 	});
+
+	test('decorative emojis are removed from empty states and settings chrome', () => {
+		const emptyStateFiles = [
+			'src/routes/(app)/automations/+page.svelte',
+			'src/lib/components/admin/Functions.svelte',
+			'src/lib/components/workspace/Prompts.svelte',
+			'src/lib/components/workspace/Models.svelte',
+			'src/lib/components/workspace/Tools.svelte',
+			'src/lib/components/workspace/Knowledge.svelte',
+			'src/lib/components/admin/Evaluations/Feedbacks.svelte',
+			'src/lib/components/workspace/Skills.svelte',
+			'src/lib/components/admin/Settings/Models.svelte',
+			'src/lib/components/admin/Users/Groups.svelte'
+		];
+
+		for (const file of emptyStateFiles) {
+			expect(read(file)).not.toMatch(/[⚡😕📝👥]/);
+		}
+
+		const generalSettings = read('src/lib/components/chat/Settings/General.svelte');
+		expect(generalSettings).not.toMatch(/[⚙🌑🌃☀🌷]/);
+
+		const userMenu = read('src/lib/components/layout/Sidebar/UserMenu.svelte');
+		expect(userMenu).not.toContain('✨');
+
+		const userList = read('src/lib/components/admin/Users/UserList.svelte');
+		expect(userList).not.toMatch(/[👋🌱💛👉]/);
+	});
 });

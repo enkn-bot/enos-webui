@@ -92,7 +92,7 @@
 				rel="noopener noreferrer"
 				class="underline hover:text-gray-700 dark:hover:text-gray-200"
 			>
-				{$i18n.t('Learn more')} ↗
+				{$i18n.t('Learn more')}
 			</a>
 		</div>
 	{/if}

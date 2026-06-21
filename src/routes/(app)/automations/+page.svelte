@@ -396,7 +396,6 @@
 					{:else if (automations ?? []).length === 0}
 						<div class="w-full h-full flex flex-col justify-center items-center my-16 mb-24">
 							<div class="max-w-md text-center">
-								<div class="text-3xl mb-3">⚡</div>
 								<div class="text-lg font-medium mb-1">
 									{query ? $i18n.t('No results found') : $i18n.t('No automations found')}
 								</div>

@@ -295,7 +295,7 @@
 								<a
 									class="underline"
 									href="https://github.com/open-webui/open-terminal"
-									target="_blank">{$i18n.t('Learn more about Open Terminal')} ↗</a
+									target="_blank">{$i18n.t('Learn more about Open Terminal')}</a
 								>
 							</div>
 						</div>

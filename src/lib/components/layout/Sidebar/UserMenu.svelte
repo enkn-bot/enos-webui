@@ -624,7 +624,7 @@
 
 					<Tooltip
 						content={usage?.model_ids && usage?.model_ids.length > 0
-							? `${$i18n.t('Running')}: ${usage.model_ids.join(', ')} ✨`
+							? `${$i18n.t('Running')}: ${usage.model_ids.join(', ')}`
 							: ''}
 					>
 						<div
