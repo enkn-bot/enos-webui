@@ -1,5 +1,6 @@
 <script context="module" lang="ts">
-	let savedTab: 'controls' | 'files' | 'overview' = 'controls';
+	type ControlTab = 'overview' | 'controls' | 'files';
+	let savedTab: ControlTab | null = null;
 </script>
 
 <script lang="ts">
@@ -48,7 +49,6 @@
 
 	const i18n = getContext('i18n');
 
-	type ControlTab = 'overview' | 'controls' | 'files';
 	const DESK_CONTROL_TAB_ORDER = ['overview', 'controls', 'files'] satisfies ControlTab[];
 	const DEFAULT_CONTROL_TAB_ORDER = ['controls', 'files', 'overview'] satisfies ControlTab[];
 	const controlTabLabel = (tab: ControlTab) =>
@@ -79,14 +79,13 @@
 	let paneReady = false;
 
 	// Tab state for the shared surface side pane.
-	let activeTab: ControlTab = savedTab;
+	let activeTab: ControlTab = 'controls';
+	let defaultControlTab: ControlTab = 'controls';
 	let controlTabOrder: ControlTab[] = DEFAULT_CONTROL_TAB_ORDER;
 	let visibleControlTabs: ControlTab[] = [];
 	let desktopCapabilities: EnosDesktopCapabilities | null = null;
-	// svelte-ignore reactive_declaration_module_script_dependency
-	$: {
-		savedTab = activeTab;
-	}
+	let canApplyInitialTab = false;
+	let hasAppliedInitialTab = false;
 
 	$: hasMessages = history?.messages && Object.keys(history.messages).length > 0;
 
@@ -111,16 +110,22 @@
 		showTerminalFileNav ||
 		(codeInterpreterEnabled && $config?.code?.interpreter_engine !== 'jupyter');
 	$: showOverviewTab = isDeskSurface || hasMessages;
+	$: defaultControlTab = isDeskSurface ? 'files' : 'controls';
 	$: controlTabOrder = isDeskSurface ? DESK_CONTROL_TAB_ORDER : DEFAULT_CONTROL_TAB_ORDER;
 	$: visibleControlTabs = controlTabOrder.filter((tab) => {
 		if (tab === 'overview') return showOverviewTab;
 		if (tab === 'files') return showFilesTab;
 		return showControlsTab;
 	});
+	$: canApplyInitialTab = savedTab !== null || !isDeskSurface || showFilesTab;
+	$: if (!hasAppliedInitialTab && canApplyInitialTab) {
+		activeTab = savedTab ?? defaultControlTab;
+		hasAppliedInitialTab = true;
+	}
 
 	// Tab fallback: if active tab becomes hidden, switch to the first surface tab.
-	$: if (!visibleControlTabs.includes(activeTab)) {
-		activeTab = visibleControlTabs[0] ?? 'controls';
+	$: if (hasAppliedInitialTab && !visibleControlTabs.includes(activeTab)) {
+		activeTab = visibleControlTabs[0] ?? defaultControlTab;
 	}
 
 	// Auto-close if there are no visible tabs
@@ -340,6 +345,11 @@
 
 	// Helper: is a "special" full-screen panel active?
 	$: specialPanel = $showCallOverlay || $showArtifacts || $showEmbeds;
+
+	const selectControlTab = (tab: ControlTab) => {
+		activeTab = tab;
+		savedTab = tab;
+	};
 </script>
 
 {#if !largeScreen}
@@ -372,19 +382,19 @@
 					<!-- Shared surface tabs -->
 					<div class="flex flex-col h-full min-h-0">
 						<!-- Tab bar -->
-						<div class="flex items-center justify-between px-2 pt-2 pb-2 shrink-0">
-							<div class="flex gap-1 min-w-0 overflow-x-auto scrollbar-hidden">
-								{#each visibleControlTabs as tab}
-									<button
-										class="px-2.5 py-1 text-sm rounded-lg transition whitespace-nowrap {activeTab ===
-										tab
-											? 'bg-gray-100 dark:bg-gray-800 font-medium text-gray-900 dark:text-white'
-											: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
-										on:click={() => (activeTab = tab)}
-									>
-										{$i18n.t(controlTabLabel(tab))}
-									</button>
-								{/each}
+							<div class="flex items-center justify-between px-2 pt-2 pb-2 shrink-0">
+								<div class="flex gap-1 min-w-0 overflow-x-auto scrollbar-hidden">
+									{#each visibleControlTabs as tab}
+										<button
+											class="px-2.5 py-1 text-sm rounded-lg transition whitespace-nowrap {activeTab ===
+											tab
+												? 'bg-gray-100 dark:bg-gray-800 font-medium text-gray-900 dark:text-white'
+												: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
+											on:click={() => selectControlTab(tab)}
+										>
+											{$i18n.t(controlTabLabel(tab))}
+										</button>
+									{/each}
 							</div>
 							<button
 								class="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition text-gray-500 dark:text-gray-400"
@@ -512,7 +522,7 @@
 											tab
 												? 'bg-gray-100 dark:bg-gray-800 font-medium text-gray-900 dark:text-white'
 												: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
-											on:click={() => (activeTab = tab)}
+											on:click={() => selectControlTab(tab)}
 										>
 											{$i18n.t(controlTabLabel(tab))}
 										</button>
