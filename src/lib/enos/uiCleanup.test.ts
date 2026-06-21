@@ -45,8 +45,12 @@ describe('ENOS UI cleanup source ownership', () => {
 		expect(navbar).toContain('Select workspace…');
 		expect(navbar).toContain('onRenameChat');
 		expect(navbar).toContain('on:dblclick');
-		expect(sidebar).toContain('bg-[var(--enos-brand-sage)]');
-		expect(userMenu).toContain('bg-[var(--enos-brand-sage)]');
+		// Sage user avatar is rendered via UserAvatar (initials on sage circle),
+		// not an inline bg on the server's opaque generated PNG.
+		const userAvatar = read('src/lib/components/enos/UserAvatar.svelte');
+		expect(userAvatar).toContain('bg-[var(--enos-brand-sage)]');
+		expect(sidebar).toContain('<UserAvatar');
+		expect(userMenu).toContain('<UserAvatar');
 		expect(appCss).toContain('--enos-brand-sage: #a4b672');
 		expect(staticCss).not.toContain('button[aria-label="User menu"]');
 	});
