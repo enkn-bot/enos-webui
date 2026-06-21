@@ -50,6 +50,7 @@
 		type EnosDesktopCapabilities,
 		type EnosDesktopProjectDigest
 	} from '$lib/enos/desktopBridge';
+	import { isDeskHostname } from '$lib/enos/deskRuntime';
 
 	const i18n = getContext('i18n');
 
@@ -95,7 +96,7 @@
 	$: hasMessages = history?.messages && Object.keys(history.messages).length > 0;
 
 	$: showControlsTab = $user?.role === 'admin' || ($user?.permissions?.chat?.controls ?? true);
-	$: isDeskSurface = browser && window.location.hostname === 'enosdesk.duckdns.org';
+	$: isDeskSurface = browser && isDeskHostname();
 	$: canUseDirectTerminal =
 		$user?.role === 'admin' || ($user?.permissions?.features?.direct_tool_servers ?? true);
 	$: hasConfiguredTerminal =

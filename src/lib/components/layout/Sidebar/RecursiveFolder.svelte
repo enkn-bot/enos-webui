@@ -37,6 +37,7 @@
 		importChats
 	} from '$lib/apis/chats';
 	import { surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
+	import { isDeskHostname } from '$lib/enos/deskRuntime';
 
 	import ChevronDown from '../../icons/ChevronDown.svelte';
 	import ChevronRight from '../../icons/ChevronRight.svelte';
@@ -84,7 +85,7 @@
 	let clickTimer = null;
 
 	let name = '';
-	$: isDeskSurface = browser && window.location.hostname === 'enosdesk.duckdns.org';
+	$: isDeskSurface = browser && isDeskHostname();
 	$: currentSurface = surfaceFromIsDesk(isDeskSurface);
 
 	const onDragOver = (e) => {

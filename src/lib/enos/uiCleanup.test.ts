@@ -37,7 +37,9 @@ describe('ENOS UI cleanup source ownership', () => {
 		const appCss = read('src/app.css');
 		const staticCss = read('static/static/custom.css');
 
-		expect(navbar).toContain("window.location.hostname === 'enosdesk.duckdns.org'");
+		// Surface detection is centralized in deskRuntime (single source of truth).
+		expect(navbar).toContain("import { isDeskHostname } from '$lib/enos/deskRuntime';");
+		expect(navbar).toContain('isDeskHostname()');
 		expect(navbar).toContain('isDeskSurface &&');
 		expect(navbar).not.toContain('WEBUI_API_BASE_URL');
 		expect(navbar).not.toContain('<UserMenu');

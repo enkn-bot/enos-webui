@@ -53,6 +53,9 @@
 	let fileLoading = false;
 	let syncingProjectContext = false;
 	let error: string | null = null;
+	// Desk in the browser (no desktop runtime). This is a supported lite mode,
+	// not an error — local files / Git live in the desktop app only.
+	let liteMode = false;
 	let loadedFolderId: string | null = null;
 	let removeProjectFilesChangedListener = () => {};
 	let localHasProjectDigest = false;
@@ -353,7 +356,8 @@
 
 		bridge = getEnosDesktopBridge();
 		if (!bridge) {
-			error = 'ENOS Desktop bridge is unavailable.';
+			// Lite mode: chats work here; local files need the desktop app.
+			liteMode = true;
 			return;
 		}
 		await loadWorkspace();
@@ -374,7 +378,9 @@
 			<div class="min-w-0">
 				<div class="text-sm font-medium">{$i18n.t('Local Files')}</div>
 				<div class="text-xs text-gray-400 dark:text-gray-500 truncate">
-					{#if workspace}
+					{#if liteMode}
+						{$i18n.t('Browser preview')}
+					{:else if workspace}
 						{workspace.rootDisplay}
 					{:else}
 						{$i18n.t('Choose one Mac folder for ENOS Desk.')}
@@ -405,7 +411,7 @@
 					</div>
 				{/if}
 			</div>
-			{#if !workspace || !folderId}
+			{#if !liteMode && (!workspace || !folderId)}
 				<button
 					class="shrink-0 px-2 py-1 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
 					on:click={chooseWorkspace}
@@ -417,7 +423,20 @@
 		</div>
 	</div>
 
-	{#if !workspace}
+	{#if liteMode}
+		<div class="flex-1 min-h-0 flex items-center justify-center px-6 text-center">
+			<div class="max-w-xs">
+				<div class="text-sm font-medium mb-1">
+					{$i18n.t('Local files live in the desktop app')}
+				</div>
+				<div class="text-xs text-gray-400 dark:text-gray-500">
+					{$i18n.t(
+						'Viewing ENOS Desk in the browser. Chats and conversations work here — open the ENOS desktop app for local project files, Git, and edits.'
+					)}
+				</div>
+			</div>
+		</div>
+	{:else if !workspace}
 		<div class="flex-1 min-h-0 flex items-center justify-center px-6 text-center">
 			<div>
 				<div class="text-sm font-medium mb-1">{$i18n.t('No local folder selected')}</div>

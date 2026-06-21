@@ -7,6 +7,7 @@
 
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import { isDeskHostname } from '$lib/enos/deskRuntime';
 	import { toast } from 'svelte-sonner';
 	import { goto, invalidate, invalidateAll } from '$app/navigation';
 	import { onMount, getContext, createEventDispatcher, tick } from 'svelte';
@@ -296,7 +297,7 @@
 			}
 		};
 
-		$: isDeskSurface = browser && window.location.hostname === 'enosdesk.duckdns.org';
+		$: isDeskSurface = browser && isDeskHostname();
 
 		const requestTrayOpenOnSelect = () => {
 			if (isDeskSurface && !openFilesOnSelect) return;

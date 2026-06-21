@@ -118,6 +118,7 @@
 	import Image from '../common/Image.svelte';
 	import { getBanners } from '$lib/apis/configs';
 	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
+	import { isDeskHostname } from '$lib/enos/deskRuntime';
 	import { buildProjectActionContext } from '$lib/enos/projectActions';
 	import { runDeskAgentLoop } from '$lib/enos/deskAgentLoop';
 	import { DESK_FILE_TOOLS, describeDeskTool, executeDeskFileTool } from '$lib/enos/deskFileTools';
@@ -1806,8 +1807,7 @@
 	$: deskActiveFolder = $selectedFolder ?? deskChatFolder ?? null;
 	$: deskWorkspaceBadge = workspaceBadgeFromFolder(deskActiveFolder);
 
-	const isDeskSurface = () =>
-		typeof window !== 'undefined' && window.location.hostname === 'enosdesk.duckdns.org';
+	const isDeskSurface = () => isDeskHostname();
 	const currentSurface = () => surfaceFromIsDesk(isDeskSurface());
 
 	const rememberDeskProjectFolder = (folder) => {

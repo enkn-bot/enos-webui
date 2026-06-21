@@ -93,6 +93,7 @@
 		surfaceFromIsDesk,
 		withSurfaceMeta
 	} from '$lib/enos/surfaceScope';
+	import { isDeskHostname } from '$lib/enos/deskRuntime';
 	import UserAvatar from '$lib/components/enos/UserAvatar.svelte';
 
 	const BREAKPOINT = 768;
@@ -129,7 +130,7 @@
 	let newFolderId = null;
 
 	$: pinnedItems = $settings?.pinnedMenuItems ?? DEFAULT_PINNED_ITEMS;
-	$: isDeskSurface = browser && window.location.hostname === 'enosdesk.duckdns.org';
+	$: isDeskSurface = browser && isDeskHostname();
 	$: currentSurface = surfaceFromIsDesk(isDeskSurface);
 	// Chats are ALWAYS scoped per surface now (folders already are). The legacy
 	// fallback in filterChatsBySurface guarantees no untagged chat vanishes.

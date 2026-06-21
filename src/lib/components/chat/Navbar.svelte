@@ -39,6 +39,7 @@
 	import Plus from '../icons/Plus.svelte';
 	import DeskWorkspacePicker from '$lib/components/enos/DeskWorkspacePicker.svelte';
 	import { workspaceKindLabel } from '$lib/enos/workspaceBadge';
+	import { isDeskHostname } from '$lib/enos/deskRuntime';
 
 	const i18n = getContext('i18n');
 
@@ -84,7 +85,7 @@
 	// Source-contract anchor: <DeskWorkspacePicker bind:show={showDeskWorkspacePicker}>
 
 	onMount(() => {
-		isDeskSurface = window.location.hostname === 'enosdesk.duckdns.org';
+		isDeskSurface = isDeskHostname();
 	});
 
 	const normalizeTitle = (value) => (typeof value === 'string' ? value.trim() : '');

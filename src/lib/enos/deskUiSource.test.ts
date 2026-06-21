@@ -110,4 +110,30 @@ describe('ENOS Desk UI source guardrails', () => {
 			/const selectProjectContext = \(\) => \{[\s\S]*requestTrayOpenOnSelect\(\);[\s\S]*\};/
 		);
 	});
+
+	test('surface detection is centralized in deskRuntime (no inline hostname checks)', () => {
+		const files = [
+			'src/lib/components/chat/ChatControls.svelte',
+			'src/lib/components/chat/MessageInput.svelte',
+			'src/lib/components/chat/Navbar.svelte',
+			'src/lib/components/chat/Chat.svelte',
+			'src/lib/components/layout/Sidebar.svelte',
+			'src/lib/components/layout/Sidebar/RecursiveFolder.svelte',
+			'src/lib/components/layout/Sidebar/ChatItem.svelte',
+			'src/lib/components/chat/Placeholder/FolderTitle.svelte'
+		];
+		for (const file of files) {
+			const src = read(file);
+			expect(src).not.toContain("window.location.hostname === 'enosdesk.duckdns.org'");
+			expect(src).toContain("from '$lib/enos/deskRuntime'");
+		}
+	});
+
+	test('browser desk degrades to a calm lite-mode notice, not a red error', () => {
+		const nav = read('src/lib/components/chat/LocalFileNav.svelte');
+		// Lite mode replaces the old red "bridge unavailable" error string.
+		expect(nav).toContain('liteMode = true;');
+		expect(nav).not.toContain('ENOS Desktop bridge is unavailable.');
+		expect(nav).toContain('Local files live in the desktop app');
+	});
 });

@@ -19,6 +19,7 @@
 	} from '$lib/apis/folders';
 	import { getChatsByFolderId } from '$lib/apis/chats';
 	import { surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
+	import { isDeskHostname } from '$lib/enos/deskRuntime';
 
 	import FolderModal from '$lib/components/layout/Sidebar/Folders/FolderModal.svelte';
 
@@ -40,8 +41,7 @@
 	let showDeleteConfirm = false;
 	let deleteFolderContents = true;
 
-	const isDeskSurface = () =>
-		typeof window !== 'undefined' && window.location.hostname === 'enosdesk.duckdns.org';
+	const isDeskSurface = () => isDeskHostname();
 
 	const updateHandler = async ({ name, meta, data }) => {
 		if (name === '') {

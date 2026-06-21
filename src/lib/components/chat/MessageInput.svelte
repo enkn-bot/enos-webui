@@ -100,6 +100,7 @@
 		type EnosDesktopBridge,
 		type EnosDesktopPermissionProfile
 	} from '$lib/enos/desktopBridge';
+	import { isDeskHostname } from '$lib/enos/deskRuntime';
 
 	const i18n = getContext('i18n');
 
@@ -890,7 +891,7 @@
 	};
 
 	onMount(() => {
-		isDeskSurface = window.location.hostname === 'enosdesk.duckdns.org';
+		isDeskSurface = isDeskHostname();
 		bridge = getEnosDesktopBridge();
 		if (isDeskSurface && bridge) {
 			loadProjectPermissionProfile();
