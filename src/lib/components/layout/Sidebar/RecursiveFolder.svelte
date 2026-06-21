@@ -17,7 +17,6 @@
 		mobile,
 		requestTrayOpenForSurface,
 		selectedFolder,
-		settings,
 		showLocalFileFolderId,
 		showSidebar
 	} from '$lib/stores';
@@ -37,7 +36,7 @@
 		updateChatFolderIdById,
 		importChats
 	} from '$lib/apis/chats';
-	import { filterBySurface, surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
+	import { surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
 
 	import ChevronDown from '../../icons/ChevronDown.svelte';
 	import ChevronRight from '../../icons/ChevronRight.svelte';
@@ -422,11 +421,14 @@
 				toast.error(`${error}`);
 				return [];
 			});
-			// Mirror top-level sidebar: show all folder chats by default; only scope
-			// by surface when the user explicitly opts in. Strict filtering hid every
-			// legacy/untagged chat on desk -> folder appeared empty when opened.
-			const scope = $settings?.enos?.scopeSidebarChatsBySurface ?? false;
-			chats = scope ? filterBySurface(folderChats, currentSurface) : folderChats;
+			// A folder only renders on its own surface, so its untagged chats belong to
+			// that surface. Keep chats tagged for THIS surface plus untagged (legacy)
+			// ones (inherited); exclude only chats explicitly tagged for the other
+			// surface. No untagged chat vanishes.
+			chats = (folderChats ?? []).filter((chat) => {
+				const tag = chat?.meta?.surface;
+				return tag !== 'desk' && tag !== 'chat' ? true : tag === currentSurface;
+			});
 		} else {
 			chats = null;
 		}

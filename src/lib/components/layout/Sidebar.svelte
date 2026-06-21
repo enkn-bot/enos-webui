@@ -87,7 +87,12 @@
 	import { slide } from 'svelte/transition';
 	import HotkeyHint from '../common/HotkeyHint.svelte';
 	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
-	import { filterBySurface, surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
+	import {
+		filterBySurface,
+		filterChatsBySurface,
+		surfaceFromIsDesk,
+		withSurfaceMeta
+	} from '$lib/enos/surfaceScope';
 	import UserAvatar from '$lib/components/enos/UserAvatar.svelte';
 
 	const BREAKPOINT = 768;
@@ -116,24 +121,24 @@
 
 	let folders = {};
 	let folderRegistry = {};
+	// Ids of folders that belong to the desk surface (tagged desk, locally bound,
+	// or legacy bridge workspace). Captured from the UNFILTERED folder list so the
+	// chat surface filter can also recognize desk folders. Drives filterChatsBySurface.
+	let deskFolderIds = [];
 
 	let newFolderId = null;
-
-	const scopeSidebarChats = (items, shouldScope, surface) =>
-		shouldScope ? filterBySurface(items, surface) : items;
 
 	$: pinnedItems = $settings?.pinnedMenuItems ?? DEFAULT_PINNED_ITEMS;
 	$: isDeskSurface = browser && window.location.hostname === 'enosdesk.duckdns.org';
 	$: currentSurface = surfaceFromIsDesk(isDeskSurface);
-	$: shouldScopeSidebarChatsBySurface = $settings?.enos?.scopeSidebarChatsBySurface ?? false;
-	$: sidebarChats = scopeSidebarChats($chats ?? [], shouldScopeSidebarChatsBySurface, currentSurface);
-	$: sidebarPinnedChats = scopeSidebarChats(
-		$pinnedChats ?? [],
-		shouldScopeSidebarChatsBySurface,
-		currentSurface
-	);
+	// Chats are ALWAYS scoped per surface now (folders already are). The legacy
+	// fallback in filterChatsBySurface guarantees no untagged chat vanishes.
+	$: sidebarChats = filterChatsBySurface($chats ?? [], currentSurface, deskFolderIds);
+	$: sidebarPinnedChats = filterChatsBySurface($pinnedChats ?? [], currentSurface, deskFolderIds);
 	$: hasDesktopBridge = browser && Boolean(getEnosDesktopBridge());
-	$: showDeskChats = !(isDeskSurface && ($settings?.enos?.scopeSidebarChatsBySurface ?? false));
+	// Desk has its own loose chats — always render the Chats section (contents are
+	// surface-scoped above). Previously hidden entirely on desk when scoping was on.
+	$: showDeskChats = true;
 	$: if ($showDeskFolderPicker) {
 		showCreateFolderModal = true;
 		showDeskFolderPicker.set(false);
@@ -215,6 +220,18 @@
 			return [];
 		});
 		const legacyDeskProjectIds = await discoverLegacyDeskProjectIds(allFolders);
+		// Desk-folder ids from the FULL list (both surfaces need this for chat scoping):
+		// tagged desk, locally bound (project_context_source), or legacy bridge workspace.
+		const legacyDeskSet = new Set(legacyDeskProjectIds.map(String));
+		deskFolderIds = allFolders
+			.filter(
+				(folder) =>
+					folder?.id &&
+					(folder?.meta?.surface === 'desk' ||
+						Boolean(folder?.data?.project_context_source) ||
+						legacyDeskSet.has(String(folder.id)))
+			)
+			.map((folder) => String(folder.id));
 		const folderList = filterBySurface(allFolders, currentSurface, {
 			legacyDeskItemIds: legacyDeskProjectIds
 		});
@@ -438,11 +455,8 @@
 			})(),
 			await (async () => {
 				console.log('Init pinned chats');
-				const _pinnedChats = scopeSidebarChats(
-					await getPinnedChatList(localStorage.token),
-					shouldScopeSidebarChatsBySurface,
-					currentSurface
-				);
+				// Store raw; surface scoping happens in the sidebarPinnedChats reactive.
+				const _pinnedChats = await getPinnedChatList(localStorage.token);
 				pinnedChats.set(_pinnedChats);
 			})(),
 			await (async () => {
@@ -457,11 +471,8 @@
 			})(),
 			await (async () => {
 				console.log('Init chat list');
-				const _chats = scopeSidebarChats(
-					await getChatList(localStorage.token, $currentChatPage),
-					shouldScopeSidebarChatsBySurface,
-					currentSurface
-				);
+				// Store raw; surface scoping happens in the sidebarChats reactive.
+				const _chats = await getChatList(localStorage.token, $currentChatPage);
 				await chats.set(_chats);
 			})()
 		]);
@@ -478,11 +489,8 @@
 		let newChatList = [];
 
 		const rawChatList = await getChatList(localStorage.token, $currentChatPage);
-		newChatList = scopeSidebarChats(
-			rawChatList,
-			shouldScopeSidebarChatsBySurface,
-			currentSurface
-		);
+		// Store raw; surface scoping happens in the sidebarChats reactive.
+		newChatList = rawChatList;
 
 		// once the bottom of the list has been reached (no results) there is no need to continue querying
 		allChatsLoaded = rawChatList.length === 0;

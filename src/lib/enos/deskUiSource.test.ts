@@ -4,32 +4,26 @@ import { readFileSync } from 'node:fs';
 const read = (path: string) => readFileSync(path, 'utf8');
 
 describe('ENOS Desk UI source guardrails', () => {
-	test('sidebar chat lists are surface-scoped only when the ENOS setting opts in', () => {
+	test('sidebar chats are always surface-scoped with a legacy fallback (no chat vanishes)', () => {
 		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
 
-		expect(sidebar).toMatch(
-			/\$: shouldScopeSidebarChatsBySurface = \$settings\?\.enos\?\.scopeSidebarChatsBySurface \?\? false;/
-		);
-		expect(sidebar).toMatch(
-			/const scopeSidebarChats = \(items, shouldScope, surface\) =>\s*shouldScope\s*\?\s*filterBySurface\(items, surface\)\s*:\s*items;/
+		// Chats are always scoped per surface now; legacy fallback lives in filterChatsBySurface.
+		expect(sidebar).toContain(
+			'$: sidebarChats = filterChatsBySurface($chats ?? [], currentSurface, deskFolderIds);'
 		);
 		expect(sidebar).toContain(
-			'$: sidebarChats = scopeSidebarChats($chats ?? [], shouldScopeSidebarChatsBySurface, currentSurface);'
+			'$: sidebarPinnedChats = filterChatsBySurface($pinnedChats ?? [], currentSurface, deskFolderIds);'
 		);
-		expect(sidebar).toMatch(
-			/\$: sidebarPinnedChats = scopeSidebarChats\(\s*\$pinnedChats \?\? \[],\s*shouldScopeSidebarChatsBySurface,\s*currentSurface\s*\);/
-		);
-		expect(sidebar).toContain(
-			'const _pinnedChats = scopeSidebarChats('
-		);
-		expect(sidebar).toContain(
-			'await getPinnedChatList(localStorage.token),'
-		);
-		expect(sidebar).toContain('await getChatList(localStorage.token, $currentChatPage),');
-		expect(sidebar).toContain(
-			'shouldScopeSidebarChatsBySurface,'
-		);
-		expect(sidebar).toMatch(/newChatList = scopeSidebarChats\(\s*rawChatList,/);
+		// Desk-folder ids are captured from the UNFILTERED folder list for chat scoping.
+		expect(sidebar).toContain('deskFolderIds = allFolders');
+		expect(sidebar).toContain("folder?.meta?.surface === 'desk'");
+		expect(sidebar).toContain('Boolean(folder?.data?.project_context_source)');
+		// Desk Chats section always renders (desk has its own loose chats).
+		expect(sidebar).toContain('$: showDeskChats = true;');
+		// Stores hold raw chats; the old opt-in scoping helper is gone.
+		expect(sidebar).not.toContain('scopeSidebarChats(');
+		expect(sidebar).not.toContain('shouldScopeSidebarChatsBySurface');
+		// Folders are still surface-scoped via filterBySurface.
 		expect(sidebar).toMatch(/const folderList = filterBySurface/);
 	});
 
