@@ -85,6 +85,16 @@ code {
 	font-family: var(--font-secondary);
 }
 
+/* Display headings (welcome greeting, project landing title): serif at display
+   scale with tight negative tracking, per the Anthropic type system. Body/UI
+   stays sans (--font-primary); this is the single, formalized serif treatment. */
+.enos-display {
+	font-family: var(--font-secondary);
+	font-weight: 400;
+	letter-spacing: -0.01em;
+	line-height: 1.15;
+}
+
 /* Anthropic Serif emphasis: use the design-system weight 600 instead of browser default 700. */
 :root[data-fonts='anthropic'] .font-secondary strong,
 :root[data-fonts='anthropic'] .markdown-prose strong,

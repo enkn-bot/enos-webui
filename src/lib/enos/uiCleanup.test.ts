@@ -73,6 +73,19 @@ describe('ENOS UI cleanup source ownership', () => {
 		expect(chat).toContain('<EnosOrb tone="all"');
 	});
 
+	test('display headings use the formalized serif token class, not hardcoded fonts', () => {
+		const placeholder = read('src/lib/components/chat/Placeholder.svelte');
+		const folderTitle = read('src/lib/components/chat/Placeholder/FolderTitle.svelte');
+		const appCss = read('src/app.css');
+
+		// Greeting + project title share one serif display treatment via the token class.
+		expect(placeholder).toContain('class="enos-display');
+		expect(placeholder).not.toContain("font-family: 'Anthropic Serif'");
+		expect(folderTitle).toContain('enos-display');
+		// The class is defined off the secondary (serif) token, not a hardcoded family.
+		expect(appCss).toMatch(/\.enos-display\s*\{[^}]*font-family:\s*var\(--font-secondary\)/);
+	});
+
 	test('decorative emojis are removed from empty states and settings chrome', () => {
 		const emptyStateFiles = [
 			'src/routes/(app)/automations/+page.svelte',

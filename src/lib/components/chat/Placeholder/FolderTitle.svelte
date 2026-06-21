@@ -232,7 +232,7 @@
 				</button>
 			</EmojiPicker>
 
-			<div class="text-3xl line-clamp-1">
+			<div class="enos-display text-3xl line-clamp-1">
 				{folder.name}
 			</div>
 		</div>
