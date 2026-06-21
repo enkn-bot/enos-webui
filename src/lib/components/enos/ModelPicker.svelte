@@ -4,7 +4,7 @@
   const MINDS = [
     { id: 'enos.subconscious', label: 'Subconscious', subtitle: 'Quick responses.' },
     { id: 'enos.mind',         label: 'Mind',         subtitle: 'Everyday tasks.' },
-    { id: 'enos.deepmind',     label: 'DeepMind',     subtitle: 'Toughest problems' },
+    { id: 'enos.deepmind',     label: 'DeepMind',     subtitle: 'Toughest problems.' },
   ] as const;
 
   export let value: string = 'enos.mind';
