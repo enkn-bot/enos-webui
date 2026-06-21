@@ -1795,10 +1795,16 @@
 	};
 
 	let deskChatFolder: any = null;
+	let deskActiveFolder: any = null;
 	let deskWorkspaceBadge = workspaceBadgeFromFolder(null);
 
 	$: deskChatFolder = ($folders, knownProjectFolderById(projectFolderIdFromChat(chat)));
-	$: deskWorkspaceBadge = workspaceBadgeFromFolder(deskChatFolder);
+	// Desk is project-first: badge + workspace binding follow the project you're in
+	// ($selectedFolder, set on project navigation AND refreshed on bind), falling back
+	// to the open chat's folder. Makes the top "Select workspace…" reflect AND bind the
+	// folder you're viewing, and update instantly after binding.
+	$: deskActiveFolder = $selectedFolder ?? deskChatFolder ?? null;
+	$: deskWorkspaceBadge = workspaceBadgeFromFolder(deskActiveFolder);
 
 	const isDeskSurface = () =>
 		typeof window !== 'undefined' && window.location.hostname === 'enosdesk.duckdns.org';
@@ -3517,8 +3523,8 @@
 							{moveChatHandler}
 							onRenameChat={renameChatHandler}
 							deskWorkspace={deskWorkspaceBadge}
-							deskWorkspaceFolderId={deskChatFolder?.id ?? null}
-							deskWorkspaceFolder={deskChatFolder}
+							deskWorkspaceFolderId={deskActiveFolder?.id ?? null}
+							deskWorkspaceFolder={deskActiveFolder}
 							onSaveTempChat={async () => {
 								try {
 									if (!history?.currentId || !Object.keys(history.messages).length) {
