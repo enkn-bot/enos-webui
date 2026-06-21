@@ -342,7 +342,9 @@
 		if ($showCallOverlay) showCallOverlay.set(false);
 	};
 
-	$: if (paneReady && !chatId) closeHandler();
+	// On Desk the side pane (Files) is useful without an active chat — e.g. after
+	// selecting a project folder from the sidebar — so don't auto-close it there.
+	$: if (paneReady && !chatId && !isDeskSurface) closeHandler();
 
 	// Helper: is a "special" full-screen panel active?
 	$: specialPanel = $showCallOverlay || $showArtifacts || $showEmbeds;
