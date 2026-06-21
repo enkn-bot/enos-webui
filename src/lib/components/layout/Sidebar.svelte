@@ -117,11 +117,19 @@
 
 	let newFolderId = null;
 
+	const scopeSidebarChats = (items, shouldScope, surface) =>
+		shouldScope ? filterBySurface(items, surface) : items;
+
 	$: pinnedItems = $settings?.pinnedMenuItems ?? DEFAULT_PINNED_ITEMS;
 	$: isDeskSurface = browser && window.location.hostname === 'enosdesk.duckdns.org';
 	$: currentSurface = surfaceFromIsDesk(isDeskSurface);
-	$: sidebarChats = filterBySurface($chats ?? [], currentSurface);
-	$: sidebarPinnedChats = filterBySurface($pinnedChats ?? [], currentSurface);
+	$: shouldScopeSidebarChatsBySurface = $settings?.enos?.scopeSidebarChatsBySurface ?? false;
+	$: sidebarChats = scopeSidebarChats($chats ?? [], shouldScopeSidebarChatsBySurface, currentSurface);
+	$: sidebarPinnedChats = scopeSidebarChats(
+		$pinnedChats ?? [],
+		shouldScopeSidebarChatsBySurface,
+		currentSurface
+	);
 	$: hasDesktopBridge = browser && Boolean(getEnosDesktopBridge());
 	$: showDeskChats = !(isDeskSurface && ($settings?.enos?.scopeSidebarChatsBySurface ?? false));
 	$: if ($showDeskFolderPicker) {
@@ -427,8 +435,9 @@
 			})(),
 			await (async () => {
 				console.log('Init pinned chats');
-				const _pinnedChats = filterBySurface(
+				const _pinnedChats = scopeSidebarChats(
 					await getPinnedChatList(localStorage.token),
+					shouldScopeSidebarChatsBySurface,
 					currentSurface
 				);
 				pinnedChats.set(_pinnedChats);
@@ -445,8 +454,9 @@
 			})(),
 			await (async () => {
 				console.log('Init chat list');
-				const _chats = filterBySurface(
+				const _chats = scopeSidebarChats(
 					await getChatList(localStorage.token, $currentChatPage),
+					shouldScopeSidebarChatsBySurface,
 					currentSurface
 				);
 				await chats.set(_chats);
@@ -465,7 +475,11 @@
 		let newChatList = [];
 
 		const rawChatList = await getChatList(localStorage.token, $currentChatPage);
-		newChatList = filterBySurface(rawChatList, currentSurface);
+		newChatList = scopeSidebarChats(
+			rawChatList,
+			shouldScopeSidebarChatsBySurface,
+			currentSurface
+		);
 
 		// once the bottom of the list has been reached (no results) there is no need to continue querying
 		allChatsLoaded = rawChatList.length === 0;
