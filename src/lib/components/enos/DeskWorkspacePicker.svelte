@@ -5,13 +5,18 @@
 	import {
 		settings,
 		showDeskFolderPicker,
+		selectedFolder,
 		showSettings,
+		showControls,
+		showFileNavPath,
+		showLocalFileFolderId,
 		terminalServers,
 		selectedTerminalId,
 		user
 	} from '$lib/stores';
 	import { getToolServersData } from '$lib/apis';
 	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
+	import { bindLocalWorkspaceToFolder } from '$lib/enos/bindLocalWorkspace';
 
 	import Dropdown from '$lib/components/common/Dropdown.svelte';
 	import Check from '$lib/components/icons/Check.svelte';
@@ -25,6 +30,8 @@
 	const i18n = getContext<I18nStore>('i18n');
 
 	export let show = false;
+	export let activeFolderId: string | null = null;
+	export let activeFolder: any = null;
 
 	$: hasDesktopBridge = Boolean(getEnosDesktopBridge());
 	$: systemTerminals = ($terminalServers ?? []).filter((terminal) => terminal.id);
@@ -53,8 +60,25 @@
 		}
 	};
 
-	const selectLocal = () => {
+	const selectLocal = async () => {
 		if (!hasDesktopBridge) return;
+
+		if (activeFolderId) {
+			show = false;
+			const updated = await bindLocalWorkspaceToFolder(
+				localStorage.token,
+				activeFolderId,
+				activeFolder
+			);
+			if (updated) {
+				await selectedFolder.set(updated);
+				showLocalFileFolderId.set(activeFolderId);
+				showControls.set(true);
+				showFileNavPath.set('.');
+			}
+			return;
+		}
+
 		showDeskFolderPicker.set(true);
 		show = false;
 	};
@@ -132,7 +156,7 @@
 					<div class="flex min-w-0 flex-1 flex-col items-start">
 						<span class="truncate">{$i18n.t('Local')}</span>
 						<span class="truncate text-xs text-gray-400 dark:text-gray-500">
-							{$i18n.t('Desktop only')}
+							{$i18n.t(activeFolderId ? 'Bind this project to a folder' : 'Desktop only')}
 						</span>
 					</div>
 				</div>

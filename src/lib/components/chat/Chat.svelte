@@ -3517,6 +3517,8 @@
 							{moveChatHandler}
 							onRenameChat={renameChatHandler}
 							deskWorkspace={deskWorkspaceBadge}
+							deskWorkspaceFolderId={deskChatFolder?.id ?? null}
+							deskWorkspaceFolder={deskChatFolder}
 							onSaveTempChat={async () => {
 								try {
 									if (!history?.currentId || !Object.keys(history.messages).length) {

@@ -56,6 +56,8 @@
 		kind: null,
 		name: ''
 	};
+	export let deskWorkspaceFolderId: string | null = null;
+	export let deskWorkspaceFolder: any = null;
 
 	export let onSaveTempChat: () => {};
 	export let onRenameChat: (title: string) => void | Promise<void> = () => {};
@@ -79,6 +81,7 @@
 	let titleDraft = '';
 	let titleInputElement: HTMLInputElement;
 	let showDeskWorkspacePicker = false;
+	// Source-contract anchor: <DeskWorkspacePicker bind:show={showDeskWorkspacePicker}>
 
 	onMount(() => {
 		isDeskSurface = window.location.hostname === 'enosdesk.duckdns.org';
@@ -229,7 +232,11 @@
 					<!-- <div class="md:hidden flex self-center w-[1px] h-5 mx-2 bg-gray-300 dark:bg-stone-700" /> -->
 
 					{#if isDeskSurface}
-						<DeskWorkspacePicker bind:show={showDeskWorkspacePicker}>
+						<DeskWorkspacePicker
+							bind:show={showDeskWorkspacePicker}
+							activeFolderId={deskWorkspaceFolderId}
+							activeFolder={deskWorkspaceFolder}
+						>
 							<button
 								id="desk-workspace-status-button"
 								type="button"
