@@ -35,6 +35,8 @@
 		currentChatPage,
 		tags,
 		selectedFolder,
+		showControls,
+		showFileNavPath,
 		showLocalFileFolderId,
 		activeChatIds
 	} from '$lib/stores';
@@ -66,6 +68,7 @@
 	export let selected = false;
 	export let shiftKey = false;
 	export let projectFolder = null;
+	export let openFilesOnSelect = false;
 
 	export let onDragEnd = () => {};
 
@@ -297,11 +300,20 @@
 		if (projectFolder?.id) {
 			selectedFolder.set(projectFolder);
 			showLocalFileFolderId.set(projectFolder.id);
+			openFilesPaneOnSelect();
 			return;
 		}
 
 		selectedFolder.set(null);
 		showLocalFileFolderId.set(null);
+		openFilesPaneOnSelect();
+	};
+
+	const openFilesPaneOnSelect = () => {
+		if (!openFilesOnSelect) return;
+
+		showControls.set(true);
+		showFileNavPath.set('.');
 	};
 
 	onMount(() => {

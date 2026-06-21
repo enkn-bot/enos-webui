@@ -21,7 +21,6 @@
 		showLocalFileFolderId,
 		showSidebar
 	} from '$lib/stores';
-	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 
 	import {
 		deleteFolderById,
@@ -384,6 +383,13 @@
 		}, 500);
 	};
 
+	const openDeskFilesPane = () => {
+		if (!isDeskSurface) return;
+
+		showControls.set(true);
+		showFileNavPath.set('.');
+	};
+
 	const selectProjectFolderHandler = async ({ openFiles = false } = {}) => {
 		const folder = await getFolderById(localStorage.token, folderId).catch((error) => {
 			toast.error(`${error}`);
@@ -394,11 +400,10 @@
 			await selectedFolder.set(folder);
 		}
 
-		if (isDeskSurface && getEnosDesktopBridge()) {
+		if (isDeskSurface) {
 			showLocalFileFolderId.set(folderId);
 			if (openFiles) {
-				showControls.set(true);
-				showFileNavPath.set('.');
+				openDeskFilesPane();
 			}
 		}
 	};
@@ -581,6 +586,11 @@
 					}
 
 					clickTimer = setTimeout(async () => {
+						if (isDeskSurface) {
+							open = !open;
+							isExpandedUpdateDebounceHandler();
+						}
+
 						await selectProjectFolderHandler({ openFiles: true });
 
 						await goto('/');
@@ -729,6 +739,7 @@
 							lastReadAt={chat.last_read_at}
 							{shiftKey}
 							projectFolder={isDeskSurface ? folders[folderId] : null}
+							openFilesOnSelect={isDeskSurface}
 							on:change={(e) => {
 								dispatch('change', e.detail);
 							}}

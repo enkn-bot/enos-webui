@@ -82,4 +82,28 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(sidebar).toContain('<XMark className="size-3.5" strokeWidth="2" />');
 		expect(sidebar).not.toContain('M6 18 18 6M6 6l12 12');
 	});
+
+	test('Desk folder and chat selection opens Files without changing non-Desk chat rows', () => {
+		const recursiveFolder = read('src/lib/components/layout/Sidebar/RecursiveFolder.svelte');
+		const chatItem = read('src/lib/components/layout/Sidebar/ChatItem.svelte');
+		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
+
+		expect(recursiveFolder).toMatch(
+			/const openDeskFilesPane = \(\) => \{[\s\S]*if \(!isDeskSurface\) return;[\s\S]*showControls\.set\(true\);[\s\S]*showFileNavPath\.set\('\.'\);[\s\S]*\};/
+		);
+		expect(recursiveFolder).toMatch(
+			/if \(isDeskSurface\) \{[\s\S]*open = !open;[\s\S]*isExpandedUpdateDebounceHandler\(\);[\s\S]*\}/
+		);
+		expect(recursiveFolder).toContain('await selectProjectFolderHandler({ openFiles: true });');
+
+		expect(chatItem).toContain('export let openFilesOnSelect = false;');
+		expect(chatItem).toMatch(
+			/const openFilesPaneOnSelect = \(\) => \{[\s\S]*if \(!openFilesOnSelect\) return;[\s\S]*showControls\.set\(true\);[\s\S]*showFileNavPath\.set\('\.'\);[\s\S]*\};/
+		);
+		expect(chatItem).toMatch(
+			/on:click=\{\(\) => \{[\s\S]*selectProjectContext\(\);/
+		);
+		expect(sidebar.match(/openFilesOnSelect=\{isDeskSurface\}/g)?.length).toBeGreaterThanOrEqual(2);
+		expect(recursiveFolder).toContain('openFilesOnSelect={isDeskSurface}');
+	});
 });

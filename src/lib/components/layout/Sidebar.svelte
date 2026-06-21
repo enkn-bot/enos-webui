@@ -1660,6 +1660,7 @@
 													lastReadAt={chat.last_read_at}
 													{shiftKey}
 													selected={selectedChatId === chat.id}
+													openFilesOnSelect={isDeskSurface}
 													on:select={() => {
 														selectedChatId = chat.id;
 													}}
@@ -1723,6 +1724,7 @@
 											lastReadAt={chat.last_read_at}
 											{shiftKey}
 											selected={selectedChatId === chat.id}
+											openFilesOnSelect={isDeskSurface}
 											on:select={() => {
 												selectedChatId = chat.id;
 											}}
