@@ -75,6 +75,7 @@
 	import ChannelModal from './Sidebar/ChannelModal.svelte';
 	import ChannelItem from './Sidebar/ChannelItem.svelte';
 	import PencilSquare from '../icons/PencilSquare.svelte';
+	import NewFolderAlt from '../icons/NewFolderAlt.svelte';
 	import Search from '../icons/Search.svelte';
 	import SearchModal from './SearchModal.svelte';
 	import FolderModal from './Sidebar/Folders/FolderModal.svelte';
@@ -1474,6 +1475,7 @@
 						className="px-2 mt-0.5"
 						name={$i18n.t('Projects')}
 						chevron={false}
+						addIcon={NewFolderAlt}
 						onAdd={() => {
 							showCreateFolderModal = true;
 						}}
@@ -1527,6 +1529,11 @@
 						className="px-2 mt-0.5"
 						name={$i18n.t('Chats')}
 						chevron={false}
+						addIcon={PencilSquare}
+						onAdd={() => {
+							startNewChatHandler();
+						}}
+						onAddLabel={$i18n.t('New Chat')}
 						on:change={async (e) => {
 							selectedFolder.set(null);
 						}}

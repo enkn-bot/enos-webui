@@ -22,6 +22,8 @@
 	export let chevron = true;
 	export let onAddLabel: string = '';
 	export let onAdd: null | Function = null;
+	// Icon for the section add button (defaults to a plain plus).
+	export let addIcon: any = Plus;
 
 	export let dragAndDrop = true;
 
@@ -184,7 +186,7 @@
 									class="p-0.5 dark:hover:bg-gray-850 rounded-lg touch-auto"
 									on:click={(e) => {}}
 								>
-									<Plus className=" size-3" strokeWidth="2.5" />
+									<svelte:component this={addIcon} className="size-4" strokeWidth="2" />
 								</button>
 							</Tooltip>
 						</button>
