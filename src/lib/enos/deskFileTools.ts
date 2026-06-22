@@ -66,10 +66,14 @@ export const DESK_FILE_TOOLS: DeskToolSpec[] = [
 		function: {
 			name: 'list_files',
 			description:
-				'List files and folders inside the selected project, at a project-relative path (default the project root).',
+				'List files and folders at a project-relative path, an absolute path, or a ~/... home path (for example ~/Desktop). Reads may reach elsewhere on the user\'s machine subject to the active permission mode; secrets such as .ssh, .env, and credentials are off-limits unless Full Access is active.',
 			parameters: {
 				type: 'object',
-				properties: { path: str('Project-relative folder path. Omit or "." for the root.') },
+				properties: {
+					path: str(
+						'Project-relative, absolute, or ~/... folder path. Omit or "." for the project root; use paths like ~/Desktop for non-project folders.'
+					)
+				},
 				required: []
 			}
 		}
@@ -78,10 +82,15 @@ export const DESK_FILE_TOOLS: DeskToolSpec[] = [
 		type: 'function',
 		function: {
 			name: 'read_file',
-			description: 'Read the UTF-8 contents of a file at a project-relative path.',
+			description:
+				'Read the UTF-8 contents of a file at a project-relative path, an absolute path, or a ~/... home path (for example ~/Desktop/notes.txt). Reads may reach elsewhere on the user\'s machine subject to the active permission mode; secrets such as .ssh, .env, and credentials are off-limits unless Full Access is active.',
 			parameters: {
 				type: 'object',
-				properties: { path: str('Project-relative file path to read.') },
+				properties: {
+					path: str(
+						'Project-relative, absolute, or ~/... file path to read, such as README.md or ~/Desktop/notes.txt.'
+					)
+				},
 				required: ['path']
 			}
 		}

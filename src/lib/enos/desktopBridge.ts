@@ -3,6 +3,7 @@ import type { DeskToolSpec } from '$lib/enos/deskFileTools';
 
 export type EnosDesktopPlatform = 'electron' | 'tauri' | 'swift';
 export type EnosDesktopPermissionProfile = 'ask' | 'approve_safe_project_edits';
+export type EnosDesktopAccessMode = 'read-only' | 'auto' | 'full';
 
 export type EnosDesktopCapabilities = {
 	desktopBridge: true;
@@ -178,6 +179,8 @@ export type EnosDesktopBridge = {
 		path: string,
 		content: string
 	) => Promise<EnosDesktopProjectWriteRequest>;
+	getAccessMode?: () => Promise<EnosDesktopAccessMode>;
+	setAccessMode?: (mode: EnosDesktopAccessMode) => Promise<EnosDesktopAccessMode>;
 	getPermissionProfile: () => Promise<EnosDesktopPermissionProfile>;
 	setPermissionProfile: (
 		permissionProfile: EnosDesktopPermissionProfile

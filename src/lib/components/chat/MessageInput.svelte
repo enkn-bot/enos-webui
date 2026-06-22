@@ -98,6 +98,7 @@
 	import {
 		getEnosDesktopBridge,
 		type EnosDesktopBridge,
+		type EnosDesktopAccessMode,
 		type EnosDesktopPermissionProfile
 	} from '$lib/enos/desktopBridge';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
@@ -170,26 +171,54 @@
 	let selectedValvesItemId = null;
 	let bridge: EnosDesktopBridge | null = null;
 	let isDeskSurface = false;
-	let projectPermissionProfile: EnosDesktopPermissionProfile = 'ask';
-	let showProjectPermissionMenu = false;
+	let projectAccessMode: EnosDesktopAccessMode = 'auto';
+	let showProjectAccessModeMenu = false;
 
-	const loadProjectPermissionProfile = async () => {
+	const accessModeFromLegacyProfile = (
+		_profile: EnosDesktopPermissionProfile
+	): EnosDesktopAccessMode => 'auto';
+
+	const legacyProfileFromAccessMode = (
+		mode: EnosDesktopAccessMode
+	): EnosDesktopPermissionProfile =>
+		mode === 'read-only' ? 'ask' : 'approve_safe_project_edits';
+
+	const normalizeProjectAccessMode = (mode: unknown): EnosDesktopAccessMode => {
+		if (mode === 'read-only' || mode === 'auto' || mode === 'full') {
+			return mode;
+		}
+		return 'auto';
+	};
+
+	const loadProjectAccessMode = async () => {
 		if (!bridge) return;
 		try {
-			projectPermissionProfile = await bridge.getPermissionProfile();
+			if (typeof bridge.getAccessMode === 'function') {
+				projectAccessMode = normalizeProjectAccessMode(await bridge.getAccessMode());
+				return;
+			}
+			if (typeof bridge.getPermissionProfile === 'function') {
+				projectAccessMode = accessModeFromLegacyProfile(await bridge.getPermissionProfile());
+			}
 		} catch (error) {
-			console.warn('Unable to load ENOS project action permissions', error);
+			console.warn('Unable to load ENOS Desk access mode', error);
 		}
 	};
 
-	const setProjectPermissionProfile = async (profile: EnosDesktopPermissionProfile) => {
+	const setProjectAccessMode = async (mode: EnosDesktopAccessMode) => {
 		if (!bridge) return;
 		try {
-			projectPermissionProfile = await bridge.setPermissionProfile(profile);
-			showProjectPermissionMenu = false;
+			if (typeof bridge.setAccessMode === 'function') {
+				projectAccessMode = normalizeProjectAccessMode(await bridge.setAccessMode(mode));
+			} else if (typeof bridge.setPermissionProfile === 'function') {
+				projectAccessMode = accessModeFromLegacyProfile(
+					await bridge.setPermissionProfile(legacyProfileFromAccessMode(mode))
+				);
+			}
+			showProjectAccessModeMenu = false;
 		} catch (error) {
-			toast.error($i18n.t('Unable to update project action permissions'));
-			await loadProjectPermissionProfile();
+			toast.error($i18n.t('Unable to update Desk access mode'));
+			await loadProjectAccessMode();
 		}
 	};
 
@@ -894,7 +923,7 @@
 		isDeskSurface = isDeskHostname();
 		bridge = getEnosDesktopBridge();
 		if (isDeskSurface && bridge) {
-			loadProjectPermissionProfile();
+			loadProjectAccessMode();
 		}
 
 		suggestions = [
@@ -1647,7 +1676,7 @@
 
 									{#if isDeskSurface && bridge}
 										<Dropdown
-											bind:show={showProjectPermissionMenu}
+											bind:show={showProjectAccessModeMenu}
 											side="bottom"
 											align="start"
 											contentClass="w-80 rounded-2xl p-1 bg-white dark:bg-gray-850 dark:text-white shadow-lg border border-gray-100 dark:border-gray-800"
@@ -1656,11 +1685,16 @@
 												type="button"
 												id="project-action-permissions-button"
 												class="bg-transparent hover:bg-gray-100 text-gray-700 dark:text-white dark:hover:bg-gray-800 rounded-full size-8 flex justify-center items-center outline-hidden focus:outline-hidden"
-												aria-label={$i18n.t('Project action permissions')}
-												title={$i18n.t('Project action permissions')}
+												aria-label={$i18n.t('Desk access mode')}
+												title={$i18n.t('Desk access mode')}
 											>
-												{#if projectPermissionProfile === 'approve_safe_project_edits'}
-													<CheckCircle className="size-5.5" strokeWidth="1.75" />
+												{#if projectAccessMode === 'read-only'}
+													<XMark className="size-5.5" strokeWidth="1.75" />
+												{:else if projectAccessMode === 'full'}
+													<CheckCircle
+														className="size-5.5 text-amber-600 dark:text-amber-400"
+														strokeWidth="1.75"
+													/>
 												{:else}
 													<UserBadgeCheck className="size-5.5" strokeWidth="1.75" />
 												{/if}
@@ -1668,47 +1702,69 @@
 
 											<div slot="content" class="py-1">
 												<div class="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
-													{$i18n.t('Project action permissions')}
+													{$i18n.t('Desk access mode')}
 												</div>
 												<button
 													type="button"
 													class="w-full rounded-xl px-3 py-2 flex items-center gap-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800"
-													on:click={() => setProjectPermissionProfile('ask')}
+													on:click={() => setProjectAccessMode('read-only')}
 												>
-													<UserBadgeCheck
+													<XMark
 														className="size-5 text-gray-500 dark:text-gray-400 shrink-0"
+														strokeWidth="1.75"
 													/>
 													<div class="min-w-0 flex-1">
-														<div class="text-sm font-medium">{$i18n.t('Ask for approval')}</div>
-														<div class="text-xs text-gray-500 dark:text-gray-400 truncate">
-															{$i18n.t('Always ask before editing project files.')}
+														<div class="text-sm font-medium">{$i18n.t('Read-only')}</div>
+														<div class="text-xs text-gray-500 dark:text-gray-400 leading-snug">
+															{$i18n.t('Read files and answer. No edits.')}
 														</div>
 													</div>
-													{#if projectPermissionProfile === 'ask'}
+													{#if projectAccessMode === 'read-only'}
 														<Check className="size-4 shrink-0" strokeWidth="2" />
 													{/if}
 												</button>
 												<button
 													type="button"
 													class="w-full rounded-xl px-3 py-2 flex items-center gap-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800"
-													on:click={() => setProjectPermissionProfile('approve_safe_project_edits')}
+													on:click={() => setProjectAccessMode('auto')}
 												>
-													<CheckCircle
+													<UserBadgeCheck
 														className="size-5 text-gray-500 dark:text-gray-400 shrink-0"
 														strokeWidth="1.75"
 													/>
 													<div class="min-w-0 flex-1">
-														<div class="text-sm font-medium">{$i18n.t('Approve safe edits')}</div>
-														<div class="text-xs text-gray-500 dark:text-gray-400 truncate">
-															{$i18n.t('Create and save inside this project without a second prompt.')}
+														<div class="text-sm font-medium">{$i18n.t('Auto')}</div>
+														<div class="text-xs text-gray-500 dark:text-gray-400 leading-snug">
+															{$i18n.t('Approve for me. Edits in this project apply; risky actions still ask.')}
 														</div>
 													</div>
-													{#if projectPermissionProfile === 'approve_safe_project_edits'}
+													{#if projectAccessMode === 'auto'}
+														<Check className="size-4 shrink-0" strokeWidth="2" />
+													{/if}
+												</button>
+												<button
+													type="button"
+													class="w-full rounded-xl px-3 py-2 flex items-center gap-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800"
+													on:click={() => setProjectAccessMode('full')}
+												>
+													<CheckCircle
+														className="size-5 text-amber-600 dark:text-amber-400 shrink-0"
+														strokeWidth="1.75"
+													/>
+													<div class="min-w-0 flex-1">
+														<div class="text-sm font-medium text-amber-700 dark:text-amber-300">
+															{$i18n.t('Full access')}
+														</div>
+														<div class="text-xs text-gray-500 dark:text-gray-400 leading-snug">
+															{$i18n.t('Read and edit anywhere on this Mac, no prompts.')}
+														</div>
+													</div>
+													{#if projectAccessMode === 'full'}
 														<Check className="size-4 shrink-0" strokeWidth="2" />
 													{/if}
 												</button>
 												<div class="px-3 pt-1 pb-2 text-[11px] text-gray-400 dark:text-gray-500">
-													{$i18n.t('Rename and delete still ask first.')}
+													{$i18n.t('Read-only disables edits. Auto keeps edits in this project. Full access removes prompts.')}
 												</div>
 											</div>
 										</Dropdown>

@@ -171,6 +171,18 @@ describe('DESK_FILE_TOOLS contract', () => {
 		]);
 	});
 
+	test('read tools describe project-relative, absolute, and home paths', () => {
+		const listToolText = JSON.stringify(toolByName('list_files')!.function);
+		const readToolText = JSON.stringify(toolByName('read_file')!.function);
+
+		for (const toolText of [listToolText, readToolText]) {
+			expect(toolText).toContain('project-relative');
+			expect(toolText).toContain('absolute');
+			expect(toolText).toContain('~/');
+			expect(toolText).toContain('Desktop');
+		}
+	});
+
 	test('web_search requires a query string parameter', () => {
 		const tool = toolByName('web_search' as DeskToolName);
 		expect(tool).toBeDefined();

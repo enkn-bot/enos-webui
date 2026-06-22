@@ -117,7 +117,11 @@
 	import Sidebar from '../icons/Sidebar.svelte';
 	import Image from '../common/Image.svelte';
 	import { getBanners } from '$lib/apis/configs';
-	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
+	import {
+		getEnosDesktopBridge,
+		type EnosDesktopAccessMode,
+		type EnosDesktopBridge
+	} from '$lib/enos/desktopBridge';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
 	import { buildProjectActionContext } from '$lib/enos/projectActions';
 	import { runDeskAgentLoop } from '$lib/enos/deskAgentLoop';
@@ -1903,6 +1907,63 @@
 		return knownProjectFolderById(folderId);
 	};
 
+	const describeDeskProjectForPrompt = (folder: any) => {
+		const source = folder?.data?.project_context_source ?? {};
+		const projectName = String(folder?.name ?? '').trim();
+		const rootName = String(source?.rootName ?? '').trim();
+		const fallbackName = projectName || rootName || 'selected Desk project';
+		const boundPath = [
+			source?.rootDisplay,
+			source?.rootPath,
+			source?.displayPath,
+			source?.path
+		]
+			.map((value) => String(value ?? '').trim())
+			.find((value) => value.length > 0);
+
+		if (boundPath && boundPath !== fallbackName) {
+			return `${fallbackName} (bound path: ${boundPath})`;
+		}
+
+		if (rootName && rootName !== fallbackName) {
+			return `${fallbackName} (bound folder: ${rootName})`;
+		}
+
+		return fallbackName;
+	};
+
+	const normalizeDeskAccessMode = (mode: unknown): EnosDesktopAccessMode => {
+		if (mode === 'read-only' || mode === 'auto' || mode === 'full') {
+			return mode;
+		}
+		return 'auto';
+	};
+
+	const loadDeskAccessModeForPrompt = async (
+		bridge: EnosDesktopBridge | null
+	): Promise<EnosDesktopAccessMode> => {
+		if (typeof bridge?.getAccessMode !== 'function') {
+			return 'auto';
+		}
+
+		try {
+			return normalizeDeskAccessMode(await bridge.getAccessMode());
+		} catch (error) {
+			console.warn('Unable to load ENOS Desk access mode', error);
+			return 'auto';
+		}
+	};
+
+	const deskAccessModePromptLine = (mode: EnosDesktopAccessMode) => {
+		if (mode === 'read-only') {
+			return 'Access mode: read-only - you may read files across the user\'s machine (for example ~/Desktop), but secrets are blocked and edits are disabled.';
+		}
+		if (mode === 'full') {
+			return 'Access mode: full - you may read and edit anywhere on this Mac without prompts; only do exactly what the user asked.';
+		}
+		return 'Access mode: auto - you may read files across the user\'s machine (for example ~/Desktop), but secrets are blocked; edits are limited to this project.';
+	};
+
 	const activeProjectPathForFolder = (folderId) =>
 		folderId && folderId === $showLocalFileFolderId ? $showLocalFilePath : '.';
 
@@ -1946,6 +2007,9 @@
 			const folderId = activeProjectFolderId();
 			const hasDesktopBridge = hasProjectListBridge(bridge);
 			if (!hasDesktopBridge || !folderId) return false;
+			const projectFolder = activeProjectFolder() ?? deskActiveFolder ?? knownProjectFolderById(folderId);
+			const projectLabel = describeDeskProjectForPrompt(projectFolder);
+			const deskAccessMode = await loadDeskAccessModeForPrompt(bridge);
 
 			// Carry the last N turns of chat history so follow-up questions have context.
 			const HISTORY_TURNS = 6;
@@ -1954,29 +2018,33 @@
 				.map((m) => ({ role: m.role as 'user' | 'assistant', content: String(m.content ?? '') }))
 				.filter((m) => m.content.length > 0);
 
-			// In ENOS Desk with the bridge present and a folder selected, the agent has
-			// full read-write access. The confirmation dialog (below) is the real safety
-			// gate for mutations — not a capability flag — so we always offer the full
-			// toolset and tell the model plainly that it can act.
+			// In ENOS Desk with the bridge present and a folder selected, the active
+			// access mode and the bridge are the safety gates. We still offer the full
+			// toolset so the model can call the right tool and report any bridge refusal
+			// plainly instead of guessing from a stale capability flag.
 			const loopMessages = [
 				{
 					role: 'system' as const,
 					content:
 						`${groundingLine()}\n\n` +
-						`You are ENOS Desk, an autonomous file and coding agent with DIRECT read-write ` +
-						`access to the user's local project files through the provided tools.\n` +
-						`Active project folder: ${folderId}.\n\n` +
+						`You are ENOS Desk, an autonomous file and coding agent with DIRECT local file ` +
+						`access through the provided tools, constrained by the active access mode.\n` +
+						`Active project: ${projectLabel}.\n` +
+						`${deskAccessModePromptLine(deskAccessMode)}\n\n` +
 						`You CAN and SHOULD use the tools to do real work: list_files, read_file, ` +
 						`write_file, edit_file, create_folder, rename_entry, delete_entry, reveal_entry, ` +
 						`web_search, git_status (read-only branch + changed files), git_log, git_diff, ` +
 						`git_create_branch, git_stage, git_commit, and git_clone. ` +
 						`When the user asks about current events, real-time info, news, scores, prices, ` +
 						`recent events, or anything you do not know from training data, call web_search ` +
-						`instead of refusing. Do not expose internal tool or system names in final answers. ` +
-						`When the user asks you to create, write, edit, move, or delete files, DO IT by ` +
-						`calling the appropriate tool — never reply that you are unable to or that the ` +
-						`system does not permit it. Generate file contents yourself. The user is prompted ` +
-						`to confirm before any change is applied to disk, so act decisively. ` +
+						`instead of refusing. Do not expose internal tool or system names, internal ids, ` +
+						`UUIDs, or folder ids in final answers. ` +
+						`When the user asks you to create, write, edit, move, or delete files, call the ` +
+						`appropriate tool when the active access mode permits it. Generate file contents ` +
+						`yourself. If a read is blocked as sensitive or denylisted, explain plainly that ` +
+						`the path is protected. If an out-of-project write is refused, explain plainly ` +
+						`that Auto mode only edits this project and the user can switch to Full access ` +
+						`for that. Do not invent a tool for changing access mode. ` +
 						`For git, you may only check status, read recent log, read working-tree diff, ` +
 						`create a new local branch, stage paths, commit staged changes, and clone HTTPS ` +
 						`repositories into new project-relative subdirectories. Refuse ssh/git/file/http clone URLs, push, fetch, pull, remote, ` +
