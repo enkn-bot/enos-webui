@@ -37,10 +37,11 @@ export const filterBySurface = <T extends SurfaceScopedItem>(
 	});
 };
 
-// Scope chats to a surface WITH a legacy fallback so no untagged chat ever
-// vanishes. A tagged chat shows only on its tagged surface. An untagged
-// (legacy) chat is inferred: 'desk' if it lives in a desk folder, else 'chat'.
-// Net: every untagged chat appears on exactly one surface — never both, never none.
+// Folder-authoritative surface scoping. A chat's surface is decided by its
+// FOLDER (desk is project-first): in a desk folder -> 'desk', any other folder
+// -> 'chat'. A loose chat (no folder) defaults to 'chat' and honors an explicit
+// meta.surface tag only as an override. This ignores stale/missing per-chat tags
+// so a chat can never double-render across surfaces.
 export const filterChatsBySurface = <T extends SurfaceScopedChat>(
 	chats: T[] | null | undefined,
 	surface: EnosSurface,
@@ -49,14 +50,18 @@ export const filterChatsBySurface = <T extends SurfaceScopedChat>(
 	const list = Array.isArray(chats) ? chats : [];
 	const deskFolders = new Set<string>();
 	for (const id of deskFolderIds) deskFolders.add(String(id));
-
 	return list.filter((chat) => {
-		const tag = itemSurface(chat);
-		if (tag) return tag === surface;
 		const folderId = chat?.folder_id;
-		const inferred: EnosSurface =
-			folderId != null && deskFolders.has(String(folderId)) ? 'desk' : 'chat';
-		return inferred === surface;
+		if (folderId != null) {
+			// Foldered chat: surface is the folder's surface. Authoritative —
+			// ignore any stale/missing per-chat tag so it can't double-render.
+			const folderSurface = deskFolders.has(String(folderId)) ? 'desk' : 'chat';
+			return folderSurface === surface;
+		}
+		// Loose chat: desk is project-first, so default to chat; honor an
+		// explicit tag only as an override when present.
+		const tag = itemSurface(chat);
+		return (tag ?? 'chat') === surface;
 	});
 };
 

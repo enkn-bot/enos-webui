@@ -49,36 +49,72 @@ describe('filterBySurface', () => {
 	});
 });
 
-describe('filterChatsBySurface (legacy fallback, no chat vanishes)', () => {
-	const chats = [
-		{ id: 'tagged-desk', meta: { surface: 'desk' } },
-		{ id: 'tagged-chat', meta: { surface: 'chat' } },
-		{ id: 'loose-untagged' }, // no folder, no tag
-		{ id: 'untagged-in-desk-folder', folder_id: 'fDesk' },
-		{ id: 'untagged-in-chat-folder', folder_id: 'fChat' }
-	];
+describe('filterChatsBySurface (folder-authoritative scoping)', () => {
 	const deskFolderIds = ['fDesk'];
 
-	test('desk surface: tagged-desk + untagged chats inside desk folders', () => {
+	test('loose untagged chats default to chat, not desk', () => {
+		const chats = [
+			{ id: 'loose-undefined-folder' },
+			{ id: 'loose-null-folder', folder_id: null }
+		];
+
+		expect(filterChatsBySurface(chats, 'chat', deskFolderIds).map((c) => c.id)).toEqual([
+			'loose-undefined-folder',
+			'loose-null-folder'
+		]);
+		expect(filterChatsBySurface(chats, 'desk', deskFolderIds).map((c) => c.id)).toEqual([]);
+	});
+
+	test('loose chats honor an explicit desk surface override', () => {
+		const chats = [{ id: 'loose-tagged-desk', meta: { surface: 'desk' } }];
+
 		expect(filterChatsBySurface(chats, 'desk', deskFolderIds).map((c) => c.id)).toEqual([
-			'tagged-desk',
+			'loose-tagged-desk'
+		]);
+		expect(filterChatsBySurface(chats, 'chat', deskFolderIds).map((c) => c.id)).toEqual([]);
+	});
+
+	test('untagged chats in desk folders are desk only', () => {
+		const chats = [{ id: 'untagged-in-desk-folder', folder_id: 'fDesk' }];
+
+		expect(filterChatsBySurface(chats, 'desk', deskFolderIds).map((c) => c.id)).toEqual([
 			'untagged-in-desk-folder'
 		]);
+		expect(filterChatsBySurface(chats, 'chat', deskFolderIds).map((c) => c.id)).toEqual([]);
 	});
 
-	test('chat surface: tagged-chat + loose untagged + untagged in non-desk folders', () => {
+	test('folder surface wins over a stale chat tag for chats in desk folders', () => {
+		const chats = [
+			{ id: 'stale-chat-tag-in-desk-folder', folder_id: 'fDesk', meta: { surface: 'chat' } }
+		];
+
+		expect(filterChatsBySurface(chats, 'desk', deskFolderIds).map((c) => c.id)).toEqual([
+			'stale-chat-tag-in-desk-folder'
+		]);
+		expect(filterChatsBySurface(chats, 'chat', deskFolderIds).map((c) => c.id)).toEqual([]);
+	});
+
+	test('untagged chats in non-desk folders are chat only', () => {
+		const chats = [{ id: 'untagged-in-chat-folder', folder_id: 'fChat' }];
+
 		expect(filterChatsBySurface(chats, 'chat', deskFolderIds).map((c) => c.id)).toEqual([
-			'tagged-chat',
-			'loose-untagged',
 			'untagged-in-chat-folder'
 		]);
+		expect(filterChatsBySurface(chats, 'desk', deskFolderIds).map((c) => c.id)).toEqual([]);
 	});
 
-	test('every chat appears on exactly one surface (never vanishes, never duplicated)', () => {
+	test('every representative chat appears on exactly one surface', () => {
+		const chats = [
+			{ id: 'loose-untagged' },
+			{ id: 'loose-tagged-desk', meta: { surface: 'desk' } },
+			{ id: 'untagged-in-desk-folder', folder_id: 'fDesk' },
+			{ id: 'stale-chat-tag-in-desk-folder', folder_id: 'fDesk', meta: { surface: 'chat' } },
+			{ id: 'untagged-in-chat-folder', folder_id: 'fChat' }
+		];
 		const onDesk = new Set(filterChatsBySurface(chats, 'desk', deskFolderIds).map((c) => c.id));
 		const onChat = new Set(filterChatsBySurface(chats, 'chat', deskFolderIds).map((c) => c.id));
 		for (const c of chats) {
-			expect(onDesk.has(c.id) !== onChat.has(c.id)).toBe(true); // XOR: exactly one
+			expect(onDesk.has(c.id) !== onChat.has(c.id)).toBe(true);
 		}
 	});
 
