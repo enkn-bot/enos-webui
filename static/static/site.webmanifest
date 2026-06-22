@@ -1,6 +1,6 @@
 {
-  "name": "Open WebUI",
-  "short_name": "WebUI",
+  "name": "ENOS",
+  "short_name": "ENOS",
   "icons": [
     {
       "src": "/static/web-app-manifest-192x192.png",
