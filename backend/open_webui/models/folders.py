@@ -50,6 +50,12 @@ class FolderModel(BaseModel):
 
 class FolderMetadataResponse(BaseModel):
     icon: Optional[str] = None
+    # ENOS: carry the surface tag into the folder LIST response. Without this,
+    # GET /folders/ strips meta.surface (this model only kept `icon`), so the
+    # client surface filter saw `surface=undefined` for every folder and desk
+    # projects leaked onto the chat surface (and vice-versa). Additive — base
+    # OWUI never sets `surface`, so it is simply null there.
+    surface: Optional[str] = None
 
 
 class FolderNameIdResponse(BaseModel):
