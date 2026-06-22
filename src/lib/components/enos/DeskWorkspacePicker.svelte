@@ -156,7 +156,13 @@
 					<div class="flex min-w-0 flex-1 flex-col items-start">
 						<span class="truncate">{$i18n.t('Local')}</span>
 						<span class="truncate text-xs text-gray-400 dark:text-gray-500">
-							{$i18n.t(activeFolderId ? 'Bind this project to a folder' : 'Desktop only')}
+							{$i18n.t(
+								!hasDesktopBridge
+									? 'Available in the desktop app'
+									: activeFolderId
+										? 'Bind this project to a folder'
+										: 'Desktop only'
+							)}
 						</span>
 					</div>
 				</div>

@@ -10,12 +10,34 @@ vi.mock('$lib/apis/retrieval', () => ({
 
 import {
 	DESK_FILE_TOOLS,
+	describeDeskTool,
 	executeDeskFileTool,
 	type DeskToolName
 } from '$lib/enos/deskFileTools';
 
 const toolByName = (name: DeskToolName) =>
 	DESK_FILE_TOOLS.find((t) => t.function.name === name);
+
+describe('describeDeskTool label honesty', () => {
+	test('successful delete shows the done label', () => {
+		expect(describeDeskTool('delete_entry', { path: 'x.png' }, 'end', true)).toBe('Deleted x.png');
+	});
+
+	test('blocked/failed delete must NOT claim success', () => {
+		const label = describeDeskTool('delete_entry', { path: 'x.png' }, 'end', false);
+		expect(label).not.toContain('Deleted');
+		expect(label).toBe("Couldn't delete x.png");
+	});
+
+	test('failed write/edit render a failure label, not success', () => {
+		expect(describeDeskTool('write_file', { path: 'a.ts' }, 'end', false)).toBe("Couldn't write a.ts");
+		expect(describeDeskTool('edit_file', { path: 'a.ts' }, 'end', false)).toBe("Couldn't edit a.ts");
+	});
+
+	test('start phase is unaffected by outcome', () => {
+		expect(describeDeskTool('delete_entry', { path: 'x.png' }, 'start', false)).toBe('Deleting x.png');
+	});
+});
 
 const fakeBridge = (overrides: Record<string, any> = {}) =>
 	({

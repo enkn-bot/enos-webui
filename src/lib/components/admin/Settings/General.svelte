@@ -203,7 +203,7 @@
 									{$i18n.t('Help')}
 								</div>
 								<div class=" text-xs text-gray-500">
-									{$i18n.t('Discover how to use ENOS and seek support from the community.')}
+									{$i18n.t('Discover how to use ENOS.')}
 								</div>
 							</div>
 						</div>
@@ -239,9 +239,7 @@
 								{:else}
 									<div class="text-xs">
 										<span class="text-gray-500">
-											{$i18n.t(
-												'Upgrade to a licensed plan for enhanced capabilities, including custom theming and branding, and dedicated support.'
-											)}
+											{$i18n.t('No license registered.')}
 										</span>
 									</div>
 								{/if}

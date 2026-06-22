@@ -2126,7 +2126,10 @@
 					const last = statusHistory[statusHistory.length - 1];
 					if (last) {
 						last.done = true;
-						last.description = describeDeskTool(ev.name, ev.args, 'end');
+						// Reflect the real outcome: a blocked/declined/errored mutation must
+						// not render a success label (e.g. "Deleted X" when read-only blocked it).
+						const ok = ev.result?.status !== 'error';
+						last.description = describeDeskTool(ev.name, ev.args, 'end', ok);
 					}
 				}
 				flushStatus();

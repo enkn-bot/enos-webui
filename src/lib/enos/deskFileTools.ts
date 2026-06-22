@@ -292,7 +292,11 @@ export const DESK_FILE_TOOLS: DeskToolSpec[] = [
 export const describeDeskTool = (
 	name: string,
 	args: Record<string, unknown>,
-	phase: 'start' | 'end'
+	phase: 'start' | 'end',
+	// Outcome of the completed step. When a mutation is blocked (read-only mode),
+	// declined, or errors, the done-label must NOT claim success — "Deleted X" on a
+	// blocked delete is a false audit trail. Pass ok=false to render the failed form.
+	ok: boolean = true
 ): string => {
 	const p = typeof args.path === 'string' ? args.path : '';
 	const to = typeof args.to_path === 'string' ? args.to_path : '';
@@ -300,24 +304,25 @@ export const describeDeskTool = (
 	const gitPaths = paths.length > 0 ? paths.join(', ') : 'paths';
 	const branch = typeof args.branch_name === 'string' ? args.branch_name : '';
 	const targetPath = typeof args.target_path === 'string' ? args.target_path : '';
-	const verb = (running: string, done: string) => (phase === 'start' ? running : done);
+	const verb = (running: string, done: string, failed?: string) =>
+		phase === 'start' ? running : !ok ? failed ?? `Failed: ${running.toLowerCase()}` : done;
 	switch (name) {
 		case 'list_files': return verb(`Listing ${p || 'files'}`, `Listed ${p || 'files'}`);
 		case 'read_file': return verb(`Reading ${p}`, `Read ${p}`);
-		case 'write_file': return verb(`Writing ${p}`, `Wrote ${p}`);
-		case 'edit_file': return verb(`Editing ${p}`, `Edited ${p}`);
-		case 'create_folder': return verb(`Creating folder ${p}`, `Created folder ${p}`);
-		case 'rename_entry': return verb(`Renaming ${p} → ${to}`, `Renamed ${p} → ${to}`);
-		case 'delete_entry': return verb(`Deleting ${p}`, `Deleted ${p}`);
+		case 'write_file': return verb(`Writing ${p}`, `Wrote ${p}`, `Couldn't write ${p}`);
+		case 'edit_file': return verb(`Editing ${p}`, `Edited ${p}`, `Couldn't edit ${p}`);
+		case 'create_folder': return verb(`Creating folder ${p}`, `Created folder ${p}`, `Couldn't create folder ${p}`);
+		case 'rename_entry': return verb(`Renaming ${p} → ${to}`, `Renamed ${p} → ${to}`, `Couldn't rename ${p}`);
+		case 'delete_entry': return verb(`Deleting ${p}`, `Deleted ${p}`, `Couldn't delete ${p}`);
 		case 'reveal_entry': return verb(`Revealing ${p}`, `Revealed ${p}`);
 		case 'web_search': return verb('Searching the web', 'Searched the web');
 		case 'git_status': return verb('Checking git status', 'Checked git status');
 		case 'git_log': return verb('Reading git log', 'Read git log');
 		case 'git_diff': return verb(`Reading git diff${p ? ` for ${p}` : ''}`, `Read git diff${p ? ` for ${p}` : ''}`);
-		case 'git_stage': return verb(`Staging ${gitPaths}`, `Staged ${gitPaths}`);
-		case 'git_commit': return verb('Committing staged changes', 'Committed staged changes');
-		case 'git_create_branch': return verb(`Creating branch ${branch}`, `Created branch ${branch}`);
-		case 'git_clone': return verb(`Cloning into ${targetPath}`, `Cloned into ${targetPath}`);
+		case 'git_stage': return verb(`Staging ${gitPaths}`, `Staged ${gitPaths}`, `Couldn't stage ${gitPaths}`);
+		case 'git_commit': return verb('Committing staged changes', 'Committed staged changes', "Couldn't commit");
+		case 'git_create_branch': return verb(`Creating branch ${branch}`, `Created branch ${branch}`, `Couldn't create branch ${branch}`);
+		case 'git_clone': return verb(`Cloning into ${targetPath}`, `Cloned into ${targetPath}`, `Couldn't clone into ${targetPath}`);
 		default: return verb('Working', 'Done');
 	}
 };
