@@ -16,6 +16,7 @@
 	import { getToolServersData } from '$lib/apis';
 	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 	import { bindLocalWorkspaceToFolder } from '$lib/enos/bindLocalWorkspace';
+	import { workspaceBadgeFromFolder } from '$lib/enos/workspaceBadge';
 
 	import Dropdown from '$lib/components/common/Dropdown.svelte';
 	import Check from '$lib/components/icons/Check.svelte';
@@ -33,6 +34,11 @@
 	export let activeFolder: any = null;
 
 	$: hasDesktopBridge = Boolean(getEnosDesktopBridge());
+	// Reflect the project's CURRENT local binding so the Local row reads as state
+	// ("Codex" + ✓), not a generic "Bind this project to a folder" action when it
+	// is in fact already bound. Same source the badge reads.
+	$: boundBadge = workspaceBadgeFromFolder(activeFolder);
+	$: isLocalBound = hasDesktopBridge && boundBadge.kind === 'local' && Boolean(boundBadge.name);
 	$: systemTerminals = ($terminalServers ?? []).filter((terminal) => terminal.id);
 	$: directTerminals = ($settings?.terminalServers ?? []).filter((terminal) => terminal.url);
 	$: canUseDirectTerminals =
@@ -156,16 +162,23 @@
 					<div class="flex min-w-0 flex-1 flex-col items-start">
 						<span class="truncate">{$i18n.t('Local')}</span>
 						<span class="truncate text-xs text-gray-400 dark:text-gray-500">
-							{$i18n.t(
-								!hasDesktopBridge
-									? 'Available in the desktop app'
-									: activeFolderId
-										? 'Bind this project to a folder'
-										: 'Desktop only'
-							)}
+							{#if !hasDesktopBridge}
+								{$i18n.t('Available in the desktop app')}
+							{:else if isLocalBound}
+								{boundBadge.name}
+							{:else if activeFolderId}
+								{$i18n.t('Bind this project to a folder')}
+							{:else}
+								{$i18n.t('Desktop only')}
+							{/if}
 						</span>
 					</div>
 				</div>
+				{#if isLocalBound}
+					<div class="shrink-0 text-emerald-600 dark:text-emerald-400">
+						<Check className="size-4" strokeWidth="2" />
+					</div>
+				{/if}
 			</button>
 
 			<hr class="border-gray-100 dark:border-gray-800 my-1" />

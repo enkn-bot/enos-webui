@@ -94,7 +94,10 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(chatControls).toContain('export const openTray = async');
 		expect(chatControls).toMatch(/const tab = resolveTrayTab\(requestedTab\);[\s\S]*showControls\.set\(true\);[\s\S]*openPane\(\);/);
 		expect(chatControls).toMatch(/if \(visibleControlTabs\.length === 0\) \{[\s\S]*showControls\.set\(false\);[\s\S]*\}/);
-		expect(chatControls).toMatch(/if \(\$selectedTerminalId && showFilesTab\) \{[\s\S]*activeTab = 'files';[\s\S]*showControls\.set\(true\);[\s\S]*\}/);
+		// A selected terminal sets the default tab but must NOT force the pane open
+		// (a default-enabled cloud terminal was popping the right sidebar on load).
+		// The pinned `{ activeTab = 'files'; }` body inherently excludes any auto-open.
+		expect(chatControls).toMatch(/if \(\$selectedTerminalId && showFilesTab\) \{\s*activeTab = 'files';\s*\}/);
 
 		expect(recursiveFolder).toContain(
 			"requestTrayOpenForSurface(isDeskSurface);"

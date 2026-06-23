@@ -150,12 +150,12 @@
 		}
 	}
 
-	// Auto-open Files tab when a terminal is selected (suppress panel open when full-screen)
+	// A selected terminal sets the default tab, but must NOT pop the right pane open
+	// on its own — e.g. a default-enabled cloud terminal (ENOS Workspace) on load
+	// was force-opening the pane. Mirror the showFileNavPath '.' gate above: the
+	// user opens the pane via the Controls toggle.
 	$: if ($selectedTerminalId && showFilesTab) {
 		activeTab = 'files';
-		if (largeScreen) {
-			showControls.set(true);
-		}
 	}
 
 	// Clear selected direct terminal if user lost permission

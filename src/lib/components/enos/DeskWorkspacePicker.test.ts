@@ -31,4 +31,15 @@ describe('Desk workspace picker source contract', () => {
 		expect(picker).toContain('Coming soon');
 		expect(picker).toContain('disabled');
 	});
+
+	test('Local row reflects the current binding (folder name + check), not a generic action', () => {
+		const picker = read('src/lib/components/enos/DeskWorkspacePicker.svelte');
+		// Derive the binding from the same source the badge uses.
+		expect(picker).toContain('workspaceBadgeFromFolder(activeFolder)');
+		expect(picker).toContain('isLocalBound');
+		// When bound, show the folder name + a ✓ instead of "Bind this project to a folder".
+		expect(picker).toContain('{:else if isLocalBound}');
+		expect(picker).toContain('{boundBadge.name}');
+		expect(picker).toMatch(/\{#if isLocalBound\}[\s\S]*<Check/);
+	});
 });
