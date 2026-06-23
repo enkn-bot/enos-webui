@@ -90,6 +90,7 @@
 	import {
 		generateQueries,
 		chatAction,
+		generateTitle,
 		generateMoACompletion,
 		stopTask,
 		stopTasksByChatId,
@@ -2155,6 +2156,24 @@
 				history.messages[responseMessageId] = done;
 				history = history;
 				await saveChatHandler($chatId, history);
+
+				try {
+					if (!$temporaryChatEnabled && (($chatTitle ?? '') === '' || $chatTitle === 'New Chat')) {
+						const titleModelId = done.model ?? selectedModels.find((id) => id) ?? 'enos.mind';
+						const title = await generateTitle(localStorage.token, titleModelId, [
+							{ role: 'user', content: userPrompt },
+							{ role: 'assistant', content: outcome.content }
+						]);
+
+						if (title) {
+							await updateChatById(localStorage.token, $chatId, { title });
+							chatTitle.set(title);
+							await chats.set(await getChatList(localStorage.token, $currentChatPage));
+						}
+					}
+				} catch (error) {
+					console.error('[enos desk title]', error);
+				}
 			}
 			return true;
 		} catch (error) {
@@ -3007,7 +3026,7 @@
 				...(continueResponse ? { assistant_message_id: responseMessageId } : {}),
 
 				background_tasks: {
-					...(!$temporaryChatEnabled && !_chatId && (userMessage?.parentId ?? null) === null
+					...(!$temporaryChatEnabled && (userMessage?.parentId ?? null) === null
 						? {
 								title_generation: $settings?.title?.auto ?? true,
 								tags_generation: $settings?.autoTags ?? true

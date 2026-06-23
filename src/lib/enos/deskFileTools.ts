@@ -104,7 +104,9 @@ export const DESK_FILE_TOOLS: DeskToolSpec[] = [
 			parameters: {
 				type: 'object',
 				properties: {
-					path: str('Project-relative file path to write.'),
+					path: str(
+						'Project-relative, absolute, or ~/... path. Writing outside the active project requires Full Access; in Auto mode only the project is writable. Sensitive paths (.ssh, .env, credentials) are always off-limits unless Full Access is active.'
+					),
 					content: str('The complete file content to write.')
 				},
 				required: ['path', 'content']
@@ -120,7 +122,9 @@ export const DESK_FILE_TOOLS: DeskToolSpec[] = [
 			parameters: {
 				type: 'object',
 				properties: {
-					path: str('Project-relative file path to edit.'),
+					path: str(
+						'Project-relative, absolute, or ~/... path. Writing outside the active project requires Full Access; in Auto mode only the project is writable. Sensitive paths (.ssh, .env, credentials) are always off-limits unless Full Access is active.'
+					),
 					old_text: str('The exact existing text to replace. Must occur exactly once in the file.'),
 					new_text: str('The replacement text.')
 				},
@@ -135,7 +139,11 @@ export const DESK_FILE_TOOLS: DeskToolSpec[] = [
 			description: 'Create a new folder at a project-relative path.',
 			parameters: {
 				type: 'object',
-				properties: { path: str('Project-relative folder path to create.') },
+				properties: {
+					path: str(
+						'Project-relative, absolute, or ~/... path. Writing outside the active project requires Full Access; in Auto mode only the project is writable. Sensitive paths (.ssh, .env, credentials) are always off-limits unless Full Access is active.'
+					)
+				},
 				required: ['path']
 			}
 		}
@@ -148,8 +156,12 @@ export const DESK_FILE_TOOLS: DeskToolSpec[] = [
 			parameters: {
 				type: 'object',
 				properties: {
-					path: str('Current project-relative path.'),
-					to_path: str('New project-relative path.')
+					path: str(
+						'Project-relative, absolute, or ~/... path. Writing outside the active project requires Full Access; in Auto mode only the project is writable. Sensitive paths (.ssh, .env, credentials) are always off-limits unless Full Access is active.'
+					),
+					to_path: str(
+						'Project-relative, absolute, or ~/... path. Writing outside the active project requires Full Access; in Auto mode only the project is writable. Sensitive paths (.ssh, .env, credentials) are always off-limits unless Full Access is active.'
+					)
 				},
 				required: ['path', 'to_path']
 			}
@@ -162,7 +174,11 @@ export const DESK_FILE_TOOLS: DeskToolSpec[] = [
 			description: 'Move a file/folder to the trash.',
 			parameters: {
 				type: 'object',
-				properties: { path: str('Project-relative path to delete.') },
+				properties: {
+					path: str(
+						'Project-relative, absolute, or ~/... path. Writing outside the active project requires Full Access; in Auto mode only the project is writable. Sensitive paths (.ssh, .env, credentials) are always off-limits unless Full Access is active.'
+					)
+				},
 				required: ['path']
 			}
 		}
