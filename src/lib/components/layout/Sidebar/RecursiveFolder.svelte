@@ -265,6 +265,17 @@
 		dragged = false;
 	};
 
+	// Re-fetch this folder's chats when a chat in it is renamed elsewhere (e.g. a
+	// desk turn auto-titles "New Chat"). The top-level chats store refresh does
+	// not reach RecursiveFolder's own getChatsByFolderId list, so the title would
+	// otherwise stay stale until the folder is reopened.
+	const onFolderChatsChanged = (e) => {
+		const changed = e?.detail?.folderId;
+		if (!changed || changed === folderId) {
+			setFolderItems();
+		}
+	};
+
 	onMount(async () => {
 		open = folders[folderId].is_expanded;
 		folderRegistry[folderId] = {
@@ -272,6 +283,7 @@
 				setFolderItems();
 			}
 		};
+		window.addEventListener('enos:folder-chats-changed', onFolderChatsChanged);
 		if (folderElement) {
 			folderElement.addEventListener('dragover', onDragOver);
 			folderElement.addEventListener('drop', onDrop);
@@ -293,6 +305,7 @@
 	});
 
 	onDestroy(() => {
+		window.removeEventListener('enos:folder-chats-changed', onFolderChatsChanged);
 		if (folderElement) {
 			folderElement.addEventListener('dragover', onDragOver);
 			folderElement.removeEventListener('drop', onDrop);

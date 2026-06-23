@@ -2169,6 +2169,14 @@
 							await updateChatById(localStorage.token, $chatId, { title });
 							chatTitle.set(title);
 							await chats.set(await getChatList(localStorage.token, $currentChatPage));
+							// The sidebar renders this chat under its project folder via
+							// RecursiveFolder's own getChatsByFolderId list, which the top-level
+							// `chats` refresh above does not touch — so without this the new title
+							// only appears after navigating away and back. Nudge the folder to
+							// reload its items so the rename shows immediately.
+							window.dispatchEvent(
+								new CustomEvent('enos:folder-chats-changed', { detail: { folderId } })
+							);
 						}
 					}
 				} catch (error) {
