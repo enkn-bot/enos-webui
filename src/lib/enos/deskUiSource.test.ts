@@ -142,6 +142,16 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(nav).toContain('Local files live in the desktop app');
 	});
 
+	test('desk-web shows a calm "desktop only" cue on local-bound folders (visible, not blocked)', () => {
+		const folder = read('src/lib/components/layout/Sidebar/RecursiveFolder.svelte');
+		// Browser desk (no bridge) + a local-bound project → a muted cue, not a block.
+		expect(folder).toContain('isDesktopOnlyHere');
+		expect(folder).toContain('workspaceBadgeFromFolder');
+		expect(folder).toContain('!getEnosDesktopBridge()');
+		expect(folder).toContain('{#if isDesktopOnlyHere}');
+		expect(folder).toContain('files are available in the ENOS desktop app');
+	});
+
 	test('cross-machine bound project degrades to a calm read-only notice', () => {
 		const nav = read('src/lib/components/chat/LocalFileNav.svelte');
 		// Bridge present but the bound folder is missing on THIS machine: show a calm

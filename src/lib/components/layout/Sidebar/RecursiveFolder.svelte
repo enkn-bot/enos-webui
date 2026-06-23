@@ -38,7 +38,10 @@
 	} from '$lib/apis/chats';
 	import { surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
+	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
+	import { workspaceBadgeFromFolder } from '$lib/enos/workspaceBadge';
 
+	import Computer from '$lib/components/icons/Computer.svelte';
 	import ChevronDown from '../../icons/ChevronDown.svelte';
 	import ChevronRight from '../../icons/ChevronRight.svelte';
 	import Collapsible from '../../common/Collapsible.svelte';
@@ -72,6 +75,15 @@
 	export let onItemMove = (e) => {};
 
 	let folderElement;
+
+	// Desk-web (browser, no desktop bridge): a project bound to a LOCAL folder can't
+	// reach its files here — chats stay readable but files live in the desktop app.
+	// Show a calm "desktop only" cue so it's visibly read-only here, without blocking.
+	$: isDesktopOnlyHere =
+		browser &&
+		isDeskHostname() &&
+		!getEnosDesktopBridge() &&
+		workspaceBadgeFromFolder(folders?.[folderId]).kind === 'local';
 
 	let showFolderModal = false;
 	let edit = false;
@@ -658,6 +670,16 @@
 						{folders[folderId].name}
 					{/if}
 				</div>
+
+				{#if isDesktopOnlyHere}
+					<div
+						class="shrink-0 text-gray-400 dark:text-gray-500"
+						title={$i18n.t('Local project — files are available in the ENOS desktop app')}
+						aria-label={$i18n.t('Local project — files are available in the ENOS desktop app')}
+					>
+						<Computer className="size-3.5" strokeWidth="2" />
+					</div>
+				{/if}
 
 				<button
 					class="text-gray-500 dark:text-gray-500 transition-all p-1 hover:bg-gray-200 dark:hover:bg-gray-850 rounded-lg invisible group-hover:visible"

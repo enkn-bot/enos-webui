@@ -30,6 +30,9 @@ describe('Desk workspace picker source contract', () => {
 		expect(picker).toContain('GitHub repo');
 		expect(picker).toContain('Coming soon');
 		expect(picker).toContain('disabled');
+		// Cloud rows read as a compute terminal, not the project's file home — so a
+		// cloud ✓ doesn't masquerade as the project's location while the badge says Local.
+		expect(picker).toContain('Cloud terminal');
 	});
 
 	test('Local row reflects the current binding (folder name + check), not a generic action', () => {

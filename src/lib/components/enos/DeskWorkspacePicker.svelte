@@ -201,7 +201,12 @@
 					>
 						<div class="flex flex-1 gap-2 items-center truncate">
 							<Cloud className="size-4 shrink-0" strokeWidth="2" />
-							<span class="truncate">{directLabel(terminal)}</span>
+							<div class="flex min-w-0 flex-1 flex-col items-start">
+								<span class="truncate">{directLabel(terminal)}</span>
+								<span class="truncate text-xs text-gray-400 dark:text-gray-500">
+									{$i18n.t('Cloud terminal')}
+								</span>
+							</div>
 						</div>
 						{#if $selectedTerminalId === terminal.url}
 							<div class="shrink-0 text-emerald-600 dark:text-emerald-400">
@@ -223,7 +228,16 @@
 				>
 					<div class="flex flex-1 gap-2 items-center truncate">
 						<Cloud className="size-4 shrink-0" strokeWidth="2" />
-						<span class="truncate">{terminal.name || terminal.id || $i18n.t('Cloud environment')}</span>
+						<div class="flex min-w-0 flex-1 flex-col items-start">
+							<span class="truncate">{terminal.name || terminal.id || $i18n.t('Cloud environment')}</span>
+							<!-- Honest label: a cloud terminal/compute env, NOT where this project's
+							     files live. Stops "ENOS Workspace ✓" reading as the project's location
+							     while the badge says Local. The real cloud-hosted project (kind:'cloud'
+							     + migration) is roadmap, not this. -->
+							<span class="truncate text-xs text-gray-400 dark:text-gray-500">
+								{$i18n.t('Cloud terminal')}
+							</span>
+						</div>
 					</div>
 					{#if $selectedTerminalId === terminal.id}
 						<div class="shrink-0 text-emerald-600 dark:text-emerald-400">
