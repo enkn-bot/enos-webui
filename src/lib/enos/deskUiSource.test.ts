@@ -45,8 +45,10 @@ describe('ENOS Desk UI source guardrails', () => {
 			/const selectControlTab = \(tab: ControlTab\) => \{[\s\S]*activeTab = tab;[\s\S]*savedTab = tab;[\s\S]*\};/
 		);
 		expect(chatControls.match(/on:click=\{\(\) => selectControlTab\(tab\)\}/g)?.length).toBe(2);
+		// Desk drops the advanced "controls" tab (params/system-prompt) — it's the
+		// least power-user-facing surface. Web keeps it via DEFAULT_CONTROL_TAB_ORDER.
 		expect(chatControls).toContain(
-			"const DESK_CONTROL_TAB_ORDER = ['overview', 'controls', 'files'] satisfies ControlTab[];"
+			"const DESK_CONTROL_TAB_ORDER = ['overview', 'files'] satisfies ControlTab[];"
 		);
 		expect(chatControls).toContain(
 			"const DEFAULT_CONTROL_TAB_ORDER = ['controls', 'files', 'overview'] satisfies ControlTab[];"
@@ -135,5 +137,16 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(nav).toContain('liteMode = true;');
 		expect(nav).not.toContain('ENOS Desktop bridge is unavailable.');
 		expect(nav).toContain('Local files live in the desktop app');
+	});
+
+	test('cross-machine bound project degrades to a calm read-only notice', () => {
+		const nav = read('src/lib/components/chat/LocalFileNav.svelte');
+		// Bridge present but the bound folder is missing on THIS machine: show a calm
+		// "files live elsewhere / read-only history" notice instead of a raw error.
+		expect(nav).toContain('let unreachable = false;');
+		expect(nav).toContain('isPathMissingError');
+		expect(nav).toContain('{:else if unreachable}');
+		expect(nav).toContain('Files live on this project’s machine');
+		expect(nav).toContain('read-only history');
 	});
 });

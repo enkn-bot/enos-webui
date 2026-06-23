@@ -37,6 +37,20 @@ describe('describeDeskTool label honesty', () => {
 	test('start phase is unaffected by outcome', () => {
 		expect(describeDeskTool('delete_entry', { path: 'x.png' }, 'start', false)).toBe('Deleting x.png');
 	});
+
+	test('web_search narration includes the query for context', () => {
+		expect(describeDeskTool('web_search', { query: 'latest scores' }, 'start')).toBe(
+			'Searching the web for “latest scores”'
+		);
+		expect(describeDeskTool('web_search', { query: 'latest scores' }, 'end', true)).toBe(
+			'Searched the web for “latest scores”'
+		);
+	});
+
+	test('web_search falls back to a plain label when query is missing', () => {
+		expect(describeDeskTool('web_search', {}, 'start')).toBe('Searching the web');
+		expect(describeDeskTool('web_search', {}, 'end', true)).toBe('Searched the web');
+	});
 });
 
 const fakeBridge = (overrides: Record<string, any> = {}) =>
@@ -594,13 +608,71 @@ describe('executeDeskFileTool web_search', () => {
 		expect(processWebSearchMock).toHaveBeenCalledWith('TOKEN', 'latest scores');
 		expect(queryCollectionMock).not.toHaveBeenCalled();
 		expect(res.status).toBe('ok');
-		expect(res.status === 'ok' && res.data).toBe('Web search is not available.');
+		// Empty lookup degrades (best-effort + retry), it no longer bare-punts.
+		expect(res.status === 'ok' && String(res.data)).toContain('no usable results');
+		expect(res.status === 'ok' && res.data).not.toBe('Web search is not available.');
 	});
 
-	test('returns graceful text when queryCollection returns no documents', async () => {
+	test('uses inline docs directly when bypass mode returns them', async () => {
 		processWebSearchMock.mockResolvedValue({
 			status: true,
-			collection_name: 'web-empty',
+			collection_name: null,
+			filenames: ['https://x.com/a'],
+			docs: [
+				{
+					content: 'Portugal beat Uzbekistan 2-0 in Houston.',
+					metadata: { source: 'https://x.com/a', title: 'Match report' }
+				}
+			]
+		});
+
+		const res = await executeDeskFileTool({
+			bridge: fakeBridge(),
+			folderId: 'F',
+			name: 'web_search',
+			args: { query: 'portugal game' },
+			token: 'TOKEN'
+		});
+
+		expect(processWebSearchMock).toHaveBeenCalledWith('TOKEN', 'portugal game');
+		// Bypass mode feeds content inline — no collection re-query needed.
+		expect(queryCollectionMock).not.toHaveBeenCalled();
+		expect(res.status).toBe('ok');
+		expect(res.status === 'ok' && String(res.data)).toContain(
+			'Portugal beat Uzbekistan 2-0 in Houston.'
+		);
+		expect(res.status === 'ok' && String(res.data)).toContain('https://x.com/a');
+	});
+
+	test('queries the collection when embedding mode returns collection_names (plural)', async () => {
+		processWebSearchMock.mockResolvedValue({
+			status: true,
+			collection_names: ['web-xyz'],
+			filenames: ['https://x.com/b']
+		});
+		queryCollectionMock.mockResolvedValue({
+			documents: [['Embedded result chunk.']],
+			metadatas: [[{ source: 'https://x.com/b', title: 'Report' }]],
+			distances: [[0.1]]
+		});
+
+		const res = await executeDeskFileTool({
+			bridge: fakeBridge(),
+			folderId: 'F',
+			name: 'web_search',
+			args: { query: 'belgium game' },
+			token: 'TOKEN'
+		});
+
+		expect(queryCollectionMock).toHaveBeenCalledWith('TOKEN', 'web-xyz', 'belgium game', 5);
+		expect(res.status).toBe('ok');
+		expect(res.status === 'ok' && String(res.data)).toContain('Embedded result chunk.');
+	});
+
+	test('degrades when queryCollection returns no documents', async () => {
+		processWebSearchMock.mockResolvedValue({
+			status: true,
+			collection_names: ['web-empty'],
 			filenames: []
 		});
 		queryCollectionMock.mockResolvedValue({
@@ -619,10 +691,11 @@ describe('executeDeskFileTool web_search', () => {
 
 		expect(queryCollectionMock).toHaveBeenCalledWith('TOKEN', 'web-empty', 'latest scores', 5);
 		expect(res.status).toBe('ok');
-		expect(res.status === 'ok' && res.data).toBe('Web search is not available.');
+		expect(res.status === 'ok' && String(res.data)).toContain('no usable results');
+		expect(res.status === 'ok' && res.data).not.toBe('Web search is not available.');
 	});
 
-	test('returns graceful text when processWebSearch throws', async () => {
+	test('degrades when processWebSearch throws', async () => {
 		processWebSearchMock.mockRejectedValue(new Error('offline'));
 
 		const res = await executeDeskFileTool({
@@ -634,6 +707,7 @@ describe('executeDeskFileTool web_search', () => {
 		});
 
 		expect(res.status).toBe('ok');
-		expect(res.status === 'ok' && res.data).toBe('Web search is not available.');
+		expect(res.status === 'ok' && String(res.data)).toContain('no usable results');
+		expect(res.status === 'ok' && res.data).not.toBe('Web search is not available.');
 	});
 });

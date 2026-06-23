@@ -331,7 +331,15 @@ export const describeDeskTool = (
 		case 'rename_entry': return verb(`Renaming ${p} → ${to}`, `Renamed ${p} → ${to}`, `Couldn't rename ${p}`);
 		case 'delete_entry': return verb(`Deleting ${p}`, `Deleted ${p}`, `Couldn't delete ${p}`);
 		case 'reveal_entry': return verb(`Revealing ${p}`, `Revealed ${p}`);
-		case 'web_search': return verb('Searching the web', 'Searched the web');
+		case 'web_search': {
+			// Context-focused narration: surface what we're actually looking for
+			// (e.g. "Searching the web for 'latest scores'") instead of a rigid,
+			// repeated "Searched the web". Mirrors base OWUI showing the query.
+			const q = typeof args.query === 'string' ? args.query.trim() : '';
+			return q
+				? verb(`Searching the web for “${q}”`, `Searched the web for “${q}”`)
+				: verb('Searching the web', 'Searched the web');
+		}
 		case 'git_status': return verb('Checking git status', 'Checked git status');
 		case 'git_log': return verb('Reading git log', 'Read git log');
 		case 'git_diff': return verb(`Reading git diff${p ? ` for ${p}` : ''}`, `Read git diff${p ? ` for ${p}` : ''}`);
@@ -394,6 +402,17 @@ const requireStringArray = (args: Record<string, unknown>, key: string): string[
 };
 
 const WEB_SEARCH_UNAVAILABLE = 'Web search is not available.';
+// Empty/failed lookup is a transient miss, not proof of absence. Tell the model
+// to degrade gracefully instead of bare-punting "I can't access real-time data".
+// Mirrors the chat pipe's retrieval-miss degrade note.
+const WEB_SEARCH_EMPTY =
+	'The live web lookup for this query returned no usable results. Do not reply that ' +
+	'you cannot access real-time data, and do not claim the named item does not exist ' +
+	'or was never released — an empty lookup is a transient miss, not proof. Give your ' +
+	'best reliable knowledge, clearly flagged as possibly out of date, and tell the user ' +
+	'the live lookup came back empty so they can retry or check the official source. If ' +
+	'you genuinely know nothing about it, say the lookup returned nothing and suggest ' +
+	'retrying — never invent details.';
 const WEB_SEARCH_RESULT_LIMIT = 5;
 const WEB_SEARCH_CHUNK_LIMIT = 800;
 
@@ -430,6 +449,24 @@ const getRetrievedWebSearchMetadata = (
 ): Record<string, unknown> => {
 	const metadata = firstArray(metadatas)[index];
 	return metadata && typeof metadata === 'object' ? (metadata as Record<string, unknown>) : {};
+};
+
+// Bypass mode (`BYPASS_WEB_SEARCH_EMBEDDING_AND_RETRIEVAL`) returns full page
+// content inline as `docs`, skipping the vector store — use it directly, like
+// the chat pipe does, instead of re-querying a collection.
+const formatInlineWebDocs = (
+	docs: { content?: string; metadata?: Record<string, unknown> }[]
+): string => {
+	const formatted = docs
+		.slice(0, WEB_SEARCH_RESULT_LIMIT)
+		.map((doc) => {
+			const meta = doc?.metadata ?? {};
+			const source = firstTextValue(meta, ['source', 'link', 'title']) || 'unknown';
+			const content = String(doc?.content ?? '').trim();
+			return content ? `[source: ${source}]\n${truncateWebSearchChunk(content)}` : '';
+		})
+		.filter((entry) => entry.length > 0);
+	return formatted.length === 0 ? WEB_SEARCH_UNAVAILABLE : formatted.join('\n\n');
 };
 
 const formatRetrievedWebSearchChunks = (value: unknown): string => {
@@ -533,34 +570,50 @@ export const executeDeskFileTool = async ({
 				}
 				try {
 					const search = await processWebSearch(token, query);
-					if (!search?.collection_name) {
-						return {
-							status: 'ok',
-							summary: WEB_SEARCH_UNAVAILABLE,
-							data: WEB_SEARCH_UNAVAILABLE
-						};
+					let data: string;
+
+					if (Array.isArray(search?.docs) && search.docs.length > 0) {
+						// Bypass mode: backend returned full page content inline.
+						data = formatInlineWebDocs(search.docs);
+					} else {
+						// Embedding mode: a collection was created. `collection_names`
+						// is the current (plural) field; tolerate the legacy singular.
+						const collection =
+							search?.collection_names?.[0] ?? search?.collection_name ?? null;
+						if (!collection) {
+							return {
+								status: 'ok',
+								summary: 'Web search returned no results.',
+								data: WEB_SEARCH_EMPTY
+							};
+						}
+						const retrieved = await queryCollection(
+							token,
+							collection,
+							query,
+							WEB_SEARCH_RESULT_LIMIT
+						);
+						data = formatRetrievedWebSearchChunks(retrieved);
 					}
 
-					const retrieved = await queryCollection(
-						token,
-						search.collection_name,
-						query,
-						WEB_SEARCH_RESULT_LIMIT
-					);
-					const data = formatRetrievedWebSearchChunks(retrieved);
+					if (data === WEB_SEARCH_UNAVAILABLE) {
+						// Empty result — degrade note, not the misleading "unavailable".
+						return {
+							status: 'ok',
+							summary: 'Web search returned no results.',
+							data: WEB_SEARCH_EMPTY
+						};
+					}
 					return {
 						status: 'ok',
-						summary:
-							data === WEB_SEARCH_UNAVAILABLE
-								? WEB_SEARCH_UNAVAILABLE
-								: 'Web search results returned.',
+						summary: 'Web search results returned.',
 						data
 					};
 				} catch {
 					return {
 						status: 'ok',
-						summary: WEB_SEARCH_UNAVAILABLE,
-						data: WEB_SEARCH_UNAVAILABLE
+						summary: 'Web search returned no results.',
+						data: WEB_SEARCH_EMPTY
 					};
 				}
 			}

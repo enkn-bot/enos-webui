@@ -4,6 +4,7 @@
 	import { getContext } from 'svelte';
 
 	import ProfileImage from '../Messages/ProfileImage.svelte';
+	import UserAvatar from '$lib/components/enos/UserAvatar.svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import Heart from '$lib/components/icons/Heart.svelte';
 
@@ -23,8 +24,8 @@
 	>
 		{#if data.message.role === 'user'}
 			<div class="flex w-full">
-				<ProfileImage
-					src={`${WEBUI_API_BASE_URL}/users/${data.user.id}/profile/image`}
+				<UserAvatar
+					name={data?.user?.name}
 					className={'size-5 -translate-y-[1px] flex-shrink-0'}
 				/>
 				<div class="ml-2">

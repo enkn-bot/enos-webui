@@ -35,8 +35,6 @@
 	import Cloud from '$lib/components/icons/Cloud.svelte';
 	import Computer from '$lib/components/icons/Computer.svelte';
 	import Folder from '$lib/components/icons/Folder.svelte';
-	import Github from '$lib/components/icons/Github.svelte';
-	import Plus from '../icons/Plus.svelte';
 	import DeskWorkspacePicker from '$lib/components/enos/DeskWorkspacePicker.svelte';
 	import { workspaceKindLabel } from '$lib/enos/workspaceBadge';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
@@ -245,22 +243,24 @@
 								aria-label={deskWorkspaceLabel()}
 							>
 								{#if hasDeskWorkspace}
-									{#if deskWorkspace?.kind === 'local'}
-										<Computer className="size-4 shrink-0" strokeWidth="2" />
-									{:else if deskWorkspace?.kind === 'cloud'}
+									{#if deskWorkspace?.kind === 'cloud'}
 										<Cloud className="size-4 shrink-0" strokeWidth="2" />
-									{:else if deskWorkspace?.kind === 'github'}
-										<Github className="size-4 shrink-0" strokeWidth="2" />
+									{:else if deskWorkspace?.kind === 'local'}
+										<Computer className="size-4 shrink-0" strokeWidth="2" />
 									{:else}
 										<Folder className="size-4 shrink-0" strokeWidth="2" />
 									{/if}
-									<span class="truncate max-w-[12rem]">
-										<span class="text-gray-400 dark:text-gray-500">{deskWorkspaceKindLabel}:</span>
-										{deskWorkspaceDisplayName}
-									</span>
+									<!-- You are ALWAYS in an environment (Local or Cloud); there is no
+									     environment-less state. A github repo is an optional overlay
+									     synced INTO that environment. When repo-sync lands, the single
+									     `kind` enum must split into environment + repo, and this label
+									     becomes "{environment}: <Github/> {repo}". Today: environment only —
+									     no project-name echo (the project name already shows in the sidebar). -->
+									<span class="truncate">{deskWorkspaceKindLabel}</span>
+									<ChevronDown className="size-3 shrink-0" strokeWidth="2.5" />
 								{:else}
-									<Plus className="size-4 shrink-0" strokeWidth="2" />
-									<span class="truncate">{deskWorkspaceLabel()}</span>
+									<span class="truncate text-gray-500 dark:text-gray-400">{$i18n.t('Select')}</span>
+									<ChevronDown className="size-3 shrink-0" strokeWidth="2.5" />
 								{/if}
 							</button>
 						</DeskWorkspacePicker>

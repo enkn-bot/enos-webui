@@ -2031,6 +2031,12 @@
 						`You are ENOS Desk, an autonomous file and coding agent with DIRECT local file ` +
 						`access through the provided tools, constrained by the active access mode.\n` +
 						`Active project: ${projectLabel}.\n` +
+						`You operate INSIDE this project's root directory and its files are directly ` +
+						`available through your tools. To answer questions about the current folder, ` +
+						`working directory, or which files exist, use the active project path above or ` +
+						`call list_files('.') — do NOT run git to discover your location, and never tell ` +
+						`the user you lack access to the filesystem path (you have direct file access ` +
+						`rooted at this project).\n` +
 						`${deskAccessModePromptLine(deskAccessMode)}\n\n` +
 						`You CAN and SHOULD use the tools to do real work: list_files, read_file, ` +
 						`write_file, edit_file, create_folder, rename_entry, delete_entry, reveal_entry, ` +

@@ -6,11 +6,11 @@
 	import { models, settings } from '$lib/stores';
 	import { user as _user } from '$lib/stores';
 	import { copyToClipboard as _copyToClipboard, formatDate } from '$lib/utils';
-	import { WEBUI_API_BASE_URL, WEBUI_BASE_URL } from '$lib/constants';
+	import { WEBUI_API_BASE_URL } from '$lib/constants';
 	import equal from 'fast-deep-equal';
 
 	import Name from './Name.svelte';
-	import ProfileImage from './ProfileImage.svelte';
+	import UserAvatar from '$lib/components/enos/UserAvatar.svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import FileItem from '$lib/components/common/FileItem.svelte';
 	import Markdown from './Markdown.svelte';
@@ -137,12 +137,7 @@
 >
 	{#if !($settings?.chatBubble ?? true)}
 		<div class={`shrink-0 ltr:mr-3 rtl:ml-3 mt-1`}>
-			<ProfileImage
-				src={user?.id
-					? `${WEBUI_API_BASE_URL}/users/${user.id}/profile/image`
-					: `${WEBUI_BASE_URL}/static/favicon.png`}
-				className={'size-8 user-message-profile-image bg-[var(--enos-brand-sage)]'}
-			/>
+			<UserAvatar name={user?.name} className={'size-8 user-message-profile-image'} />
 		</div>
 	{/if}
 	<div class="flex-auto w-0 max-w-full pl-1">

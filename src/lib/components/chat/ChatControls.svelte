@@ -54,7 +54,7 @@
 
 	const i18n = getContext('i18n');
 
-	const DESK_CONTROL_TAB_ORDER = ['overview', 'controls', 'files'] satisfies ControlTab[];
+	const DESK_CONTROL_TAB_ORDER = ['overview', 'files'] satisfies ControlTab[];
 	const DEFAULT_CONTROL_TAB_ORDER = ['controls', 'files', 'overview'] satisfies ControlTab[];
 	const controlTabLabel = (tab: ControlTab) =>
 		tab === 'overview' ? 'Overview' : tab === 'files' ? 'Files' : 'Controls';
@@ -139,10 +139,15 @@
 		showControls.set(false);
 	}
 
-	// Auto-switch to Files tab when display_file is triggered
+	// Auto-switch to Files tab when display_file is triggered.
+	// Only force the pane OPEN for an explicit file display — a real path. The
+	// project-root default ('.') is set on bind/restore, and should NOT pop the
+	// pane open on its own (the user opens it via the Controls toggle).
 	$: if ($showFileNavPath) {
 		activeTab = 'files';
-		showControls.set(true);
+		if ($showFileNavPath !== '.') {
+			showControls.set(true);
+		}
 	}
 
 	// Auto-open Files tab when a terminal is selected (suppress panel open when full-screen)

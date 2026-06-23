@@ -7,7 +7,6 @@
 		showDeskFolderPicker,
 		selectedFolder,
 		showSettings,
-		showControls,
 		showFileNavPath,
 		showLocalFileFolderId,
 		terminalServers,
@@ -73,7 +72,8 @@
 			if (updated) {
 				await selectedFolder.set(updated);
 				showLocalFileFolderId.set(activeFolderId);
-				showControls.set(true);
+				// Prep the file pane's content (root view) but do not force it open —
+				// the user opens the right pane via the Controls toggle when they want it.
 				showFileNavPath.set('.');
 			}
 			return;

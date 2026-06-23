@@ -292,8 +292,15 @@ export const updateRerankingConfig = async (token: string, payload: RerankingMod
 
 export interface SearchDocument {
 	status: boolean;
-	collection_name: string;
+	// Embedding+retrieval mode returns a collection to query; bypass mode returns
+	// `collection_name: null` plus full `docs` inline. Both shapes are handled by
+	// callers (see deskFileTools web_search).
+	collection_name?: string | null;
+	collection_names?: string[];
 	filenames: string[];
+	items?: Record<string, unknown>[];
+	docs?: { content: string; metadata: Record<string, unknown> }[];
+	loaded_count?: number;
 }
 
 export const processYoutubeVideo = async (token: string, url: string) => {
@@ -372,11 +379,12 @@ export const processWeb = async (
 
 export const processWebSearch = async (
 	token: string,
-	query: string,
-	collection_name?: string
+	query: string
 ): Promise<SearchDocument | null> => {
 	let error = null;
 
+	// Backend SearchForm is `{ queries: list[str] }`. Sending the legacy
+	// `{ query, collection_name }` shape returns 422 (Unprocessable Entity).
 	const res = await fetch(`${RETRIEVAL_API_BASE_URL}/process/web/search`, {
 		method: 'POST',
 		headers: {
@@ -384,8 +392,7 @@ export const processWebSearch = async (
 			Authorization: `Bearer ${token}`
 		},
 		body: JSON.stringify({
-			query,
-			collection_name: collection_name ?? ''
+			queries: [query]
 		})
 	})
 		.then(async (res) => {

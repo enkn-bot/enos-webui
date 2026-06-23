@@ -8,7 +8,13 @@ describe('Desk workspace picker source contract', () => {
 		const navbar = read('src/lib/components/chat/Navbar.svelte');
 
 		expect(navbar).toContain('<DeskWorkspacePicker bind:show={showDeskWorkspacePicker}>');
-		expect(navbar).toContain('<Plus');
+		// Environment-only badge: a kind icon + the environment label + a chevron,
+		// with a "Select" fallback when nothing is bound. (Replaced the old <Plus
+		// add-button — you are ALWAYS in an environment, so it reads the env, not "add".)
+		expect(navbar).not.toContain('<Plus');
+		expect(navbar).toContain('deskWorkspaceKindLabel');
+		expect(navbar).toContain('<ChevronDown');
+		expect(navbar).toContain("$i18n.t('Select')");
 		expect(navbar).toContain('Select workspace…');
 		expect(navbar).toContain('{#if hasDeskWorkspace}');
 		expect(navbar).toContain('id="desk-workspace-status-button"');

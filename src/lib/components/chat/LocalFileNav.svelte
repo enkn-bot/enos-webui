@@ -56,6 +56,13 @@
 	// Desk in the browser (no desktop runtime). This is a supported lite mode,
 	// not an error — local files / Git live in the desktop app only.
 	let liteMode = false;
+	// Desktop app IS present, but the project's bound folder does not exist on
+	// THIS machine (e.g. the project was bound on another Mac, or the folder was
+	// moved/removed). Treat it as a calm read-only state — the chats are still
+	// here — rather than a raw error. `unreachableRoot` holds the bound path so
+	// the notice can point the user at where the files actually live.
+	let unreachable = false;
+	let unreachableRoot = '';
 	let loadedFolderId: string | null = null;
 	let removeProjectFilesChangedListener = () => {};
 	let localHasProjectDigest = false;
@@ -73,6 +80,21 @@
 				path: parts.slice(0, index + 1).join('/')
 			}))
 		];
+	};
+
+	// The bound folder cannot be reached on this machine — distinct from a
+	// transient read error. Used to switch into the calm "files live elsewhere"
+	// notice instead of surfacing a raw error banner.
+	const isPathMissingError = (e: any) => {
+		const message = e?.message ?? String(e);
+		return (
+			message.includes('ENOENT') ||
+			message.includes('no such file') ||
+			message.includes('not a directory') ||
+			message.includes('EACCES') ||
+			message.includes('permission denied') ||
+			message.includes('No local workspace selected')
+		);
 	};
 
 	const friendlyDesktopError = (e: any) => {
@@ -120,6 +142,8 @@
 		currentPath = '.';
 		showLocalFilePath.set(currentPath);
 		error = null;
+		unreachable = false;
+		unreachableRoot = '';
 		try {
 			workspace = await bridge.getWorkspace(folderId);
 			if (workspace) {
@@ -172,7 +196,15 @@
 			currentPath = listing.path;
 			showLocalFilePath.set(currentPath);
 		} catch (e) {
-			error = friendlyDesktopError(e);
+			// Root path of a bound project is missing on this machine → the project's
+			// files live elsewhere. Show the calm read-only notice, not a raw error.
+			if (path === '.' && workspace && isPathMissingError(e)) {
+				unreachable = true;
+				unreachableRoot = workspace?.rootDisplay ?? '';
+				error = null;
+			} else {
+				error = friendlyDesktopError(e);
+			}
 			listing = null;
 			currentPath = '.';
 			showLocalFilePath.set(currentPath);
@@ -433,6 +465,26 @@
 					{$i18n.t(
 						'Viewing ENOS Desk in the browser. Chats and conversations work here — open the ENOS desktop app for local project files, Git, and edits.'
 					)}
+				</div>
+			</div>
+		</div>
+	{:else if unreachable}
+		<div class="flex-1 min-h-0 flex items-center justify-center px-6 text-center">
+			<div class="max-w-xs">
+				<div class="text-sm font-medium mb-1">
+					{$i18n.t('Files live on this project’s machine')}
+				</div>
+				<div class="text-xs text-gray-400 dark:text-gray-500">
+					{#if unreachableRoot}
+						{$i18n.t(
+							'This project is bound to {{path}}, which isn’t available on this machine. Your chats here are read-only history — open ENOS Desk on that machine to browse or edit its files.',
+							{ path: unreachableRoot }
+						)}
+					{:else}
+						{$i18n.t(
+							'This project’s files are on another machine. Your chats here are read-only history — open ENOS Desk on that machine to browse or edit its files.'
+						)}
+					{/if}
 				</div>
 			</div>
 		</div>

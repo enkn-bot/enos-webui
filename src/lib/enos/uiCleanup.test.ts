@@ -57,21 +57,21 @@ describe('ENOS UI cleanup source ownership', () => {
 		expect(staticCss).not.toContain('button[aria-label="User menu"]');
 	});
 
-	test('loader orbs are wired to active model loading states', () => {
+	test('per-message loaders use the calm base treatment, not brand orbs', () => {
 		const skeleton = read('src/lib/components/chat/Messages/Skeleton.svelte');
-		const responseMessage = read('src/lib/components/chat/Messages/ResponseMessage.svelte');
-		const statusHistory = read('src/lib/components/chat/Messages/ResponseMessage/StatusHistory.svelte');
 		const statusItem = read(
 			'src/lib/components/chat/Messages/ResponseMessage/StatusHistory/StatusItem.svelte'
 		);
 		const chat = read('src/lib/components/chat/Chat.svelte');
 
-		expect(skeleton).toContain('<EnosOrb');
-		expect(skeleton).toContain('modelId');
-		expect(responseMessage).toContain('<Skeleton modelId={message.model} />');
-		expect(responseMessage).toContain('<StatusHistory statusHistory={message?.statusHistory} modelId={message.model} />');
-		expect(statusHistory).toContain('<StatusItem {status} {modelId}');
-		expect(statusItem).toContain('<EnosOrb');
+		// Per-message loading uses base OWUI's pulsing dot / shimmer. The brand orb was
+		// pulled out of message skeletons and status items to calm the narration UI —
+		// it kept re-spinning on every status and read as noisy.
+		expect(skeleton).toContain('animate-pulse');
+		expect(skeleton).toContain('animate-size');
+		expect(skeleton).not.toContain('<EnosOrb');
+		expect(statusItem).not.toContain('<EnosOrb');
+		// The brand orb still anchors the single standalone loading mark (not per message).
 		expect(chat).toContain('<EnosOrb tone="all"');
 	});
 

@@ -31,7 +31,6 @@
 		WEBUI_NAME,
 		sidebarWidth,
 		activeChatIds,
-		showControls,
 		showFileNavPath,
 		showLocalFileFolderId,
 		showDeskFolderPicker
@@ -396,7 +395,8 @@
 				await bridge.bindWorkspaceToFolder(res.id);
 				await selectedFolder.set(res);
 				showLocalFileFolderId.set(res.id);
-				showControls.set(true);
+				// Prep file-pane content but don't force the pane open on create —
+				// keep the desk right pane closed by default (user opens via toggle).
 				showFileNavPath.set('.');
 				await saveProjectDigestForFolder(res.id, res);
 			}
