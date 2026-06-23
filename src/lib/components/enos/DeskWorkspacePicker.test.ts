@@ -15,6 +15,12 @@ describe('Desk workspace picker source contract', () => {
 		expect(navbar).toContain('deskWorkspaceKindLabel');
 		expect(navbar).toContain('<ChevronDown');
 		expect(navbar).toContain("$i18n.t('Select')");
+		// Binary current-location: badge shows env when there's a live location (kind),
+		// not merely when a name exists; read-only marker for a local project that can't
+		// be reached here (web, no bridge).
+		expect(navbar).toContain('hasDeskWorkspace = deskWorkspace?.kind != null');
+		expect(navbar).toContain('deskWorkspaceReadOnly');
+		expect(navbar).toContain("$i18n.t('read-only')");
 		expect(navbar).toContain('Select workspace…');
 		expect(navbar).toContain('{#if hasDeskWorkspace}');
 		expect(navbar).toContain('id="desk-workspace-status-button"');

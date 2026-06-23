@@ -129,7 +129,7 @@
 	import { DESK_FILE_TOOLS, describeDeskTool, executeDeskFileTool } from '$lib/enos/deskFileTools';
 	import { groundingLine } from '$lib/enos/grounding';
 	import { surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
-	import { workspaceBadgeFromFolder } from '$lib/enos/workspaceBadge';
+	import { workspaceBadgeFromFolder, deskCurrentLocation } from '$lib/enos/workspaceBadge';
 
 	export let chatIdProp = '';
 
@@ -785,6 +785,7 @@
 	onMount(() => {
 		loading = true;
 		console.log('mounted');
+		deskLocalBridgePresent = Boolean(getEnosDesktopBridge());
 		window.addEventListener('message', onMessageHandler);
 		$socket?.on('events', chatEventHandler);
 
@@ -1803,6 +1804,9 @@
 	let deskChatFolder: any = null;
 	let deskActiveFolder: any = null;
 	let deskWorkspaceBadge = workspaceBadgeFromFolder(null);
+	// Desktop bridge presence (stable per session) — gates whether "Local" work is
+	// even possible on this surface. False in a browser → local projects are read-only.
+	let deskLocalBridgePresent = false;
 
 	$: deskChatFolder = ($folders, knownProjectFolderById(projectFolderIdFromChat(chat)));
 	// Desk is project-first: badge + workspace binding follow the project you're in
@@ -1810,7 +1814,23 @@
 	// to the open chat's folder. Makes the top "Select workspace…" reflect AND bind the
 	// folder you're viewing, and update instantly after binding.
 	$: deskActiveFolder = $selectedFolder ?? deskChatFolder ?? null;
-	$: deskWorkspaceBadge = workspaceBadgeFromFolder(deskActiveFolder);
+	// Badge = where work is happening NOW (binary), NOT the project's stored origin.
+	// Derived from the SAME signals the Files panel uses (cloud terminal active vs
+	// desktop bridge + local project) so the two can never disagree. When a local
+	// project is viewed where it can't be reached (web, no bridge), location is null →
+	// render it as read-only Local (files don't teleport; "Continue in cloud" is the path).
+	$: deskActiveProjectKind = workspaceBadgeFromFolder(deskActiveFolder).kind;
+	$: deskLocation = deskCurrentLocation({
+		cloudWorkspaceActive: Boolean($selectedTerminalId),
+		localBridgePresent: deskLocalBridgePresent,
+		projectKind: deskActiveProjectKind
+	});
+	$: deskLocationReadOnly = deskLocation === null && deskActiveProjectKind === 'local';
+	$: deskWorkspaceBadge = {
+		kind: deskLocation ?? (deskLocationReadOnly ? 'local' : null),
+		name: workspaceBadgeFromFolder(deskActiveFolder).name,
+		readOnly: deskLocationReadOnly
+	};
 
 	const isDeskSurface = () => isDeskHostname();
 	const currentSurface = () => surfaceFromIsDesk(isDeskSurface());

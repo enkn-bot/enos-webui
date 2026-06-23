@@ -51,9 +51,14 @@
 	export let title = '';
 	export let selectedModels;
 	export let showModelSelector = true;
-	export let deskWorkspace: { kind: 'local' | 'cloud' | 'github' | null; name: string } = {
+	export let deskWorkspace: {
+		kind: 'local' | 'cloud' | 'github' | null;
+		name: string;
+		readOnly?: boolean;
+	} = {
 		kind: null,
-		name: ''
+		name: '',
+		readOnly: false
 	};
 	export let deskWorkspaceFolderId: string | null = null;
 	export let deskWorkspaceFolder: any = null;
@@ -95,8 +100,12 @@
 	const deskWorkspaceLabel = () => normalizeTitle(deskWorkspace?.name) || $i18n.t('Select workspace…');
 
 	$: deskWorkspaceDisplayName = normalizeTitle(deskWorkspace?.name);
-	$: hasDeskWorkspace = Boolean(deskWorkspaceDisplayName);
+	// Binary current-location model: the badge shows where work is happening NOW
+	// (Local | Cloud), keyed off the live location (kind), not whether a name exists.
+	// "Select" only when there is genuinely no active location.
+	$: hasDeskWorkspace = deskWorkspace?.kind != null;
 	$: deskWorkspaceKindLabel = $i18n.t(workspaceKindLabel(deskWorkspace?.kind));
+	$: deskWorkspaceReadOnly = Boolean(deskWorkspace?.readOnly);
 
 	const beginTitleRename = async () => {
 		if (!isDeskSurface) return;
@@ -250,13 +259,21 @@
 									{:else}
 										<Folder className="size-4 shrink-0" strokeWidth="2" />
 									{/if}
-									<!-- You are ALWAYS in an environment (Local or Cloud); there is no
-									     environment-less state. A github repo is an optional overlay
-									     synced INTO that environment. When repo-sync lands, the single
-									     `kind` enum must split into environment + repo, and this label
-									     becomes "{environment}: <Github/> {repo}". Today: environment only —
-									     no project-name echo (the project name already shows in the sidebar). -->
-									<span class="truncate">{deskWorkspaceKindLabel}</span>
+									<!-- Binary current-location: where work is happening NOW (Local | Cloud),
+									     not the project's origin. When repo-sync lands, the label can extend
+									     to "{environment}: <Github/> {repo}". No project-name echo (it's in the
+									     sidebar). read-only = a Local project viewed where it can't be reached
+									     (e.g. on web, no bridge): files don't teleport — chats are read-only
+									     history and "Continue in cloud" is the path to work on it elsewhere. -->
+									<span class="truncate" class:text-gray-400={deskWorkspaceReadOnly} class:dark:text-gray-500={deskWorkspaceReadOnly}>{deskWorkspaceKindLabel}</span>
+									{#if deskWorkspaceReadOnly}
+										<span
+											class="shrink-0 text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500"
+											title={$i18n.t('Read-only here — continue in cloud to work on this project')}
+										>
+											{$i18n.t('read-only')}
+										</span>
+									{/if}
 									<ChevronDown className="size-3 shrink-0" strokeWidth="2.5" />
 								{:else}
 									<span class="truncate text-gray-500 dark:text-gray-400">{$i18n.t('Select')}</span>
