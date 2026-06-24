@@ -16,6 +16,7 @@ export type EnosDesktopCapabilities = {
 	localProjectGitRead?: boolean;
 	localProjectGitWrite: boolean;
 	localProjectGitClone: boolean;
+	githubOAuth?: boolean;
 	opencodeServe?: boolean;
 };
 
@@ -185,6 +186,9 @@ export type EnosDesktopBridge = {
 	chooseWorkspace: () => Promise<EnosDesktopWorkspace | null>;
 	chooseWorkspaceForFolder: (folderId: string) => Promise<EnosDesktopWorkspace | null>;
 	bindWorkspaceToFolder: (folderId: string) => Promise<EnosDesktopWorkspace | null>;
+	openGithubOAuth?: (
+		authorizeUrl: string
+	) => Promise<{ ok: true; url?: string } | { ok: false; error: string; url?: string }>;
 	getWorkspace: (folderId?: string | null) => Promise<EnosDesktopWorkspace | null>;
 	listDir: (path?: string, folderId?: string | null) => Promise<EnosDesktopDirectoryListing>;
 	readFile: (path: string, folderId?: string | null) => Promise<EnosDesktopFilePreview>;

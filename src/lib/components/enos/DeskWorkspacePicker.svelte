@@ -216,6 +216,7 @@
 		githubError = '';
 		try {
 			await connectGithub(localStorage.token); // navigates to GitHub OAuth
+			await loadGithubStatus();
 		} catch (e) {
 			githubError = e instanceof Error ? e.message : 'GitHub connect failed';
 		}

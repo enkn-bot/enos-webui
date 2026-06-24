@@ -2,6 +2,7 @@
 // it to the workspace service alongside OWUI). Every call carries the OWUI token;
 // the service verifies it and scopes everything to the calling user.
 import { WEBUI_BASE_URL } from '$lib/constants';
+import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 
 const base = `${WEBUI_BASE_URL}/api/ws`;
 
@@ -45,6 +46,12 @@ export const connectGithub = async (token: string): Promise<void> => {
 	const res = await fetch(`${base}/github/connect`, { headers: authHeaders(token) });
 	const data = await res.json().catch(() => ({}));
 	if (!res.ok || !data?.authorize_url) throw new Error(data?.error ?? 'github connect unavailable');
+	const desktopBridge = getEnosDesktopBridge();
+	if (desktopBridge?.openGithubOAuth) {
+		const result = await desktopBridge.openGithubOAuth(data.authorize_url);
+		if (!result?.ok) throw new Error(result?.error ?? 'GitHub connect failed');
+		return;
+	}
 	window.location.href = data.authorize_url;
 };
 
