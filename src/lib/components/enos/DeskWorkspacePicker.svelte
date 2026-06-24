@@ -208,11 +208,13 @@
 		}
 	};
 
+	let githubError = '';
 	const connectGithubAccount = async () => {
+		githubError = '';
 		try {
 			await connectGithub(localStorage.token); // navigates to GitHub OAuth
 		} catch (e) {
-			console.warn('github connect failed', e);
+			githubError = e instanceof Error ? e.message : 'GitHub connect failed';
 		}
 	};
 
@@ -351,21 +353,26 @@
 				</button>
 			{/each}
 
-			<button
-				type="button"
-				disabled={creatingCloud}
-				class="flex w-full gap-2 items-center px-3 py-1.5 text-sm rounded-xl text-gray-600 dark:text-gray-300 {creatingCloud
-					? 'opacity-50 cursor-wait'
-					: 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50'}"
-				on:click={createCloud}
-			>
-				<Cloud className="size-4 shrink-0" strokeWidth="2" />
-				<span class="truncate"
-					>{creatingCloud
-						? $i18n.t('Creating cloud workspace…')
-						: $i18n.t('New cloud workspace')}</span
+			<!-- One cloud workspace per user (provisioning is idempotent), so only offer
+			     "New" when there isn't one yet — otherwise it just re-selects the existing
+			     one, which reads as confusing ("new from what?"). -->
+			{#if systemTerminals.length === 0}
+				<button
+					type="button"
+					disabled={creatingCloud}
+					class="flex w-full gap-2 items-center px-3 py-1.5 text-sm rounded-xl text-gray-600 dark:text-gray-300 {creatingCloud
+						? 'opacity-50 cursor-wait'
+						: 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50'}"
+					on:click={createCloud}
 				>
-			</button>
+					<Cloud className="size-4 shrink-0" strokeWidth="2" />
+					<span class="truncate"
+						>{creatingCloud
+							? $i18n.t('Creating cloud workspace…')
+							: $i18n.t('Set up cloud workspace')}</span
+					>
+				</button>
+			{/if}
 
 			<hr class="border-gray-100 dark:border-gray-800 my-1" />
 
@@ -396,6 +403,10 @@
 					</div>
 				{/if}
 			</button>
+
+			{#if githubError}
+				<p class="px-3 pb-1 text-xs text-amber-600 dark:text-amber-500">{githubError}</p>
+			{/if}
 
 			{#if githubStatus.connected}
 				<div class="px-3 py-1.5">

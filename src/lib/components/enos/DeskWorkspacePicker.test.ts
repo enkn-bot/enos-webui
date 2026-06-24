@@ -33,7 +33,10 @@ describe('Desk workspace picker source contract', () => {
 		expect(picker).toContain('Desktop only');
 		expect(picker).toContain('Cloud');
 		// S5: provision an ENOS-managed cloud workspace via the control-plane API.
-		expect(picker).toContain('New cloud workspace');
+		// One cloud workspace per user → the create action only shows when none exists,
+		// gated on systemTerminals.length === 0 (no confusing "New" beside an existing one).
+		expect(picker).toContain('Set up cloud workspace');
+		expect(picker).toMatch(/\{#if systemTerminals\.length === 0\}/);
 		expect(picker).toContain('createCloudWorkspace');
 		expect(picker).toContain('on:click={createCloud}');
 		// S5: GitHub is now a live OAuth connect (no longer a disabled "Coming soon").
