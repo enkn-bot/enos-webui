@@ -2044,9 +2044,98 @@
 		);
 	};
 
+	// B — cloud desk chat runs on OpenCode (opencode serve in the cloud workspace, via
+	// the authed /api/ws/oc proxy). This is the WEB path (no Electron bridge): a cloud
+	// workspace is selected → real agentic file/code work, reusing the desk renderers.
+	const handleCloudOpencodeChat = async (userPrompt, wsId) => {
+		const responseMessageId = await createLocalProjectActionMessage(userPrompt, '', { done: false });
+		const statusHistory: any[] = [];
+		let liveContent = '';
+		let liveReasoning = '';
+		let reasoningStartMs = 0;
+		const flush = () => {
+			const m = history.messages[responseMessageId];
+			if (!m) return;
+			m.statusHistory = statusHistory.map((s) => ({ ...s }));
+			history.messages[responseMessageId] = m;
+			history = history;
+		};
+		const render = (done) => {
+			const m = history.messages[responseMessageId];
+			if (!m) return;
+			const durationS = reasoningStartMs ? (Date.now() - reasoningStartMs) / 1000 : 0;
+			m.content = composeDeskMessageContent(liveReasoning, liveContent, { done, durationS });
+			history.messages[responseMessageId] = m;
+			history = history;
+		};
+		try {
+			const r = await runOpencodeDeskTurn(
+				{
+					base: `${WEBUI_BASE_URL}/api/ws/oc/${wsId}`,
+					headers: { Authorization: `Bearer ${localStorage.token}` },
+					message: userPrompt,
+					agent: 'build',
+					model: { providerID: 'openrouter', modelID: 'moonshotai/kimi-k2.7-code' }
+				},
+				{
+					onUpdate: ({ content, reasoning }) => {
+						liveContent = content;
+						liveReasoning = reasoning;
+						if (reasoning && !reasoningStartMs) reasoningStartMs = Date.now();
+						render(false);
+					},
+					onTool: ({ kind, tool, ok }) => {
+						if (kind === 'tool_start') {
+							statusHistory.push({ action: 'enos_desk', description: `${tool}…`, done: false });
+						} else {
+							const last = statusHistory[statusHistory.length - 1];
+							if (last) {
+								last.done = true;
+								last.description = ok === false ? `${tool} (failed)` : tool;
+							}
+						}
+						flush();
+					}
+				}
+			);
+			const done = history.messages[responseMessageId];
+			if (done) {
+				const durationS = reasoningStartMs ? (Date.now() - reasoningStartMs) / 1000 : 0;
+				done.content = composeDeskMessageContent(r.reasoning, r.content || '(No response from OpenCode.)', {
+					done: true,
+					durationS
+				});
+				done.statusHistory = statusHistory.map((s) => ({ ...s, done: true }));
+				done.done = true;
+				history.messages[responseMessageId] = done;
+				history = history;
+				await saveChatHandler($chatId, history);
+			}
+			dispatchProjectFilesChanged(wsId, null);
+		} catch (e) {
+			const m = history.messages[responseMessageId];
+			if (m) {
+				m.content = `OpenCode error: ${e instanceof Error ? e.message : String(e)}`;
+				m.done = true;
+				history.messages[responseMessageId] = m;
+				history = history;
+			}
+		}
+		return true;
+	};
+
 	const handleProjectChatAction = async (userPrompt) => {
 		try {
 			if (!isDeskSurface()) return false;
+
+			// Cloud workspace selected → OpenCode (web path, no bridge needed). Must come
+			// BEFORE the bridge gate, or cloud-web chat falls through to the plain pipe
+			// (no tools → it can only TALK about creating files, never actually do it).
+			const cloudWsId =
+				typeof $selectedTerminalId === 'string' && $selectedTerminalId.startsWith('ws-')
+					? $selectedTerminalId
+					: null;
+			if (cloudWsId) return await handleCloudOpencodeChat(userPrompt, cloudWsId);
 
 			await hydrateProjectFolderFromChat(chat);
 			await restoreLastDeskProjectFolder();
@@ -2216,59 +2305,14 @@
 				flushStatus();
 			};
 
-			// B — OpenCode powers CLOUD desk projects (the desk chat you already use,
-			// engine = opencode serve in your cloud workspace, via the authed /api/ws/oc
-			// proxy). LOCAL (Electron) projects keep the existing loop — additive, no
-			// regression. Reuses the same renderers (renderLiveDeskMessage + statusHistory).
-			const cloudWsId =
-				typeof $selectedTerminalId === 'string' && $selectedTerminalId.startsWith('ws-')
-					? $selectedTerminalId
-					: null;
-			let outcome;
-			if (cloudWsId) {
-				const r = await runOpencodeDeskTurn(
-					{
-						base: `${WEBUI_BASE_URL}/api/ws/oc/${cloudWsId}`,
-						headers: { Authorization: `Bearer ${localStorage.token}` },
-						message: userPrompt,
-						agent: 'build',
-						model: { providerID: 'openrouter', modelID: 'moonshotai/kimi-k2.7-code' }
-					},
-					{
-						onUpdate: ({ content, reasoning }) => {
-							liveContent = content;
-							liveReasoning = reasoning;
-							if (reasoning && !reasoningStartMs) reasoningStartMs = Date.now();
-							renderLiveDeskMessage(false);
-						},
-						onTool: ({ kind, tool, ok }) => {
-							if (kind === 'tool_start') {
-								statusHistory.push({ action: 'enos_desk', description: `${tool}…`, done: false });
-							} else {
-								const last = statusHistory[statusHistory.length - 1];
-								if (last) {
-									last.done = true;
-									last.description = ok === false ? `${tool} (failed)` : tool;
-								}
-							}
-							flushStatus();
-						}
-					}
-				);
-				lastReasoning = r.reasoning;
-				lastReasoningDurationS = reasoningStartMs ? (Date.now() - reasoningStartMs) / 1000 : 0;
-				dispatchProjectFilesChanged(folderId, null);
-				outcome = { content: r.content, messages: [], steps: 1, stoppedReason: 'complete' as const };
-			} else {
-				outcome = await runDeskAgentLoop({
-					messages: loopMessages,
-					tools: DESK_FILE_TOOLS,
-					complete,
-					executeTool,
-					confirm,
-					onEvent
-				});
-			}
+			const outcome = await runDeskAgentLoop({
+				messages: loopMessages,
+				tools: DESK_FILE_TOOLS,
+				complete,
+				executeTool,
+				confirm,
+				onEvent
+			});
 
 			// A tool may have mutated the FS; refresh the file tree.
 			dispatchProjectFilesChanged(folderId, null);

@@ -166,14 +166,19 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(folder).toContain('files are available in the ENOS desktop app');
 	});
 
-	test('cloud desk projects route coding to OpenCode (B), local keeps the loop (additive)', () => {
+	test('cloud desk chat routes to OpenCode BEFORE the bridge gate (web path), local keeps the loop', () => {
 		const chat = read('src/lib/components/chat/Chat.svelte');
-		// Cloud workspace (ws-*) → OpenCode via the authed /api/ws/oc proxy; reuses renderers.
+		// The cloud-workspace check must run before the `!hasDesktopBridge ... return false`
+		// gate — else cloud-web chat falls through to the plain pipe (no tools, hallucinates).
+		const cloudIdx = chat.indexOf('handleCloudOpencodeChat(userPrompt, cloudWsId)');
+		const gateIdx = chat.indexOf('if (!hasDesktopBridge || !folderId) return false;');
+		expect(cloudIdx).toBeGreaterThan(-1);
+		expect(gateIdx).toBeGreaterThan(-1);
+		expect(cloudIdx).toBeLessThan(gateIdx); // cloud handled before the bridge bail
 		expect(chat).toContain('runOpencodeDeskTurn');
 		expect(chat).toContain('/api/ws/oc/');
-		expect(chat).toMatch(/cloudWsId[\s\S]*startsWith\('ws-'\)/);
-		// Local (Electron) path is preserved in the else branch — no regression.
-		expect(chat).toMatch(/else \{[\s\S]*runDeskAgentLoop\(/);
+		// Local (Electron) path still uses the kimi loop — no regression.
+		expect(chat).toContain('runDeskAgentLoop({');
 	});
 
 	test('desk agent carries ENOS identity (three minds, no underlying-model leak) — B4', () => {
