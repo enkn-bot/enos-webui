@@ -40,6 +40,10 @@ describe('Desk workspace picker source contract', () => {
 		expect(picker).toContain('Connect GitHub');
 		expect(picker).toContain('connectGithubAccount');
 		expect(picker).not.toContain('Coming soon');
+		// S5: when connected, a repo input clones owner/repo into the workspace.
+		expect(picker).toContain('cloneRepoIntoWorkspace');
+		expect(picker).toContain('cloneRepo');
+		expect(picker).toContain('owner/repo');
 		// Cloud rows still read as a compute terminal, not the project's file home.
 		expect(picker).toContain('Cloud terminal');
 	});

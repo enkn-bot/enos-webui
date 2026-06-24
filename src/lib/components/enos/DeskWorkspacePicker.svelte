@@ -15,7 +15,12 @@
 	} from '$lib/stores';
 	import { getToolServersData } from '$lib/apis';
 	import { getTerminalServers } from '$lib/apis/terminal';
-	import { createCloudWorkspace, getGithubStatus, connectGithub } from '$lib/apis/workspace';
+	import {
+		createCloudWorkspace,
+		getGithubStatus,
+		connectGithub,
+		cloneRepo
+	} from '$lib/apis/workspace';
 	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 	import { bindLocalWorkspaceToFolder } from '$lib/enos/bindLocalWorkspace';
 	import { workspaceBadgeFromFolder, deskCurrentLocation } from '$lib/enos/workspaceBadge';
@@ -205,6 +210,30 @@
 		}
 	};
 
+	// Clone a repo (owner/name) into the user's cloud workspace. Provisions one
+	// first if none is running, so "connected → type repo → Clone" just works.
+	let repoInput = '';
+	let cloning = false;
+	let cloneError = '';
+	const cloneRepoIntoWorkspace = async () => {
+		const repo = repoInput.trim();
+		if (!repo || cloning) return;
+		cloning = true;
+		cloneError = '';
+		try {
+			let ws = await createCloudWorkspace(localStorage.token); // idempotent: reuse if exists
+			terminalServers.set(await getTerminalServers(localStorage.token));
+			if (ws?.id) selectedTerminalId.set(ws.id);
+			await cloneRepo(localStorage.token, repo);
+			repoInput = '';
+			show = false;
+		} catch (e) {
+			cloneError = e instanceof Error ? e.message : 'clone failed';
+		} finally {
+			cloning = false;
+		}
+	};
+
 	const directLabel = (terminal: (typeof directTerminals)[0]) =>
 		terminal.name || terminal.url?.replace(/^https?:\/\//, '') || $i18n.t('Cloud environment');
 </script>
@@ -368,6 +397,31 @@
 					</div>
 				{/if}
 			</button>
+
+			{#if githubStatus.connected}
+				<div class="px-3 py-1.5">
+					<form class="flex gap-1.5 items-center" on:submit|preventDefault={cloneRepoIntoWorkspace}>
+						<input
+							bind:value={repoInput}
+							placeholder="owner/repo"
+							disabled={cloning}
+							class="flex-1 min-w-0 rounded-lg bg-gray-50 dark:bg-gray-800 px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-emerald-500/40"
+						/>
+						<button
+							type="submit"
+							disabled={cloning || !repoInput.trim()}
+							class="shrink-0 rounded-lg px-2 py-1 text-xs {cloning || !repoInput.trim()
+								? 'opacity-50 cursor-not-allowed'
+								: 'cursor-pointer bg-emerald-600 text-white hover:bg-emerald-500'}"
+						>
+							{cloning ? $i18n.t('Cloning…') : $i18n.t('Clone')}
+						</button>
+					</form>
+					{#if cloneError}
+						<p class="mt-1 text-xs text-red-500 truncate">{cloneError}</p>
+					{/if}
+				</div>
+			{/if}
 		</div>
 	</div>
 </Dropdown>
