@@ -127,6 +127,7 @@
 	import { buildProjectActionContext } from '$lib/enos/projectActions';
 	import { runDeskAgentLoop } from '$lib/enos/deskAgentLoop';
 	import { composeDeskMessageContent } from '$lib/enos/deskReasoning';
+	import { runOpencodeDeskTurn } from '$lib/enos/deskOpencode';
 	import { DESK_FILE_TOOLS, describeDeskTool, executeDeskFileTool } from '$lib/enos/deskFileTools';
 	import { groundingLine } from '$lib/enos/grounding';
 	import { surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
@@ -2215,14 +2216,59 @@
 				flushStatus();
 			};
 
-			const outcome = await runDeskAgentLoop({
-				messages: loopMessages,
-				tools: DESK_FILE_TOOLS,
-				complete,
-				executeTool,
-				confirm,
-				onEvent
-			});
+			// B — OpenCode powers CLOUD desk projects (the desk chat you already use,
+			// engine = opencode serve in your cloud workspace, via the authed /api/ws/oc
+			// proxy). LOCAL (Electron) projects keep the existing loop — additive, no
+			// regression. Reuses the same renderers (renderLiveDeskMessage + statusHistory).
+			const cloudWsId =
+				typeof $selectedTerminalId === 'string' && $selectedTerminalId.startsWith('ws-')
+					? $selectedTerminalId
+					: null;
+			let outcome;
+			if (cloudWsId) {
+				const r = await runOpencodeDeskTurn(
+					{
+						base: `${WEBUI_BASE_URL}/api/ws/oc/${cloudWsId}`,
+						headers: { Authorization: `Bearer ${localStorage.token}` },
+						message: userPrompt,
+						agent: 'build',
+						model: { providerID: 'openrouter', modelID: 'moonshotai/kimi-k2.7-code' }
+					},
+					{
+						onUpdate: ({ content, reasoning }) => {
+							liveContent = content;
+							liveReasoning = reasoning;
+							if (reasoning && !reasoningStartMs) reasoningStartMs = Date.now();
+							renderLiveDeskMessage(false);
+						},
+						onTool: ({ kind, tool, ok }) => {
+							if (kind === 'tool_start') {
+								statusHistory.push({ action: 'enos_desk', description: `${tool}…`, done: false });
+							} else {
+								const last = statusHistory[statusHistory.length - 1];
+								if (last) {
+									last.done = true;
+									last.description = ok === false ? `${tool} (failed)` : tool;
+								}
+							}
+							flushStatus();
+						}
+					}
+				);
+				lastReasoning = r.reasoning;
+				lastReasoningDurationS = reasoningStartMs ? (Date.now() - reasoningStartMs) / 1000 : 0;
+				dispatchProjectFilesChanged(folderId, null);
+				outcome = { content: r.content, messages: [], steps: 1, stoppedReason: 'complete' as const };
+			} else {
+				outcome = await runDeskAgentLoop({
+					messages: loopMessages,
+					tools: DESK_FILE_TOOLS,
+					complete,
+					executeTool,
+					confirm,
+					onEvent
+				});
+			}
 
 			// A tool may have mutated the FS; refresh the file tree.
 			dispatchProjectFilesChanged(folderId, null);

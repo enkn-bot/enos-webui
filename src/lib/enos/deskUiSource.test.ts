@@ -166,6 +166,16 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(folder).toContain('files are available in the ENOS desktop app');
 	});
 
+	test('cloud desk projects route coding to OpenCode (B), local keeps the loop (additive)', () => {
+		const chat = read('src/lib/components/chat/Chat.svelte');
+		// Cloud workspace (ws-*) → OpenCode via the authed /api/ws/oc proxy; reuses renderers.
+		expect(chat).toContain('runOpencodeDeskTurn');
+		expect(chat).toContain('/api/ws/oc/');
+		expect(chat).toMatch(/cloudWsId[\s\S]*startsWith\('ws-'\)/);
+		// Local (Electron) path is preserved in the else branch — no regression.
+		expect(chat).toMatch(/else \{[\s\S]*runDeskAgentLoop\(/);
+	});
+
 	test('desk agent carries ENOS identity (three minds, no underlying-model leak) — B4', () => {
 		const chat = read('src/lib/components/chat/Chat.svelte');
 		// The desk agent must know it is ENOS (three minds), not leak/deny an underlying
