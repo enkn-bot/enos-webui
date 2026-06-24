@@ -119,6 +119,7 @@
 	import Image from '../common/Image.svelte';
 	import { getBanners } from '$lib/apis/configs';
 	import {
+		canUseEnosLocalOpencode,
 		getEnosDesktopBridge,
 		type EnosDesktopAccessMode,
 		type EnosDesktopBridge
@@ -127,7 +128,7 @@
 	import { buildProjectActionContext } from '$lib/enos/projectActions';
 	import { runDeskAgentLoop } from '$lib/enos/deskAgentLoop';
 	import { composeDeskMessageContent } from '$lib/enos/deskReasoning';
-	import { runOpencodeDeskTurn } from '$lib/enos/deskOpencode';
+	import { bridgeTransport, runOpencodeDeskTurn } from '$lib/enos/deskOpencode';
 	import { DESK_FILE_TOOLS, describeDeskTool, executeDeskFileTool } from '$lib/enos/deskFileTools';
 	import { groundingLine } from '$lib/enos/grounding';
 	import { surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
@@ -2124,6 +2125,85 @@
 		return true;
 	};
 
+	// B — local desk chat can also run through the Electron-hosted opencode serve.
+	// This mirrors the cloud OpenCode renderer path while keeping runDeskAgentLoop
+	// as the fallback for older desktop builds.
+	const handleLocalOpencodeChat = async (userPrompt, folderId, opencode) => {
+		const responseMessageId = await createLocalProjectActionMessage(userPrompt, '', { done: false });
+		const statusHistory: any[] = [];
+		let liveContent = '';
+		let liveReasoning = '';
+		let reasoningStartMs = 0;
+		const flush = () => {
+			const m = history.messages[responseMessageId];
+			if (!m) return;
+			m.statusHistory = statusHistory.map((s) => ({ ...s }));
+			history.messages[responseMessageId] = m;
+			history = history;
+		};
+		const render = (done) => {
+			const m = history.messages[responseMessageId];
+			if (!m) return;
+			const durationS = reasoningStartMs ? (Date.now() - reasoningStartMs) / 1000 : 0;
+			m.content = composeDeskMessageContent(liveReasoning, liveContent, { done, durationS });
+			history.messages[responseMessageId] = m;
+			history = history;
+		};
+		try {
+			const r = await runOpencodeDeskTurn(
+				{
+					message: userPrompt,
+					agent: 'build',
+					model: { providerID: 'local', modelID: 'opencode' },
+					transport: bridgeTransport(opencode, folderId)
+				},
+				{
+					onUpdate: ({ content, reasoning }) => {
+						liveContent = content;
+						liveReasoning = reasoning;
+						if (reasoning && !reasoningStartMs) reasoningStartMs = Date.now();
+						render(false);
+					},
+					onTool: ({ kind, tool, ok }) => {
+						if (kind === 'tool_start') {
+							statusHistory.push({ action: 'enos_desk', description: `${tool}…`, done: false });
+						} else {
+							const last = statusHistory[statusHistory.length - 1];
+							if (last) {
+								last.done = true;
+								last.description = ok === false ? `${tool} (failed)` : tool;
+							}
+						}
+						flush();
+					}
+				}
+			);
+			const done = history.messages[responseMessageId];
+			if (done) {
+				const durationS = reasoningStartMs ? (Date.now() - reasoningStartMs) / 1000 : 0;
+				done.content = composeDeskMessageContent(r.reasoning, r.content || '(No response from OpenCode.)', {
+					done: true,
+					durationS
+				});
+				done.statusHistory = statusHistory.map((s) => ({ ...s, done: true }));
+				done.done = true;
+				history.messages[responseMessageId] = done;
+				history = history;
+				await saveChatHandler($chatId, history);
+			}
+			dispatchProjectFilesChanged(folderId, null);
+		} catch (e) {
+			const m = history.messages[responseMessageId];
+			if (m) {
+				m.content = `OpenCode error: ${e instanceof Error ? e.message : String(e)}`;
+				m.done = true;
+				history.messages[responseMessageId] = m;
+				history = history;
+			}
+		}
+		return true;
+	};
+
 	const handleProjectChatAction = async (userPrompt) => {
 		try {
 			if (!isDeskSurface()) return false;
@@ -2143,6 +2223,15 @@
 			const folderId = activeProjectFolderId();
 			const hasDesktopBridge = hasProjectListBridge(bridge);
 			if (!hasDesktopBridge || !folderId) return false;
+			let desktopCapabilities = null;
+			try {
+				desktopCapabilities = await bridge.getCapabilities();
+			} catch (error) {
+				console.warn('Unable to load ENOS Desk capabilities', error);
+			}
+			if (bridge.opencode && canUseEnosLocalOpencode(desktopCapabilities)) {
+				return await handleLocalOpencodeChat(userPrompt, folderId, bridge.opencode);
+			}
 			const projectFolder = activeProjectFolder() ?? deskActiveFolder ?? knownProjectFolderById(folderId);
 			const projectLabel = describeDeskProjectForPrompt(projectFolder);
 			const deskAccessMode = await loadDeskAccessModeForPrompt(bridge);

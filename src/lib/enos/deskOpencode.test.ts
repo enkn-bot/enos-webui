@@ -1,6 +1,12 @@
 import { describe, expect, test } from 'vitest';
 
-import { DeskStreamState, normalizeOpencodeEvent, parseSseChunk, runOpencodeDeskTurn } from './deskOpencode';
+import {
+	DeskStreamState,
+	bridgeTransport,
+	normalizeOpencodeEvent,
+	parseSseChunk,
+	runOpencodeDeskTurn
+} from './deskOpencode';
 
 const partUpdated = (part: any) => ({ type: 'message.part.updated', properties: { part } });
 
@@ -101,6 +107,64 @@ describe('runOpencodeDeskTurn (driver, faked serve)', () => {
 		expect(tools).toEqual(['tool_start:edit:undefined', 'tool_end:edit:true']);
 		expect(calls).toContain('POST /api/oc/ws-1/session');
 		expect(calls.some((c) => c.includes('/session/ses_1/message'))).toBe(true);
+	});
+
+	test('drives a turn over the desktop bridge transport with cumulative replace semantics', async () => {
+		const events: ((ev: any) => void)[] = [];
+		const calls: string[] = [];
+		const fakeOpencode = {
+			start: async (folderId: string) => {
+				calls.push(`start:${folderId}`);
+				return { port: 4096, sessionId: 'session-1' };
+			},
+			prompt: async (folderId: string, prompt: string, agent?: string) => {
+				calls.push(`prompt:${folderId}:${prompt}:${agent}`);
+				setTimeout(() => {
+					for (const emit of events) {
+						emit({
+							streamId: 'stream-1',
+							event: partUpdated({ id: 'r', type: 'reasoning', text: 'think' })
+						});
+						emit({
+							streamId: 'stream-1',
+							event: partUpdated({ id: 't', type: 'text', text: 'Hel' })
+						});
+						emit({
+							streamId: 'stream-1',
+							event: partUpdated({ id: 't', type: 'text', text: 'Hello' })
+						});
+						emit({
+							streamId: 'stream-1',
+							event: partUpdated({ id: 'u', type: 'text', text: ' world' })
+						});
+						emit({ streamId: 'stream-1', done: true });
+					}
+				});
+				return { streamId: 'stream-1' };
+			},
+			events: (onEvent: (ev: any) => void) => {
+				events.push(onEvent);
+				return () => calls.push('dispose');
+			},
+			stop: async (folderId: string) => {
+				calls.push(`stop:${folderId}`);
+			}
+		};
+
+		let last = { content: '', reasoning: '' };
+		const out = await runOpencodeDeskTurn(
+			{
+				message: 'fix it',
+				agent: 'build',
+				model: { providerID: 'local', modelID: 'opencode' },
+				transport: bridgeTransport(fakeOpencode, 'folder-1')
+			},
+			{ onUpdate: (s) => (last = s) }
+		);
+
+		expect(out).toEqual({ content: 'Hello world', reasoning: 'think' });
+		expect(last).toEqual(out);
+		expect(calls).toEqual(['start:folder-1', 'prompt:folder-1:fix it:build', 'dispose']);
 	});
 });
 

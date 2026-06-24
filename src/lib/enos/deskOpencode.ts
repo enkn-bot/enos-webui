@@ -10,6 +10,8 @@
 //   session.idle  -> the turn is done
 //   session.error -> failure
 
+import type { EnosDesktopOpencodeBridge, EnosDesktopOpencodeEvent } from './desktopBridge';
+
 export type DeskStreamEvent =
 	| { kind: 'content'; partId: string; text: string }
 	| { kind: 'reasoning'; partId: string; text: string }
@@ -122,6 +124,122 @@ export type DeskOpencodeCallbacks = {
 	onTool?: (ev: { kind: 'tool_start' | 'tool_end'; tool: string; ok?: boolean }) => void;
 };
 
+export type DeskOpencodeTransport = {
+	createSession: () => Promise<void>;
+	sendPrompt: (input: {
+		message: string;
+		agent: string;
+		model: { providerID: string; modelID: string };
+	}) => Promise<{ streamId: string }>;
+	subscribeEvents: (onEvent: (event: EnosDesktopOpencodeEvent) => void) => () => void;
+};
+
+const errorMessage = (error: unknown, fallback: string): string => {
+	if (error instanceof Error) return error.message;
+	if (typeof error === 'string') return error;
+	if (error && typeof error === 'object' && 'message' in error) {
+		return String((error as { message?: unknown }).message ?? fallback);
+	}
+	return fallback;
+};
+
+const applyDeskStreamEvent = (
+	ev: DeskStreamEvent,
+	state: DeskStreamState,
+	cb: DeskOpencodeCallbacks
+): 'dirty' | 'done' | 'clean' => {
+	if (ev.kind === 'content' || ev.kind === 'reasoning') {
+		state.apply(ev);
+		return 'dirty';
+	}
+	if (ev.kind === 'tool_start' || ev.kind === 'tool_end') {
+		cb.onTool?.({ kind: ev.kind, tool: ev.tool, ok: (ev as any).ok });
+		return 'clean';
+	}
+	if (ev.kind === 'error') {
+		throw new Error(ev.message);
+	}
+	return 'done';
+};
+
+export const bridgeTransport = (
+	opencode: EnosDesktopOpencodeBridge,
+	folderId: string
+): DeskOpencodeTransport => ({
+	createSession: async () => {
+		await opencode.start(folderId);
+	},
+	sendPrompt: ({ message, agent }) => opencode.prompt(folderId, message, agent),
+	subscribeEvents: (onEvent) => opencode.events(onEvent)
+});
+
+const runOpencodeTransportTurn = async (
+	transport: DeskOpencodeTransport,
+	opts: {
+		message: string;
+		agent: string;
+		model: { providerID: string; modelID: string };
+		signal?: AbortSignal;
+	},
+	cb: DeskOpencodeCallbacks
+): Promise<{ content: string; reasoning: string }> => {
+	const state = new DeskStreamState();
+
+	await transport.createSession();
+	const promptResult = await transport.sendPrompt({
+		message: opts.message,
+		agent: opts.agent,
+		model: opts.model
+	});
+	const streamId = promptResult.streamId;
+	if (!streamId) throw new Error('opencode: could not start bridge stream');
+
+	return await new Promise((resolve, reject) => {
+		let settled = false;
+		let dispose: (() => void) | null = null;
+		const finish = (fn: () => void) => {
+			if (settled) return;
+			settled = true;
+			dispose?.();
+			fn();
+		};
+		const abort = () => finish(() => reject(new Error('opencode: bridge stream aborted')));
+
+		if (opts.signal?.aborted) {
+			reject(new Error('opencode: bridge stream aborted'));
+			return;
+		}
+		opts.signal?.addEventListener('abort', abort, { once: true });
+
+		dispose = transport.subscribeEvents((raw) => {
+			if (raw.streamId !== streamId) return;
+			try {
+				if ('error' in raw) {
+					finish(() => reject(new Error(errorMessage(raw.error, 'OpenCode error'))));
+					return;
+				}
+				if ('done' in raw && raw.done) {
+					cb.onUpdate({ content: state.content(), reasoning: state.reasoning() });
+					finish(() => resolve({ content: state.content(), reasoning: state.reasoning() }));
+					return;
+				}
+				if (!('event' in raw)) return;
+				const ev = normalizeOpencodeEvent(raw.event);
+				if (!ev) return;
+				const result = applyDeskStreamEvent(ev, state, cb);
+				if (result === 'dirty') {
+					cb.onUpdate({ content: state.content(), reasoning: state.reasoning() });
+				} else if (result === 'done') {
+					cb.onUpdate({ content: state.content(), reasoning: state.reasoning() });
+					finish(() => resolve({ content: state.content(), reasoning: state.reasoning() }));
+				}
+			} catch (e) {
+				finish(() => reject(e));
+			}
+		});
+	});
+};
+
 /**
  * Drive ONE desk turn through `opencode serve`: create a session, send the prompt,
  * consume the `/event` SSE, feed events through the validated normalizer + accumulator,
@@ -130,16 +248,20 @@ export type DeskOpencodeCallbacks = {
  */
 export const runOpencodeDeskTurn = async (
 	opts: {
-		base: string; // e.g. /api/oc/<ws>  (Caddy → the workspace's serve port)
+		base?: string; // e.g. /api/oc/<ws>  (Caddy → the workspace's serve port)
 		headers?: Record<string, string>;
 		message: string;
 		agent: string; // 'build' | 'plan'
 		model: { providerID: string; modelID: string };
 		signal?: AbortSignal;
 		fetchImpl?: typeof fetch;
+		transport?: DeskOpencodeTransport;
 	},
 	cb: DeskOpencodeCallbacks
 ): Promise<{ content: string; reasoning: string }> => {
+	if (opts.transport) return runOpencodeTransportTurn(opts.transport, opts, cb);
+	if (!opts.base) throw new Error('opencode: base URL required');
+
 	const f = opts.fetchImpl ?? fetch;
 	const h = { 'Content-Type': 'application/json', ...(opts.headers ?? {}) };
 
@@ -174,14 +296,10 @@ export const runOpencodeDeskTurn = async (
 		for (const raw of events) {
 			const ev = normalizeOpencodeEvent(raw);
 			if (!ev) continue;
-			if (ev.kind === 'content' || ev.kind === 'reasoning') {
-				state.apply(ev);
+			const result = applyDeskStreamEvent(ev, state, cb);
+			if (result === 'dirty') {
 				dirty = true;
-			} else if (ev.kind === 'tool_start' || ev.kind === 'tool_end') {
-				cb.onTool?.({ kind: ev.kind, tool: ev.tool, ok: (ev as any).ok });
-			} else if (ev.kind === 'error') {
-				throw new Error(ev.message);
-			} else if (ev.kind === 'done') {
+			} else if (result === 'done') {
 				cb.onUpdate({ content: state.content(), reasoning: state.reasoning() });
 				return { content: state.content(), reasoning: state.reasoning() };
 			}
