@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { DeskStreamState, normalizeOpencodeEvent } from './deskOpencode';
+import { DeskStreamState, normalizeOpencodeEvent, parseSseChunk, runOpencodeDeskTurn } from './deskOpencode';
 
 const partUpdated = (part: any) => ({ type: 'message.part.updated', properties: { part } });
 
@@ -48,6 +48,59 @@ describe('normalizeOpencodeEvent', () => {
 	test('unrelated events -> null', () => {
 		expect(normalizeOpencodeEvent({ type: 'lsp.updated' })).toBeNull();
 		expect(normalizeOpencodeEvent({})).toBeNull();
+	});
+});
+
+describe('parseSseChunk', () => {
+	test('extracts data-line events and buffers a partial line across chunks', () => {
+		const a = parseSseChunk('', 'data: {"type":"session.idle"}\ndata: {"ty');
+		expect(a.events).toEqual([{ type: 'session.idle' }]);
+		const b = parseSseChunk(a.buffer, 'pe":"x"}\n');
+		expect(b.events).toEqual([{ type: 'x' }]);
+	});
+
+	test('ignores [DONE] and keep-alive noise', () => {
+		const r = parseSseChunk('', 'data: [DONE]\n: keep-alive\ndata: notjson\n');
+		expect(r.events).toEqual([]);
+	});
+});
+
+describe('runOpencodeDeskTurn (driver, faked serve)', () => {
+	const sse = (objs: any[]) =>
+		new ReadableStream({
+			start(c) {
+				for (const o of objs) c.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(o)}\n`));
+				c.close();
+			}
+		});
+
+	test('creates session, streams content+reasoning+tools, resolves on session.idle', async () => {
+		const calls: string[] = [];
+		const events = [
+			{ type: 'message.part.updated', properties: { part: { id: 'r', type: 'reasoning', text: 'thinking' } } },
+			{ type: 'message.part.updated', properties: { part: { type: 'tool', callID: 'c1', tool: 'edit', state: { status: 'running' } } } },
+			{ type: 'message.part.updated', properties: { part: { type: 'tool', callID: 'c1', tool: 'edit', state: { status: 'completed' } } } },
+			{ type: 'message.part.updated', properties: { part: { id: 't', type: 'text', text: 'Fixed it.' } } },
+			{ type: 'session.idle' }
+		];
+		const fetchImpl = (async (url: string, init?: any) => {
+			calls.push(`${init?.method ?? 'GET'} ${url}`);
+			if (url.endsWith('/session')) return { json: async () => ({ id: 'ses_1' }) } as any;
+			if (url.endsWith('/event')) return { body: sse(events) } as any;
+			return { json: async () => ({}) } as any; // message post
+		}) as any;
+
+		const tools: string[] = [];
+		let last = { content: '', reasoning: '' };
+		const out = await runOpencodeDeskTurn(
+			{ base: '/api/oc/ws-1', message: 'fix', agent: 'build', model: { providerID: 'enos', modelID: 'm' }, fetchImpl },
+			{ onUpdate: (s) => (last = s), onTool: (e) => tools.push(`${e.kind}:${e.tool}:${e.ok}`) }
+		);
+		expect(out.content).toBe('Fixed it.');
+		expect(out.reasoning).toBe('thinking');
+		expect(tools).toEqual(['tool_start:edit:undefined', 'tool_end:edit:true']);
+		expect(calls).toContain('POST /api/oc/ws-1/session');
+		expect(calls.some((c) => c.includes('/session/ses_1/message'))).toBe(true);
 	});
 });
 

@@ -18,7 +18,38 @@ export type DeskStreamEvent =
 	| { kind: 'done' }
 	| { kind: 'error'; message: string };
 
+// VALIDATED 2026-06-24 against live `opencode serve` (1.17.9): the turn streams via
+// `message.part.updated` (text/reasoning/tool parts) whose text is CUMULATIVE (replace,
+// not append) → DeskStreamState replace semantics is correct. `session.idle` ends the
+// turn. We deliberately ignore `message.part.delta` (smoother per-token, but untyped in
+// the SDK and version-specific) — `.updated` snapshots converge to the correct content.
 const toolEndStatuses = new Set(['completed', 'error', 'failed']);
+
+/** Parse an SSE text chunk into the JSON event objects on its `data:` lines. Pure;
+ *  carries a buffer for lines split across network chunks. */
+export const parseSseChunk = (
+	buffer: string,
+	chunk: string
+): { events: any[]; buffer: string } => {
+	const events: any[] = [];
+	let buf = buffer + chunk;
+	let nl: number;
+	while ((nl = buf.indexOf('\n')) !== -1) {
+		const line = buf.slice(0, nl).trim();
+		buf = buf.slice(nl + 1);
+		if (line.startsWith('data: ')) {
+			const data = line.slice(6);
+			if (data && data !== '[DONE]') {
+				try {
+					events.push(JSON.parse(data));
+				} catch {
+					/* keep-alive / partial — ignore */
+				}
+			}
+		}
+	}
+	return { events, buffer: buf };
+};
 
 /** Map ONE raw OpenCode event to a desk stream event (or null to ignore). Pure. */
 export const normalizeOpencodeEvent = (event: any): DeskStreamEvent | null => {
@@ -83,3 +114,79 @@ export class DeskStreamState {
 		return this.order.map((id) => this.reason.get(id)).filter(Boolean).join('');
 	}
 }
+
+export type DeskOpencodeCallbacks = {
+	/** current full content + reasoning after each update (for the desk message + accordion) */
+	onUpdate: (s: { content: string; reasoning: string }) => void;
+	/** tool lifecycle for statusHistory */
+	onTool?: (ev: { kind: 'tool_start' | 'tool_end'; tool: string; ok?: boolean }) => void;
+};
+
+/**
+ * Drive ONE desk turn through `opencode serve`: create a session, send the prompt,
+ * consume the `/event` SSE, feed events through the validated normalizer + accumulator,
+ * and surface content/reasoning/tool updates to the desk chat. Returns the final
+ * content+reasoning. Transport only — the parsing/mapping is the tested core above.
+ */
+export const runOpencodeDeskTurn = async (
+	opts: {
+		base: string; // e.g. /api/oc/<ws>  (Caddy → the workspace's serve port)
+		headers?: Record<string, string>;
+		message: string;
+		agent: string; // 'build' | 'plan'
+		model: { providerID: string; modelID: string };
+		signal?: AbortSignal;
+		fetchImpl?: typeof fetch;
+	},
+	cb: DeskOpencodeCallbacks
+): Promise<{ content: string; reasoning: string }> => {
+	const f = opts.fetchImpl ?? fetch;
+	const h = { 'Content-Type': 'application/json', ...(opts.headers ?? {}) };
+
+	const sess = await (await f(`${opts.base}/session`, { method: 'POST', headers: h, body: '{}' })).json();
+	const sid = sess?.id ?? sess?.sessionID;
+	if (!sid) throw new Error('opencode: could not create session');
+
+	const state = new DeskStreamState();
+	const evRes = await f(`${opts.base}/event`, { headers: h, signal: opts.signal });
+	if (!evRes.body) throw new Error('opencode: no event stream');
+
+	// fire the prompt (don't await its completion; the turn completes via session.idle)
+	void f(`${opts.base}/session/${sid}/message`, {
+		method: 'POST',
+		headers: h,
+		body: JSON.stringify({
+			parts: [{ type: 'text', text: opts.message }],
+			agent: opts.agent,
+			model: opts.model
+		})
+	});
+
+	const reader = evRes.body.getReader();
+	const decoder = new TextDecoder();
+	let buffer = '';
+	for (;;) {
+		const { value, done } = await reader.read();
+		if (done) break;
+		const { events, buffer: nb } = parseSseChunk(buffer, decoder.decode(value, { stream: true }));
+		buffer = nb;
+		let dirty = false;
+		for (const raw of events) {
+			const ev = normalizeOpencodeEvent(raw);
+			if (!ev) continue;
+			if (ev.kind === 'content' || ev.kind === 'reasoning') {
+				state.apply(ev);
+				dirty = true;
+			} else if (ev.kind === 'tool_start' || ev.kind === 'tool_end') {
+				cb.onTool?.({ kind: ev.kind, tool: ev.tool, ok: (ev as any).ok });
+			} else if (ev.kind === 'error') {
+				throw new Error(ev.message);
+			} else if (ev.kind === 'done') {
+				cb.onUpdate({ content: state.content(), reasoning: state.reasoning() });
+				return { content: state.content(), reasoning: state.reasoning() };
+			}
+		}
+		if (dirty) cb.onUpdate({ content: state.content(), reasoning: state.reasoning() });
+	}
+	return { content: state.content(), reasoning: state.reasoning() };
+};
