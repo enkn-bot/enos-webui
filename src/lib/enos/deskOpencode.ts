@@ -13,10 +13,11 @@
 import type { EnosDesktopOpencodeBridge, EnosDesktopOpencodeEvent } from './desktopBridge';
 
 export type DeskStreamEvent =
-	| { kind: 'content'; partId: string; text: string }
-	| { kind: 'reasoning'; partId: string; text: string }
+	| { kind: 'content'; partId: string; text: string; messageId?: string }
+	| { kind: 'reasoning'; partId: string; text: string; messageId?: string }
 	| { kind: 'tool_start'; callId: string; tool: string; input: unknown }
 	| { kind: 'tool_end'; callId: string; tool: string; ok: boolean }
+	| { kind: 'user_message'; messageId: string }
 	| { kind: 'done' }
 	| { kind: 'error'; message: string };
 
@@ -60,16 +61,26 @@ export const normalizeOpencodeEvent = (event: any): DeskStreamEvent | null => {
 	if (type === 'session.error') {
 		return { kind: 'error', message: String(event?.properties?.error?.message ?? 'OpenCode error') };
 	}
+	// The /event stream carries parts for BOTH the user message and the assistant
+	// message. message.updated tells us a message's role; flag user messages so their
+	// text parts (the prompt echo) are dropped, not rendered as assistant content.
+	if (type === 'message.updated' || type === 'message.created') {
+		const info = event?.properties?.info ?? event?.properties?.message ?? event?.info;
+		const messageId = String(info?.id ?? '');
+		if (messageId && info?.role === 'user') return { kind: 'user_message', messageId };
+		return null;
+	}
 	if (type !== 'message.part.updated') return null;
 
 	const part = event?.properties?.part ?? event?.part;
 	if (!part || typeof part !== 'object') return null;
+	const messageId = part.messageID ? String(part.messageID) : undefined;
 
 	if (part.type === 'text' && typeof part.text === 'string') {
-		return { kind: 'content', partId: String(part.id ?? 'text'), text: part.text };
+		return { kind: 'content', partId: String(part.id ?? 'text'), text: part.text, messageId };
 	}
 	if (part.type === 'reasoning' && typeof part.text === 'string') {
-		return { kind: 'reasoning', partId: String(part.id ?? 'reasoning'), text: part.text };
+		return { kind: 'reasoning', partId: String(part.id ?? 'reasoning'), text: part.text, messageId };
 	}
 	if (part.type === 'tool') {
 		const status = part?.state?.status;
@@ -97,8 +108,17 @@ export class DeskStreamState {
 	private order: string[] = [];
 	private text = new Map<string, string>();
 	private reason = new Map<string, string>();
+	private userMessages = new Set<string>();
 
 	apply(ev: DeskStreamEvent): void {
+		if (ev.kind === 'user_message') {
+			this.userMessages.add(ev.messageId);
+			return;
+		}
+		// Drop parts that belong to the user's own message (prompt echo).
+		if (ev.kind === 'content' || ev.kind === 'reasoning') {
+			if (ev.messageId && this.userMessages.has(ev.messageId)) return;
+		}
 		if (ev.kind === 'content') {
 			if (!this.text.has(ev.partId)) this.order.push(ev.partId);
 			this.text.set(ev.partId, ev.text);
@@ -151,6 +171,10 @@ const applyDeskStreamEvent = (
 	if (ev.kind === 'content' || ev.kind === 'reasoning') {
 		state.apply(ev);
 		return 'dirty';
+	}
+	if (ev.kind === 'user_message') {
+		state.apply(ev);
+		return 'clean';
 	}
 	if (ev.kind === 'tool_start' || ev.kind === 'tool_end') {
 		cb.onTool?.({ kind: ev.kind, tool: ev.tool, ok: (ev as any).ok });

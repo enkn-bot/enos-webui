@@ -184,4 +184,33 @@ describe('DeskStreamState (multi-part assembly)', () => {
 		expect(s.reasoning()).toBe('step 1');
 		expect(s.content()).toBe('answer');
 	});
+
+	test('drops text parts belonging to the user message (prompt echo)', () => {
+		const s = new DeskStreamState();
+		// user message.updated arrives before its part (validated ordering)
+		s.apply({ kind: 'user_message', messageId: 'msg_user' });
+		s.apply({ kind: 'content', partId: 'pu', text: 'write a test file to folder', messageId: 'msg_user' });
+		s.apply({ kind: 'content', partId: 'pa', text: 'Done — wrote test.txt', messageId: 'msg_asst' });
+		expect(s.content()).toBe('Done — wrote test.txt');
+	});
+});
+
+describe('normalizeOpencodeEvent role filtering', () => {
+	test('message.updated role=user -> user_message marker', () => {
+		expect(
+			normalizeOpencodeEvent({ type: 'message.updated', properties: { info: { id: 'msg_u', role: 'user' } } })
+		).toEqual({ kind: 'user_message', messageId: 'msg_u' });
+	});
+
+	test('message.updated role=assistant -> ignored (null)', () => {
+		expect(
+			normalizeOpencodeEvent({ type: 'message.updated', properties: { info: { id: 'msg_a', role: 'assistant' } } })
+		).toBeNull();
+	});
+
+	test('text part carries its messageID', () => {
+		expect(
+			normalizeOpencodeEvent(partUpdated({ id: 'p1', type: 'text', text: 'hi', messageID: 'msg_a' }))
+		).toEqual({ kind: 'content', partId: 'p1', text: 'hi', messageId: 'msg_a' });
+	});
 });
