@@ -41,14 +41,24 @@ describe('Desk workspace picker source contract', () => {
 		expect(picker).toContain('Cloud terminal');
 	});
 
-	test('Local row reflects the current binding (folder name + check), not a generic action', () => {
+	test('Local row shows the bound folder name, but the ✓ marks the ACTIVE location (binary)', () => {
 		const picker = read('src/lib/components/enos/DeskWorkspacePicker.svelte');
-		// Derive the binding from the same source the badge uses.
+		// Sublabel still shows the folder name when bound (context).
 		expect(picker).toContain('workspaceBadgeFromFolder(activeFolder)');
-		expect(picker).toContain('isLocalBound');
-		// When bound, show the folder name + a ✓ instead of "Bind this project to a folder".
 		expect(picker).toContain('{:else if isLocalBound}');
 		expect(picker).toContain('{boundBadge.name}');
-		expect(picker).toMatch(/\{#if isLocalBound\}[\s\S]*<Check/);
+		// But the ✓ tracks the binary current location, not mere binding existence —
+		// so Local + Cloud can't both show a check at once.
+		expect(picker).toContain('deskCurrentLocation');
+		expect(picker).toContain('isLocalActive = currentLocation === \'local\'');
+		expect(picker).toMatch(/\{#if isLocalActive\}[\s\S]*<Check/);
+		expect(picker).not.toMatch(/\{#if isLocalBound\}[\s\S]*<Check/);
+	});
+
+	test('selecting Local deactivates the cloud workspace (mutually exclusive)', () => {
+		const picker = read('src/lib/components/enos/DeskWorkspacePicker.svelte');
+		expect(picker).toContain('deactivateCloudWorkspace');
+		expect(picker).toMatch(/selectLocal[\s\S]*await deactivateCloudWorkspace\(\)/);
+		expect(picker).toMatch(/deactivateCloudWorkspace[\s\S]*selectedTerminalId\.set\(null\)/);
 	});
 });

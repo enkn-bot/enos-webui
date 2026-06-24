@@ -393,12 +393,29 @@
 			if (localWorkspace && isDeskSurface && hasDesktopBridge) {
 				const bridge = getEnosDesktopBridge();
 				await bridge.bindWorkspaceToFolder(res.id);
-				await selectedFolder.set(res);
+				// Optimistic local binding: write project_context_source.kind='local' (from the
+				// workspace we already picked) BEFORE the slow buildProjectDigest file-scan, so the
+				// badge reads "Local" instantly instead of flickering "Select" → "Local" while the
+				// scan runs. saveProjectDigestForFolder then enriches the source (fileCount, etc.).
+				const optimisticFolder = {
+					...res,
+					data: {
+						...(res?.data ?? {}),
+						project_context_source: {
+							kind: 'local',
+							rootName: localWorkspace?.name ?? res?.name ?? '',
+							...(localWorkspace?.rootDisplay
+								? { rootDisplay: localWorkspace.rootDisplay }
+								: {})
+						}
+					}
+				};
+				await selectedFolder.set(optimisticFolder);
 				showLocalFileFolderId.set(res.id);
 				// Prep file-pane content but don't force the pane open on create —
 				// keep the desk right pane closed by default (user opens via toggle).
 				showFileNavPath.set('.');
-				await saveProjectDigestForFolder(res.id, res);
+				await saveProjectDigestForFolder(res.id, optimisticFolder);
 			}
 			// newFolderId = res.id;
 			await initFolders();

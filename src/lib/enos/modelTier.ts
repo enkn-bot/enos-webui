@@ -17,7 +17,7 @@ const ORB_ASSET_BY_TONE: Record<EnosOrbTone, string> = {
 	all: '/static/enos_loader_all_orbs.svg'
 };
 
-export const enosOrbToneForModel = (modelId: string | null | undefined): EnosOrbTone =>
+const enosOrbToneForModel = (modelId: string | null | undefined): EnosOrbTone =>
 	MODEL_TONE_BY_ID.get(String(modelId ?? '')) ?? 'all';
 
 export const enosOrbAssetForTone = (tone: EnosOrbTone = 'all'): string =>

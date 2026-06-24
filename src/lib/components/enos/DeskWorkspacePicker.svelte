@@ -16,7 +16,7 @@
 	import { getToolServersData } from '$lib/apis';
 	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 	import { bindLocalWorkspaceToFolder } from '$lib/enos/bindLocalWorkspace';
-	import { workspaceBadgeFromFolder } from '$lib/enos/workspaceBadge';
+	import { workspaceBadgeFromFolder, deskCurrentLocation } from '$lib/enos/workspaceBadge';
 
 	import Dropdown from '$lib/components/common/Dropdown.svelte';
 	import Check from '$lib/components/icons/Check.svelte';
@@ -39,6 +39,15 @@
 	// is in fact already bound. Same source the badge reads.
 	$: boundBadge = workspaceBadgeFromFolder(activeFolder);
 	$: isLocalBound = hasDesktopBridge && boundBadge.kind === 'local' && Boolean(boundBadge.name);
+	// Binary current location — the SAME signal the badge + Files panel use. The ✓ marks
+	// where work is happening NOW (exactly one row), not every binding that merely exists.
+	// (Before: Local ✓ = "bound locally" AND Cloud ✓ = "terminal selected" → two checks.)
+	$: currentLocation = deskCurrentLocation({
+		cloudWorkspaceActive: Boolean($selectedTerminalId),
+		localBridgePresent: hasDesktopBridge,
+		projectKind: boundBadge.kind
+	});
+	$: isLocalActive = currentLocation === 'local';
 	$: systemTerminals = ($terminalServers ?? []).filter((terminal) => terminal.id);
 	$: directTerminals = ($settings?.terminalServers ?? []).filter((terminal) => terminal.url);
 	$: canUseDirectTerminals =
@@ -65,11 +74,27 @@
 		}
 	};
 
+	// Local and Cloud are mutually exclusive (binary location). Switching to Local must
+	// deactivate any active cloud workspace/terminal, else both rows stay "selected".
+	const deactivateCloudWorkspace = async () => {
+		if ($selectedTerminalId) selectedTerminalId.set(null);
+		if (($settings?.terminalServers ?? []).some((server) => server?.enabled)) {
+			const updatedServers = ($settings.terminalServers ?? []).map((server) => ({
+				...server,
+				enabled: false
+			}));
+			settings.set({ ...$settings, terminalServers: updatedServers });
+			await refreshTerminalServersStore(updatedServers);
+		}
+	};
+
 	const selectLocal = async () => {
 		if (!hasDesktopBridge) return;
 
 		if (activeFolderId) {
 			show = false;
+			// Binary switch: leaving Cloud for Local.
+			await deactivateCloudWorkspace();
 			const updated = await bindLocalWorkspaceToFolder(
 				localStorage.token,
 				activeFolderId,
@@ -174,7 +199,7 @@
 						</span>
 					</div>
 				</div>
-				{#if isLocalBound}
+				{#if isLocalActive}
 					<div class="shrink-0 text-emerald-600 dark:text-emerald-400">
 						<Check className="size-4" strokeWidth="2" />
 					</div>

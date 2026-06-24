@@ -1,12 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import {
-	DESK_HOSTNAME,
-	deskMode,
-	deskSurface,
-	getDeskRuntime,
-	isDeskHostname
-} from './deskRuntime';
-import * as bridge from './desktopBridge';
+import { isDeskHostname } from './deskRuntime';
 
 const setHostname = (hostname: string | undefined) => {
 	if (hostname === undefined) {
@@ -27,45 +20,23 @@ describe('deskRuntime — single source of truth', () => {
 	test('SSR (no window) is never the desk surface', () => {
 		setHostname(undefined);
 		expect(isDeskHostname()).toBe(false);
-		expect(deskSurface()).toBe('chat');
 	});
 
-	test('desk host => desk surface, other host => chat surface', () => {
-		setHostname(DESK_HOSTNAME);
+	test('desk host returns true, other hosts return false', () => {
+		setHostname('enosdesk.duckdns.org');
 		expect(isDeskHostname()).toBe(true);
-		expect(deskSurface()).toBe('desk');
 
 		setHostname('enoschat.duckdns.org');
 		expect(isDeskHostname()).toBe(false);
-		expect(deskSurface()).toBe('chat');
 	});
 
-	test('mode is app only when the desktop bridge is present', () => {
-		vi.spyOn(bridge, 'getEnosDesktopBridge').mockReturnValue(null);
-		expect(deskMode()).toBe('browser');
-
-		vi.spyOn(bridge, 'getEnosDesktopBridge').mockReturnValue({} as never);
-		expect(deskMode()).toBe('app');
+	test('localhost is not the desk host', () => {
+		setHostname('localhost');
+		expect(isDeskHostname()).toBe(false);
 	});
 
-	test('desk host + no bridge => lite mode (supported, not an error)', () => {
-		setHostname(DESK_HOSTNAME);
-		vi.spyOn(bridge, 'getEnosDesktopBridge').mockReturnValue(null);
-		const rt = getDeskRuntime();
-		expect(rt).toEqual({
-			surface: 'desk',
-			mode: 'browser',
-			isDesk: true,
-			isApp: false,
-			isDeskLite: true
-		});
-	});
-
-	test('desk host + bridge => full app mode', () => {
-		setHostname(DESK_HOSTNAME);
-		vi.spyOn(bridge, 'getEnosDesktopBridge').mockReturnValue({} as never);
-		const rt = getDeskRuntime();
-		expect(rt.isApp).toBe(true);
-		expect(rt.isDeskLite).toBe(false);
+	test('similarly named hosts are not the desk host', () => {
+		setHostname('preview.enosdesk.duckdns.org');
+		expect(isDeskHostname()).toBe(false);
 	});
 });

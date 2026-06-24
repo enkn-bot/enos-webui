@@ -1832,6 +1832,30 @@
 		readOnly: deskLocationReadOnly
 	};
 
+	// Entering a LOCAL-bound project defaults the location to Local: a globally-persisted
+	// cloud-terminal selection must not make your local project open as Cloud (location
+	// follows the project). Runs once per project entry (folder-id guarded), so an explicit
+	// switch to a cloud workspace afterward still sticks. The real fix = per-project location
+	// when cloud projects land (Tier 1.5); this removes the surprise in the meantime.
+	let lastLocalDefaultedFolderId: string | null = null;
+	const applyLocalLocationDefault = (folder, bridgePresent) => {
+		if (!bridgePresent || !isDeskSurface()) return;
+		const fid = folder?.id ?? null;
+		if (!fid || fid === lastLocalDefaultedFolderId) return;
+		if (workspaceBadgeFromFolder(folder).kind !== 'local') return;
+		lastLocalDefaultedFolderId = fid;
+		if ($selectedTerminalId) {
+			selectedTerminalId.set(null);
+			if (($settings?.terminalServers ?? []).some((s) => s?.enabled)) {
+				settings.set({
+					...$settings,
+					terminalServers: ($settings.terminalServers ?? []).map((s) => ({ ...s, enabled: false }))
+				});
+			}
+		}
+	};
+	$: applyLocalLocationDefault(deskActiveFolder, deskLocalBridgePresent);
+
 	const isDeskSurface = () => isDeskHostname();
 	const currentSurface = () => surfaceFromIsDesk(isDeskSurface());
 

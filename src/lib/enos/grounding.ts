@@ -2,7 +2,7 @@
 // local time and timezone, so Desk grounding is more accurate than anything the
 // server could infer. Kept tiny and pure so it is trivially testable.
 
-export const GROUNDING_PREFIX = 'Current date and time:';
+const GROUNDING_PREFIX = 'Current date and time:';
 
 /**
  * A one-line statement of the present moment in the user's local timezone,

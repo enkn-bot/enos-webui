@@ -19,11 +19,6 @@ export const workspaceBadgeFromFolder = (folder: any): WorkspaceBadge => {
 	};
 };
 
-export const workspaceBadgeLabel = (
-	badge: WorkspaceBadge | null | undefined,
-	fallback: string
-): string => badge?.name?.trim() || fallback;
-
 // Canonical (untranslated) label for the binding type. Callers wrap with i18n.
 // local -> Local (desktop dir) · github -> Repo · cloud -> Cloud env.
 export const workspaceKindLabel = (kind: WorkspaceKind | null | undefined): string => {

@@ -2,7 +2,6 @@ import { describe, expect, test } from 'vitest';
 
 import {
 	workspaceBadgeFromFolder,
-	workspaceBadgeLabel,
 	workspaceKindLabel,
 	deskCurrentLocation
 } from './workspaceBadge';
@@ -47,6 +46,19 @@ describe('workspaceBadgeFromFolder', () => {
 			})
 		).toEqual({ kind: null, name: '' });
 	});
+
+	test('trims bound folder names', () => {
+		expect(
+			workspaceBadgeFromFolder({
+				data: {
+					project_context_source: {
+						kind: 'local',
+						rootName: '  project  '
+					}
+				}
+			})
+		).toEqual({ kind: 'local', name: 'project' });
+	});
 });
 
 describe('workspaceKindLabel', () => {
@@ -56,6 +68,10 @@ describe('workspaceKindLabel', () => {
 		expect(workspaceKindLabel('cloud')).toBe('Cloud');
 		expect(workspaceKindLabel(null)).toBe('Workspace');
 		expect(workspaceKindLabel(undefined)).toBe('Workspace');
+	});
+
+	test('labels GitHub workspaces as repos', () => {
+		expect(workspaceKindLabel('github')).toBe('Repo');
 	});
 });
 
@@ -90,15 +106,5 @@ describe('deskCurrentLocation (binary where-work-happens-now)', () => {
 		expect(
 			deskCurrentLocation({ cloudWorkspaceActive: true, localBridgePresent: false, projectKind: 'local' })
 		).toBe('cloud');
-	});
-});
-
-describe('workspaceBadgeLabel', () => {
-	test('returns the badge name when present and falls back when missing', () => {
-		expect(workspaceBadgeLabel({ kind: 'local', name: '  X  ' }, 'Select workspace…')).toBe('X');
-		expect(workspaceBadgeLabel({ kind: null, name: '' }, 'Select workspace…')).toBe(
-			'Select workspace…'
-		);
-		expect(workspaceBadgeLabel(null, 'Select workspace…')).toBe('Select workspace…');
 	});
 });

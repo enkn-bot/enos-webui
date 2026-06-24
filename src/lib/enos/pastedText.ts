@@ -1,4 +1,4 @@
-export const PASTED_TEXT_PREVIEW_LIMIT = 220;
+const PASTED_TEXT_PREVIEW_LIMIT = 220;
 
 const PASTED_TEXT_NAME_PATTERN = /^Pasted_Text_\d+\.txt$/;
 

@@ -27,6 +27,20 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(sidebar).toMatch(/const folderList = filterBySurface/);
 	});
 
+	test('a new local project binds optimistically so the badge reads "Local" before the digest scan', () => {
+		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
+		// The project_context_source (kind:'local') must be set on the selectedFolder BEFORE
+		// saveProjectDigestForFolder runs — otherwise the badge flickers "Select" → "Local"
+		// while the slow buildProjectDigest file-scan completes.
+		expect(sidebar).toContain('const optimisticFolder = {');
+		expect(sidebar).toMatch(
+			/optimisticFolder = \{[\s\S]*project_context_source:\s*\{[\s\S]*kind: 'local'/
+		);
+		expect(sidebar).toMatch(
+			/selectedFolder\.set\(optimisticFolder\)[\s\S]*saveProjectDigestForFolder\(res\.id, optimisticFolder\)/
+		);
+	});
+
 	test('Desk side pane defaults to Files only when no tab has been explicitly saved', () => {
 		const chatControls = read('src/lib/components/chat/ChatControls.svelte');
 

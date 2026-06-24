@@ -1,5 +1,3 @@
-import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
-
 /**
  * Single source of truth for the two orthogonal Desk axes.
  *
@@ -16,41 +14,10 @@ import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
  */
 
 /** Canonical Desk surface hostname. */
-export const DESK_HOSTNAME = 'enosdesk.duckdns.org';
-
-export type DeskSurface = 'desk' | 'chat';
-export type DeskMode = 'app' | 'browser';
-
-export type DeskRuntime = {
-	surface: DeskSurface;
-	mode: DeskMode;
-	/** surface === 'desk' */
-	isDesk: boolean;
-	/** mode === 'app' (local capability available) */
-	isApp: boolean;
-	/** desk surface running in the browser — the supported lite mode */
-	isDeskLite: boolean;
-};
+const DESK_HOSTNAME = 'enosdesk.duckdns.org';
 
 /** True when served from the Desk host. SSR-safe (false on the server). */
 export const isDeskHostname = (): boolean => {
 	if (typeof window === 'undefined') return false;
 	return window.location.hostname === DESK_HOSTNAME;
-};
-
-export const deskSurface = (): DeskSurface => (isDeskHostname() ? 'desk' : 'chat');
-
-/** `app` when the desktop bridge is present, else `browser` (lite). */
-export const deskMode = (): DeskMode => (getEnosDesktopBridge() ? 'app' : 'browser');
-
-export const getDeskRuntime = (): DeskRuntime => {
-	const surface = deskSurface();
-	const mode = deskMode();
-	return {
-		surface,
-		mode,
-		isDesk: surface === 'desk',
-		isApp: mode === 'app',
-		isDeskLite: surface === 'desk' && mode === 'browser'
-	};
 };
