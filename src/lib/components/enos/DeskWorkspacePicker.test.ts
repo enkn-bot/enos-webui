@@ -26,18 +26,21 @@ describe('Desk workspace picker source contract', () => {
 		expect(navbar).toContain('id="desk-workspace-status-button"');
 	});
 
-	test('picker offers local, cloud, and disabled GitHub workspace rows', () => {
+	test('picker offers local, cloud-workspace create, and a live GitHub connect (S5)', () => {
 		const picker = read('src/lib/components/enos/DeskWorkspacePicker.svelte');
 
 		expect(picker).toContain('showDeskFolderPicker.set(true)');
 		expect(picker).toContain('Desktop only');
 		expect(picker).toContain('Cloud');
-		expect(picker).toContain('Add cloud environment…');
-		expect(picker).toContain('GitHub repo');
-		expect(picker).toContain('Coming soon');
-		expect(picker).toContain('disabled');
-		// Cloud rows read as a compute terminal, not the project's file home — so a
-		// cloud ✓ doesn't masquerade as the project's location while the badge says Local.
+		// S5: provision an ENOS-managed cloud workspace via the control-plane API.
+		expect(picker).toContain('New cloud workspace');
+		expect(picker).toContain('createCloudWorkspace');
+		expect(picker).toContain('on:click={createCloud}');
+		// S5: GitHub is now a live OAuth connect (no longer a disabled "Coming soon").
+		expect(picker).toContain('Connect GitHub');
+		expect(picker).toContain('connectGithubAccount');
+		expect(picker).not.toContain('Coming soon');
+		// Cloud rows still read as a compute terminal, not the project's file home.
 		expect(picker).toContain('Cloud terminal');
 	});
 

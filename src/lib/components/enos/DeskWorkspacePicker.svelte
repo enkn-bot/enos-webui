@@ -14,6 +14,8 @@
 		user
 	} from '$lib/stores';
 	import { getToolServersData } from '$lib/apis';
+	import { getTerminalServers } from '$lib/apis/terminal';
+	import { createCloudWorkspace, getGithubStatus, connectGithub } from '$lib/apis/workspace';
 	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 	import { bindLocalWorkspaceToFolder } from '$lib/enos/bindLocalWorkspace';
 	import { workspaceBadgeFromFolder, deskCurrentLocation } from '$lib/enos/workspaceBadge';
@@ -163,6 +165,46 @@
 		showSettings.set('tools' as never);
 	};
 
+	// --- S5: ENOS-managed cloud workspace + GitHub ---
+	let creatingCloud = false;
+	let githubStatus: { connected: boolean; login: string | null } = { connected: false, login: null };
+
+	const loadGithubStatus = async () => {
+		try {
+			githubStatus = await getGithubStatus(localStorage.token);
+		} catch {
+			githubStatus = { connected: false, login: null };
+		}
+	};
+	$: if (show) loadGithubStatus();
+
+	// Provision (or reuse) the user's cloud workspace, then reload the system
+	// terminals so the freshly-registered, owner-scoped connection appears + selects.
+	const createCloud = async () => {
+		if (creatingCloud) return;
+		creatingCloud = true;
+		try {
+			const ws = await createCloudWorkspace(localStorage.token);
+			terminalServers.set(await getTerminalServers(localStorage.token));
+			if (ws?.id) {
+				selectedTerminalId.set(ws.id);
+				show = false;
+			}
+		} catch (e) {
+			console.warn('cloud workspace create failed', e);
+		} finally {
+			creatingCloud = false;
+		}
+	};
+
+	const connectGithubAccount = async () => {
+		try {
+			await connectGithub(localStorage.token); // navigates to GitHub OAuth
+		} catch (e) {
+			console.warn('github connect failed', e);
+		}
+	};
+
 	const directLabel = (terminal: (typeof directTerminals)[0]) =>
 		terminal.name || terminal.url?.replace(/^https?:\/\//, '') || $i18n.t('Cloud environment');
 </script>
@@ -274,6 +316,22 @@
 
 			<button
 				type="button"
+				disabled={creatingCloud}
+				class="flex w-full gap-2 items-center px-3 py-1.5 text-sm rounded-xl text-gray-600 dark:text-gray-300 {creatingCloud
+					? 'opacity-50 cursor-wait'
+					: 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50'}"
+				on:click={createCloud}
+			>
+				<Cloud className="size-4 shrink-0" strokeWidth="2" />
+				<span class="truncate"
+					>{creatingCloud
+						? $i18n.t('Creating cloud workspace…')
+						: $i18n.t('New cloud workspace')}</span
+				>
+			</button>
+
+			<button
+				type="button"
 				class="flex w-full gap-2 items-center px-3 py-1.5 text-sm cursor-pointer rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50"
 				on:click={addCloudEnvironment}
 			>
@@ -285,18 +343,30 @@
 
 			<button
 				type="button"
-				disabled
-				class="flex w-full justify-between gap-2 items-center px-3 py-2 text-sm rounded-xl cursor-not-allowed opacity-50"
+				disabled={githubStatus.connected}
+				class="flex w-full justify-between gap-2 items-center px-3 py-2 text-sm rounded-xl {githubStatus.connected
+					? 'opacity-70 cursor-default'
+					: 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50'}"
+				on:click={connectGithubAccount}
 			>
 				<div class="flex flex-1 gap-2 items-center truncate">
 					<Github className="size-4 shrink-0" />
 					<div class="flex min-w-0 flex-1 flex-col items-start">
-						<span class="truncate">{$i18n.t('GitHub repo')}</span>
+						<span class="truncate"
+							>{githubStatus.connected ? githubStatus.login : $i18n.t('Connect GitHub')}</span
+						>
 						<span class="truncate text-xs text-gray-400 dark:text-gray-500">
-							{$i18n.t('Coming soon')}
+							{githubStatus.connected
+								? $i18n.t('Connected')
+								: $i18n.t('Clone a repo into your workspace')}
 						</span>
 					</div>
 				</div>
+				{#if githubStatus.connected}
+					<div class="shrink-0 text-emerald-600 dark:text-emerald-400">
+						<Check className="size-4" strokeWidth="2" />
+					</div>
+				{/if}
 			</button>
 		</div>
 	</div>
