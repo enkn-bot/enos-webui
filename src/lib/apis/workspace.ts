@@ -48,12 +48,25 @@ export const connectGithub = async (token: string): Promise<void> => {
 	window.location.href = data.authorize_url;
 };
 
-/** Clone `owner/name` into the caller's running cloud workspace. */
-export const cloneRepo = async (token: string, repo: string): Promise<{ cloned: string; dest: string }> => {
+export type GithubRepo = { full_name: string; default_branch: string };
+
+/** The connected account's repos (most-recently-pushed first). */
+export const listGithubRepos = async (token: string): Promise<GithubRepo[]> => {
+	const res = await fetch(`${base}/github/repos`, { headers: authHeaders(token) });
+	if (!res.ok) return [];
+	return (await res.json())?.repos ?? [];
+};
+
+/** Clone `owner/name` (optionally a branch) into the caller's running cloud workspace. */
+export const cloneRepo = async (
+	token: string,
+	repo: string,
+	branch = ''
+): Promise<{ cloned: string; branch: string; dest: string }> => {
 	const res = await fetch(`${base}/github/clone`, {
 		method: 'POST',
 		headers: authHeaders(token),
-		body: JSON.stringify({ repo })
+		body: JSON.stringify({ repo, branch })
 	});
 	const data = await res.json().catch(() => ({}));
 	if (!res.ok) throw new Error(data?.error ?? `clone failed (${res.status})`);

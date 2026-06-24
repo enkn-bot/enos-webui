@@ -6,7 +6,6 @@
 		settings,
 		showDeskFolderPicker,
 		selectedFolder,
-		showSettings,
 		showFileNavPath,
 		showLocalFileFolderId,
 		terminalServers,
@@ -19,7 +18,9 @@
 		createCloudWorkspace,
 		getGithubStatus,
 		connectGithub,
-		cloneRepo
+		cloneRepo,
+		listGithubRepos,
+		type GithubRepo
 	} from '$lib/apis/workspace';
 	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 	import { bindLocalWorkspaceToFolder } from '$lib/enos/bindLocalWorkspace';
@@ -55,7 +56,12 @@
 		projectKind: boundBadge.kind
 	});
 	$: isLocalActive = currentLocation === 'local';
-	$: systemTerminals = ($terminalServers ?? []).filter((terminal) => terminal.id);
+	// Cloud = ENOS-managed per-user workspaces (ws-*). Legacy/shared or externally
+	// added terminal servers are filtered out so the picker reads cleanly as
+	// Local · Cloud · GitHub (the user's mental model), not a pile of terminals.
+	$: systemTerminals = ($terminalServers ?? []).filter(
+		(terminal) => terminal.id && String(terminal.id).startsWith('ws-')
+	);
 	$: directTerminals = ($settings?.terminalServers ?? []).filter((terminal) => terminal.url);
 	$: canUseDirectTerminals =
 		$user?.role === 'admin' || ($user?.permissions?.features?.direct_tool_servers ?? true);
@@ -165,23 +171,23 @@
 		show = false;
 	};
 
-	const addCloudEnvironment = () => {
-		show = false;
-		showSettings.set('tools' as never);
-	};
-
 	// --- S5: ENOS-managed cloud workspace + GitHub ---
 	let creatingCloud = false;
 	let githubStatus: { connected: boolean; login: string | null } = { connected: false, login: null };
 
+	let githubRepos: GithubRepo[] = [];
 	const loadGithubStatus = async () => {
 		try {
 			githubStatus = await getGithubStatus(localStorage.token);
+			githubRepos = githubStatus.connected ? await listGithubRepos(localStorage.token) : [];
 		} catch {
 			githubStatus = { connected: false, login: null };
+			githubRepos = [];
 		}
 	};
 	$: if (show) loadGithubStatus();
+	// Auto-fill the default branch when the typed repo matches one of the user's.
+	$: matchedRepo = githubRepos.find((r) => r.full_name === repoInput.trim());
 
 	// Provision (or reuse) the user's cloud workspace, then reload the system
 	// terminals so the freshly-registered, owner-scoped connection appears + selects.
@@ -213,6 +219,7 @@
 	// Clone a repo (owner/name) into the user's cloud workspace. Provisions one
 	// first if none is running, so "connected → type repo → Clone" just works.
 	let repoInput = '';
+	let branchInput = '';
 	let cloning = false;
 	let cloneError = '';
 	const cloneRepoIntoWorkspace = async () => {
@@ -224,8 +231,9 @@
 			let ws = await createCloudWorkspace(localStorage.token); // idempotent: reuse if exists
 			terminalServers.set(await getTerminalServers(localStorage.token));
 			if (ws?.id) selectedTerminalId.set(ws.id);
-			await cloneRepo(localStorage.token, repo);
+			await cloneRepo(localStorage.token, repo, branchInput.trim());
 			repoInput = '';
+			branchInput = '';
 			show = false;
 		} catch (e) {
 			cloneError = e instanceof Error ? e.message : 'clone failed';
@@ -359,15 +367,6 @@
 				>
 			</button>
 
-			<button
-				type="button"
-				class="flex w-full gap-2 items-center px-3 py-1.5 text-sm cursor-pointer rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50"
-				on:click={addCloudEnvironment}
-			>
-				<Plus className="size-4 shrink-0" strokeWidth="2" />
-				<span class="truncate">{$i18n.t('Add cloud environment…')}</span>
-			</button>
-
 			<hr class="border-gray-100 dark:border-gray-800 my-1" />
 
 			<button
@@ -400,22 +399,36 @@
 
 			{#if githubStatus.connected}
 				<div class="px-3 py-1.5">
-					<form class="flex gap-1.5 items-center" on:submit|preventDefault={cloneRepoIntoWorkspace}>
+					<form class="flex flex-col gap-1.5" on:submit|preventDefault={cloneRepoIntoWorkspace}>
 						<input
 							bind:value={repoInput}
+							list="enos-gh-repos"
 							placeholder="owner/repo"
 							disabled={cloning}
-							class="flex-1 min-w-0 rounded-lg bg-gray-50 dark:bg-gray-800 px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-emerald-500/40"
+							class="w-full rounded-lg bg-gray-50 dark:bg-gray-800 px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-emerald-500/40"
 						/>
-						<button
-							type="submit"
-							disabled={cloning || !repoInput.trim()}
-							class="shrink-0 rounded-lg px-2 py-1 text-xs {cloning || !repoInput.trim()
-								? 'opacity-50 cursor-not-allowed'
-								: 'cursor-pointer bg-emerald-600 text-white hover:bg-emerald-500'}"
-						>
-							{cloning ? $i18n.t('Cloning…') : $i18n.t('Clone')}
-						</button>
+						<datalist id="enos-gh-repos">
+							{#each githubRepos as r}
+								<option value={r.full_name} />
+							{/each}
+						</datalist>
+						<div class="flex gap-1.5 items-center">
+							<input
+								bind:value={branchInput}
+								placeholder={matchedRepo ? matchedRepo.default_branch : 'branch (optional)'}
+								disabled={cloning}
+								class="flex-1 min-w-0 rounded-lg bg-gray-50 dark:bg-gray-800 px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-emerald-500/40"
+							/>
+							<button
+								type="submit"
+								disabled={cloning || !repoInput.trim()}
+								class="shrink-0 rounded-lg px-2.5 py-1 text-xs {cloning || !repoInput.trim()
+									? 'opacity-50 cursor-not-allowed'
+									: 'cursor-pointer bg-emerald-600 text-white hover:bg-emerald-500'}"
+							>
+								{cloning ? $i18n.t('Cloning…') : $i18n.t('Clone')}
+							</button>
+						</div>
 					</form>
 					{#if cloneError}
 						<p class="mt-1 text-xs text-red-500 truncate">{cloneError}</p>

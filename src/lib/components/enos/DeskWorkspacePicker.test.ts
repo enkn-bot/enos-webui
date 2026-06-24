@@ -44,6 +44,14 @@ describe('Desk workspace picker source contract', () => {
 		expect(picker).toContain('cloneRepoIntoWorkspace');
 		expect(picker).toContain('cloneRepo');
 		expect(picker).toContain('owner/repo');
+		// S5 repo/branch support: repo autocomplete (datalist) + a branch field.
+		expect(picker).toContain('listGithubRepos');
+		expect(picker).toContain('enos-gh-repos');
+		expect(picker).toContain('branchInput');
+		// Clean model: cloud = ENOS-managed ws-* only; the base "Add cloud
+		// environment…" external-terminal clutter is gone from the ENOS picker.
+		expect(picker).not.toContain('Add cloud environment');
+		expect(picker).toContain("startsWith('ws-')");
 		// Cloud rows still read as a compute terminal, not the project's file home.
 		expect(picker).toContain('Cloud terminal');
 	});
