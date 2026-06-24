@@ -166,6 +166,17 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(folder).toContain('files are available in the ENOS desktop app');
 	});
 
+	test('desk agent carries ENOS identity (three minds, no underlying-model leak) — B4', () => {
+		const chat = read('src/lib/components/chat/Chat.svelte');
+		// The desk agent must know it is ENOS (three minds), not leak/deny an underlying
+		// model (the "I don't have three models / Claude models" gap).
+		expect(chat).toContain('IDENTITY: You are ENOS');
+		expect(chat).toContain('three minds');
+		expect(chat).toContain('Subconscious');
+		expect(chat).toContain('DeepMind');
+		expect(chat).toMatch(/never claim to[\s\S]*Claude, GPT, Gemini/);
+	});
+
 	test('cross-machine bound project degrades to a calm read-only notice', () => {
 		const nav = read('src/lib/components/chat/LocalFileNav.svelte');
 		// Bridge present but the bound folder is missing on THIS machine: show a calm
