@@ -126,6 +126,7 @@
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
 	import { buildProjectActionContext } from '$lib/enos/projectActions';
 	import { runDeskAgentLoop } from '$lib/enos/deskAgentLoop';
+	import { composeDeskMessageContent } from '$lib/enos/deskReasoning';
 	import { DESK_FILE_TOOLS, describeDeskTool, executeDeskFileTool } from '$lib/enos/deskFileTools';
 	import { groundingLine } from '$lib/enos/grounding';
 	import { surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
@@ -2121,11 +2122,26 @@
 			const complete = async (msgs, tools) => {
 				if (bridge.agentCompleteStream) {
 					liveContent = '';
-					return bridge.agentCompleteStream(msgs, tools, uuidv4(), (delta) => {
-						if (!delta) return;
-						liveContent += delta;
-						setLiveContent(liveContent);
-					});
+					liveReasoning = '';
+					reasoningStartMs = 0;
+					const result = await bridge.agentCompleteStream(
+						msgs,
+						tools,
+						uuidv4(),
+						(delta, kind = 'content') => {
+							if (!delta) return;
+							if (kind === 'reasoning') {
+								if (!reasoningStartMs) reasoningStartMs = Date.now();
+								liveReasoning += delta;
+							} else {
+								liveContent += delta;
+							}
+							renderLiveDeskMessage(false);
+						}
+					);
+					lastReasoning = liveReasoning;
+					lastReasoningDurationS = reasoningStartMs ? (Date.now() - reasoningStartMs) / 1000 : 0;
+					return result;
 				}
 				if (!bridge.agentComplete) throw new Error('Desk agent endpoint not available — update ENOS Desk.');
 				return bridge.agentComplete(msgs, tools);
@@ -2155,13 +2171,20 @@
 				history = history;
 			};
 
-			// Live prose streaming: completion tokens are appended to the in-progress
-			// message as they arrive (reset per round; outcome.content stays final).
+			// Live prose + reasoning streaming: completion tokens append to the
+			// in-progress message as they arrive (reset per round; outcome.content
+			// stays final). Reasoning is surfaced as base OWUI's collapsible
+			// reasoning block (desk-C: watch the model think live on code work).
 			let liveContent = '';
-			const setLiveContent = (text) => {
+			let liveReasoning = '';
+			let reasoningStartMs = 0;
+			let lastReasoning = '';
+			let lastReasoningDurationS = 0;
+			const renderLiveDeskMessage = (done) => {
 				const m = history.messages[responseMessageId];
 				if (!m) return;
-				m.content = text;
+				const durationS = reasoningStartMs ? (Date.now() - reasoningStartMs) / 1000 : 0;
+				m.content = composeDeskMessageContent(liveReasoning, liveContent, { done, durationS });
 				history.messages[responseMessageId] = m;
 				history = history;
 			};
@@ -2200,7 +2223,11 @@
 
 			const done = history.messages[responseMessageId];
 			if (done) {
-				done.content = outcome.content || '(No response from agent.)';
+				done.content = composeDeskMessageContent(
+					lastReasoning,
+					outcome.content || '(No response from agent.)',
+					{ done: true, durationS: lastReasoningDurationS }
+				);
 				done.statusHistory = statusHistory.map((s) => ({ ...s, done: true }));
 				done.done = true;
 				history.messages[responseMessageId] = done;
