@@ -68,7 +68,7 @@ describe('Desk workspace picker source contract', () => {
 		// But the ✓ tracks the binary current location, not mere binding existence —
 		// so Local + Cloud can't both show a check at once.
 		expect(picker).toContain('deskCurrentLocation');
-		expect(picker).toContain('isLocalActive = currentLocation === \'local\'');
+		expect(picker).toContain("isLocalActive = currentLocation === 'local'");
 		expect(picker).toMatch(/\{#if isLocalActive\}[\s\S]*<Check/);
 		expect(picker).not.toMatch(/\{#if isLocalBound\}[\s\S]*<Check/);
 	});
@@ -78,5 +78,19 @@ describe('Desk workspace picker source contract', () => {
 		expect(picker).toContain('deactivateCloudWorkspace');
 		expect(picker).toMatch(/selectLocal[\s\S]*await deactivateCloudWorkspace\(\)/);
 		expect(picker).toMatch(/deactivateCloudWorkspace[\s\S]*selectedTerminalId\.set\(null\)/);
+	});
+
+	test('GitHub clone binds repo metadata to the active Desk project', () => {
+		const picker = read('src/lib/components/enos/DeskWorkspacePicker.svelte');
+
+		expect(picker).toContain('bindGithubRepoToFolder');
+		expect(picker).toContain('Select or create a project before cloning a repo.');
+		expect(picker).toMatch(
+			/const cloned = await cloneRepo\(localStorage\.token, repo, branchInput\.trim\(\)\)/
+		);
+		expect(picker).toMatch(
+			/bindGithubRepoToFolder\(\s*localStorage\.token,\s*activeFolderId,\s*activeFolder,\s*cloned\s*\)/
+		);
+		expect(picker).toMatch(/if \(updated\)[\s\S]*selectedFolder\.set\(updated\)/);
 	});
 });

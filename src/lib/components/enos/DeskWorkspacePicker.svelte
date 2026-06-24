@@ -23,7 +23,7 @@
 		type GithubRepo
 	} from '$lib/apis/workspace';
 	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
-	import { bindLocalWorkspaceToFolder } from '$lib/enos/bindLocalWorkspace';
+	import { bindGithubRepoToFolder, bindLocalWorkspaceToFolder } from '$lib/enos/bindLocalWorkspace';
 	import { workspaceBadgeFromFolder, deskCurrentLocation } from '$lib/enos/workspaceBadge';
 
 	import Dropdown from '$lib/components/common/Dropdown.svelte';
@@ -173,7 +173,10 @@
 
 	// --- S5: ENOS-managed cloud workspace + GitHub ---
 	let creatingCloud = false;
-	let githubStatus: { connected: boolean; login: string | null } = { connected: false, login: null };
+	let githubStatus: { connected: boolean; login: string | null } = {
+		connected: false,
+		login: null
+	};
 
 	let githubRepos: GithubRepo[] = [];
 	const loadGithubStatus = async () => {
@@ -227,13 +230,24 @@
 	const cloneRepoIntoWorkspace = async () => {
 		const repo = repoInput.trim();
 		if (!repo || cloning) return;
+		if (!activeFolderId) {
+			cloneError = 'Select or create a project before cloning a repo.';
+			return;
+		}
 		cloning = true;
 		cloneError = '';
 		try {
 			let ws = await createCloudWorkspace(localStorage.token); // idempotent: reuse if exists
 			terminalServers.set(await getTerminalServers(localStorage.token));
 			if (ws?.id) selectedTerminalId.set(ws.id);
-			await cloneRepo(localStorage.token, repo, branchInput.trim());
+			const cloned = await cloneRepo(localStorage.token, repo, branchInput.trim());
+			const updated = await bindGithubRepoToFolder(
+				localStorage.token,
+				activeFolderId,
+				activeFolder,
+				cloned
+			);
+			if (updated) await selectedFolder.set(updated);
 			repoInput = '';
 			branchInput = '';
 			show = false;
@@ -290,7 +304,9 @@
 			<hr class="border-gray-100 dark:border-gray-800 my-1" />
 
 			<div class="flex items-center justify-between px-3 py-1">
-				<span class="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+				<span
+					class="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider"
+				>
 					{$i18n.t('Cloud')}
 				</span>
 			</div>
@@ -335,7 +351,9 @@
 					<div class="flex flex-1 gap-2 items-center truncate">
 						<Cloud className="size-4 shrink-0" strokeWidth="2" />
 						<div class="flex min-w-0 flex-1 flex-col items-start">
-							<span class="truncate">{terminal.name || terminal.id || $i18n.t('Cloud environment')}</span>
+							<span class="truncate"
+								>{terminal.name || terminal.id || $i18n.t('Cloud environment')}</span
+							>
 							<!-- Honest label: a cloud terminal/compute env, NOT where this project's
 							     files live. Stops "ENOS Workspace ✓" reading as the project's location
 							     while the badge says Local. The real cloud-hosted project (kind:'cloud'

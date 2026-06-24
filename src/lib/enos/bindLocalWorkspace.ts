@@ -26,6 +26,31 @@ export function projectContextSourceFromDigest(
 	};
 }
 
+export function githubProjectContextSource(clone: {
+	repo?: string;
+	cloned?: string;
+	branch?: string;
+	dest?: string;
+}): {
+	kind: 'github';
+	rootName: string;
+	repo: string;
+	branch: string;
+	cloudPath?: string;
+} {
+	const repo = String(clone.repo ?? clone.cloned ?? '').trim();
+	const branch = String(clone.branch ?? 'default').trim() || 'default';
+	const cloudPath = String(clone.dest ?? '').trim();
+
+	return {
+		kind: 'github',
+		rootName: repo,
+		repo,
+		branch,
+		...(cloudPath ? { cloudPath } : {})
+	};
+}
+
 export async function bindLocalWorkspaceToFolder(
 	token: string,
 	folderId: string,
@@ -43,6 +68,28 @@ export async function bindLocalWorkspaceToFolder(
 		project_context_digest: digest.text,
 		project_context_updated_at: digest.generatedAt,
 		project_context_source: projectContextSourceFromDigest(digest, ws)
+	};
+
+	const updated = await updateFolderById(token, folderId, { data: nextData });
+	return {
+		...(folder ?? {}),
+		...(updated ?? {}),
+		id: folderId,
+		data: nextData
+	};
+}
+
+export async function bindGithubRepoToFolder(
+	token: string,
+	folderId: string,
+	folder: any,
+	clone: { cloned: string; branch: string; dest: string }
+): Promise<any | null> {
+	if (!folderId) return null;
+
+	const nextData = {
+		...(folder?.data ?? {}),
+		project_context_source: githubProjectContextSource(clone)
 	};
 
 	const updated = await updateFolderById(token, folderId, { data: nextData });
