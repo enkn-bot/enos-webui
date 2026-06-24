@@ -181,6 +181,19 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(chat).toContain('runDeskAgentLoop({');
 	});
 
+	test('cloud runtime Files tab renders terminal/cloud files before local files', () => {
+		const chatControls = read('src/lib/components/chat/ChatControls.svelte');
+		const terminalBranch = chatControls.indexOf(
+			"activeTab === 'files' && showActiveTerminalFileNav"
+		);
+		const localBranch = chatControls.indexOf("activeTab === 'files' && showProjectFileNav");
+
+		expect(chatControls).toContain('showActiveTerminalFileNav');
+		expect(terminalBranch).toBeGreaterThan(-1);
+		expect(localBranch).toBeGreaterThan(-1);
+		expect(terminalBranch).toBeLessThan(localBranch);
+	});
+
 	test('desk agent carries ENOS identity (three minds, no underlying-model leak) — B4', () => {
 		const chat = read('src/lib/components/chat/Chat.svelte');
 		// The desk agent must know it is ENOS (three minds), not leak/deny an underlying

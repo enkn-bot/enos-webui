@@ -108,6 +108,7 @@
 			canUseDirectTerminal);
 	$: showTerminalFileNav =
 		hasSelectedTerminalAccess || (isDeskSurface && hasConfiguredTerminal && canUseDirectTerminal);
+	$: showActiveTerminalFileNav = showTerminalFileNav && Boolean($selectedTerminalId);
 	$: showLocalFileNav = isDeskSurface && canUseEnosLocalProjectFiles(desktopCapabilities);
 	$: showProjectFileNav = showLocalFileNav && Boolean($showLocalFileFolderId);
 	$: showDeskProjectFilesEmpty = showLocalFileNav && !$showLocalFileFolderId;
@@ -507,6 +508,8 @@
 									}}
 									onClose={() => showControls.set(false)}
 								/>
+							{:else if activeTab === 'files' && showActiveTerminalFileNav}
+								<FileNav onAttach={handleTerminalAttach} {chatId} />
 							{:else if activeTab === 'files' && showProjectFileNav}
 								<LocalFileNav folderId={$showLocalFileFolderId} onAttach={handleTerminalAttach} onProjectDigest={handleProjectDigest} hasProjectDigest={Boolean($selectedFolder?.data?.project_context_digest)} projectContextUpdatedAt={$selectedFolder?.data?.project_context_updated_at ?? null} />
 							{:else if activeTab === 'files' && showDeskProjectFilesEmpty}
@@ -635,6 +638,8 @@
 										}}
 										onClose={() => showControls.set(false)}
 									/>
+								{:else if activeTab === 'files' && showActiveTerminalFileNav}
+									<FileNav onAttach={handleTerminalAttach} overlay={dragged} {chatId} />
 								{:else if activeTab === 'files' && showProjectFileNav}
 									<LocalFileNav folderId={$showLocalFileFolderId} onAttach={handleTerminalAttach} onProjectDigest={handleProjectDigest} hasProjectDigest={Boolean($selectedFolder?.data?.project_context_digest)} projectContextUpdatedAt={$selectedFolder?.data?.project_context_updated_at ?? null} />
 								{:else if activeTab === 'files' && showDeskProjectFilesEmpty}
