@@ -21,12 +21,13 @@ describe('ENOS Desk UI source guardrails', () => {
 		// Desk is project-first: the full standalone Chats section stays chat-surface-only.
 		expect(sidebar).toContain('$: showDeskChats = !isDeskSurface;');
 		// But no-project Desk chats still need a visible home.
-		expect(sidebar).toContain(
-			'$: showDeskUnfiledChats = isDeskSurface && sidebarChats.length > 0;'
-		);
 		expect(sidebar).toContain("name={$i18n.t('Unfiled')}");
 		expect(sidebar).toContain('deskLooseChatIds');
 		expect(sidebar).toContain('{#if showDeskUnfiledChats}');
+		expect(sidebar).toMatch(
+			/\$: showDeskUnfiledChats =[\s\S]*isDeskSurface && \(sidebarPinnedChats\.length > 0 \|\| sidebarChats\.length > 0\);/
+		);
+		expect(sidebar).toContain('desk-unfiled-pinned-chat-');
 		// Stores hold raw chats; the old opt-in scoping helper is gone.
 		expect(sidebar).not.toContain('scopeSidebarChats(');
 		expect(sidebar).not.toContain('shouldScopeSidebarChatsBySurface');
@@ -38,7 +39,9 @@ describe('ENOS Desk UI source guardrails', () => {
 		const chatsModel = read('backend/open_webui/models/chats.py');
 
 		expect(chatsModel).toMatch(/class ChatTitleIdResponse\(BaseModel\):[\s\S]*meta: dict = \{\}/);
-		expect(chatsModel).toMatch(/class ChatTitleIdResponse\(BaseModel\):[\s\S]*folder_id: str \| None = None/);
+		expect(chatsModel).toMatch(
+			/class ChatTitleIdResponse\(BaseModel\):[\s\S]*folder_id: str \| None = None/
+		);
 		expect(chatsModel).toContain('Chat.meta');
 		expect(chatsModel).toContain('Chat.folder_id');
 		expect(chatsModel).toContain("'meta': chat[5]");

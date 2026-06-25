@@ -138,8 +138,11 @@
 	$: hasDesktopBridge = browser && Boolean(getEnosDesktopBridge());
 	// Desk is project-first: the full standalone Chats section stays chat-surface-only.
 	$: showDeskChats = !isDeskSurface;
-	$: deskLooseChatIds = sidebarChats.map((chat) => chat?.id).filter(Boolean);
-	$: showDeskUnfiledChats = isDeskSurface && sidebarChats.length > 0;
+	$: deskLooseChatIds = [...sidebarPinnedChats, ...sidebarChats]
+		.map((chat) => chat?.id)
+		.filter(Boolean);
+	$: showDeskUnfiledChats =
+		isDeskSurface && (sidebarPinnedChats.length > 0 || sidebarChats.length > 0);
 	$: if ($showDeskFolderPicker) {
 		showCreateFolderModal = true;
 		showDeskFolderPicker.set(false);
@@ -1565,6 +1568,32 @@
 					>
 						<div class="sr-only">{deskLooseChatIds.length}</div>
 						<div class="flex flex-col overflow-y-auto scrollbar-hidden pt-1.5">
+							{#each sidebarPinnedChats as chat, idx (`desk-unfiled-pinned-chat-${chat?.id ?? idx}`)}
+								<ChatItem
+									className=""
+									id={chat.id}
+									title={chat.title}
+									createdAt={chat.created_at}
+									updatedAt={chat.updated_at}
+									lastReadAt={chat.last_read_at}
+									{shiftKey}
+									selected={selectedChatId === chat.id}
+									openFilesOnSelect={false}
+									on:select={() => {
+										selectedChatId = chat.id;
+									}}
+									on:unselect={() => {
+										selectedChatId = null;
+									}}
+									on:change={async () => {
+										initChatList();
+									}}
+									on:tag={(e) => {
+										const { type, name } = e.detail;
+										tagEventHandler(type, name, chat.id);
+									}}
+								/>
+							{/each}
 							{#each sidebarChats as chat, idx (`desk-unfiled-chat-${chat?.id ?? idx}`)}
 								<ChatItem
 									className=""
