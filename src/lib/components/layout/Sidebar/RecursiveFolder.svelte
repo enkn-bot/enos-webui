@@ -38,6 +38,7 @@
 	} from '$lib/apis/chats';
 	import { surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
+	import { deskSessionTitle } from '$lib/enos/deskSessionLabels';
 
 	import ChevronDown from '../../icons/ChevronDown.svelte';
 	import ChevronRight from '../../icons/ChevronRight.svelte';
@@ -746,6 +747,7 @@
 						<ChatItem
 							id={chat.id}
 							title={chat.title}
+							displayTitle={deskSessionTitle(chat.title, currentSurface)}
 							createdAt={chat.created_at}
 							updatedAt={chat.updated_at}
 							lastReadAt={chat.last_read_at}

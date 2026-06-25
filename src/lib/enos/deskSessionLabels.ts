@@ -18,3 +18,13 @@ export const deskSurfaceLabel = (
 	if (kind === 'empty') return 'No chats found';
 	return 'Rename chat';
 };
+
+export const deskSessionTitle = (
+	title: string | null | undefined,
+	surface: EnosSurface
+): string => {
+	if (surface === 'desk' && (!title || title === 'New Chat')) {
+		return 'New Session';
+	}
+	return title ?? '';
+};

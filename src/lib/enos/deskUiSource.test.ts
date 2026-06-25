@@ -6,6 +6,7 @@ const read = (path: string) => readFileSync(path, 'utf8');
 describe('ENOS Desk UI source guardrails', () => {
 	test('sidebar chats are always surface-scoped with a legacy fallback (no chat vanishes)', () => {
 		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
+		const recursiveFolder = read('src/lib/components/layout/Sidebar/RecursiveFolder.svelte');
 
 		// Chats are always scoped per surface now; legacy fallback lives in filterChatsBySurface.
 		expect(sidebar).toContain('filterProjectsForDeskRuntime');
@@ -25,21 +26,21 @@ describe('ENOS Desk UI source guardrails', () => {
 		);
 		// Desk is project-first: the full standalone Chats section stays chat-surface-only.
 		expect(sidebar).toContain('$: showDeskChats = !isDeskSurface;');
-		// But no-project Desk sessions still need a visible home with Desk language.
-		expect(sidebar).toContain('deskSessionsLabel');
+		// Desk sessions are project-scoped only. No standalone top-level Sessions fallback.
 		expect(sidebar).toContain('newChatLabel');
 		expect(sidebar).not.toContain("name={$i18n.t('Unfiled')}");
-		expect(sidebar).toContain('deskLooseChatIds');
-		expect(sidebar).toContain('{#if showDeskUnfiledChats}');
-		expect(sidebar).toMatch(
-			/\$: showDeskUnfiledChats =[\s\S]*isDeskSurface && \(sidebarPinnedChats\.length > 0 \|\| sidebarChats\.length > 0\);/
-		);
-		expect(sidebar).toContain('desk-unfiled-pinned-chat-');
+		expect(sidebar).not.toContain('deskLooseChatIds');
+		expect(sidebar).not.toContain('showDeskUnfiledChats');
+		expect(sidebar).not.toContain('sidebar-desk-unfiled-chats');
+		expect(sidebar).not.toContain('desk-unfiled-pinned-chat-');
+		expect(sidebar).not.toContain('desk-unfiled-chat-');
 		// Stores hold raw chats; the old opt-in scoping helper is gone.
 		expect(sidebar).not.toContain('scopeSidebarChats(');
 		expect(sidebar).not.toContain('shouldScopeSidebarChatsBySurface');
 		// Folders are still surface-scoped, then web Desk hides local-only projects.
 		expect(sidebar).toMatch(/const folderList = filterProjectsForDeskRuntime/);
+		expect(recursiveFolder).toContain('deskSessionTitle');
+		expect(recursiveFolder).toContain('displayTitle={deskSessionTitle(chat.title, currentSurface)}');
 	});
 
 	test('chat list summaries carry surface fields needed by the Desk sidebar', () => {
