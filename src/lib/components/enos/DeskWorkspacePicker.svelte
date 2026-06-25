@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
+	import { toast } from 'svelte-sonner';
 	import type { Readable } from 'svelte/store';
 
 	import {
@@ -18,6 +19,7 @@
 		createCloudWorkspace,
 		getGithubStatus,
 		connectGithub,
+		disconnectGithub,
 		cloneRepo,
 		listGithubRepos,
 		type GithubRepo
@@ -113,8 +115,28 @@
 		}
 	};
 
+	const confirmEnvironmentSwitch = (target: 'local' | 'cloud') => {
+		if (webDeskCloudLocked) return true;
+		if (target === 'cloud' && currentLocation === 'local') {
+			return window.confirm(
+				$i18n.t(
+					'Switch to cloud? Local files stay on this device until you copy the project to cloud.'
+				)
+			);
+		}
+		if (target === 'local' && currentLocation === 'cloud') {
+			return window.confirm(
+				$i18n.t(
+					'Switch to local? Cloud files stay in cloud. Bind or select a local folder on this device.'
+				)
+			);
+		}
+		return true;
+	};
+
 	const selectLocal = async () => {
 		if (!hasDesktopBridge) return;
+		if (!confirmEnvironmentSwitch('local')) return;
 
 		if (activeFolderId) {
 			show = false;
@@ -131,6 +153,7 @@
 				// Prep the file pane's content (root view) but do not force it open —
 				// the user opens the right pane via the Controls toggle when they want it.
 				showFileNavPath.set('.');
+				toast.info($i18n.t('Working on your device'));
 			}
 			return;
 		}
@@ -144,6 +167,7 @@
 		if (!terminalId) return;
 
 		const newId = $selectedTerminalId === terminalId ? null : terminalId;
+		if (newId && currentLocation !== 'cloud' && !confirmEnvironmentSwitch('cloud')) return;
 		selectedTerminalId.set(newId);
 
 		const updatedServers = ($settings?.terminalServers ?? []).map((server) => ({
@@ -158,6 +182,7 @@
 
 		show = false;
 		await refreshTerminalServersStore(updatedServers);
+		if (newId) toast.info($i18n.t('Working in cloud'));
 	};
 
 	const selectSystem = async (terminal: (typeof systemTerminals)[0]) => {
@@ -169,6 +194,7 @@
 			: $selectedTerminalId === terminalId
 				? null
 				: terminalId;
+		if (nextId && currentLocation !== 'cloud' && !confirmEnvironmentSwitch('cloud')) return;
 		selectedTerminalId.set(nextId);
 
 		if ($settings?.terminalServers?.some((server) => server.enabled)) {
@@ -186,6 +212,7 @@
 		}
 
 		show = false;
+		if (nextId) toast.info($i18n.t('Working in cloud'));
 	};
 
 	// --- S5: ENOS-managed cloud workspace + GitHub ---
@@ -220,6 +247,7 @@
 			if (ws?.id) {
 				selectedTerminalId.set(ws.id);
 				show = false;
+				toast.info($i18n.t('Working in cloud'));
 			}
 		} catch (e) {
 			console.warn('cloud workspace create failed', e);
@@ -236,6 +264,32 @@
 			await loadGithubStatus();
 		} catch (e) {
 			githubError = e instanceof Error ? e.message : 'GitHub connect failed';
+		}
+	};
+
+	let disconnectingGithub = false;
+	const disconnectGithubAccount = async () => {
+		if (disconnectingGithub || !githubStatus.connected) return;
+		if (
+			!window.confirm(
+				$i18n.t('Disconnect GitHub? Existing cloned files stay in cloud. New clones need reconnect.')
+			)
+		) {
+			return;
+		}
+		disconnectingGithub = true;
+		githubError = '';
+		try {
+			await disconnectGithub(localStorage.token);
+			githubStatus = { connected: false, login: null };
+			githubRepos = [];
+			repoInput = '';
+			branchInput = '';
+			toast.info($i18n.t('GitHub disconnected'));
+		} catch (e) {
+			githubError = e instanceof Error ? e.message : 'GitHub disconnect failed';
+		} finally {
+			disconnectingGithub = false;
 		}
 	};
 
@@ -287,24 +341,6 @@
 		<div
 			class="min-w-72 max-w-80 rounded-2xl px-1 py-1 border border-gray-100 dark:border-gray-800 z-50 bg-white dark:bg-gray-850 dark:text-white shadow-lg max-h-96 overflow-y-auto overflow-x-hidden scrollbar-thin"
 		>
-			<div class="px-3 py-2">
-				<div
-					class="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider"
-				>
-					{$i18n.t('Project')}
-				</div>
-				<div class="mt-1 truncate text-sm font-medium text-gray-800 dark:text-gray-100">
-					{activeFolder?.name || $i18n.t('No Project')}
-				</div>
-				<div class="mt-0.5 truncate text-xs text-gray-400 dark:text-gray-500">
-					{activeFolder
-						? $i18n.t('Project chats and files stay together')
-						: $i18n.t('Loose Desk chats live in Unfiled')}
-				</div>
-			</div>
-
-			<hr class="border-gray-100 dark:border-gray-800 my-1" />
-
 			<div class="flex items-center justify-between px-3 py-1">
 				<span
 					class="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider"
@@ -478,6 +514,21 @@
 				{/if}
 			</button>
 
+			{#if githubStatus.connected}
+				<div class="px-3 pb-1">
+					<button
+						type="button"
+						disabled={disconnectingGithub}
+						class="rounded-lg px-2 py-1 text-xs text-gray-500 dark:text-gray-400 {disconnectingGithub
+							? 'cursor-wait opacity-50'
+							: 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-700 dark:hover:text-gray-200'}"
+						on:click={disconnectGithubAccount}
+					>
+						{disconnectingGithub ? $i18n.t('Disconnecting…') : $i18n.t('Disconnect')}
+					</button>
+				</div>
+			{/if}
+
 			{#if githubError}
 				<p class="px-3 pb-1 text-xs text-amber-600 dark:text-amber-500">{githubError}</p>
 			{/if}
@@ -494,7 +545,7 @@
 						/>
 						<datalist id="enos-gh-repos">
 							{#each githubRepos as r}
-								<option value={r.full_name} />
+								<option value={r.full_name}></option>
 							{/each}
 						</datalist>
 						<div class="flex gap-1.5 items-center">

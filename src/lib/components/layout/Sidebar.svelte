@@ -1555,7 +1555,7 @@
 					<Folder
 						id="sidebar-desk-unfiled-chats"
 						className="px-2 mt-0.5"
-						name={$i18n.t('Unfiled')}
+						name={$i18n.t('Chats')}
 						chevron={false}
 						addIcon={PencilSquare}
 						onAdd={() => {

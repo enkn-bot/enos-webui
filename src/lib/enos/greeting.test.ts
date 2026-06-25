@@ -12,12 +12,23 @@ describe('composeWelcomeGreeting', () => {
 	test('adds weekend greetings to the selection pool', () => {
 		const greeting = composeWelcomeGreeting(new Date(2026, 5, 20, 13, 0), 'Ernest', () => 0.5);
 
-		expect(greeting).toBe('Happy Saturday, Ernest!');
+		expect(greeting).toBe('What should we move forward?');
 	});
 
-	test('handles invalid random values without flickering out of range', () => {
+	test('late-session greeting has ENOS voice, not assistant-cute voice', () => {
 		const greeting = composeWelcomeGreeting(new Date(2026, 5, 19, 23, 15), '', () => Number.NaN);
 
-		expect(greeting).toBe('Hello, night owl.');
+		expect(greeting).toBe('Late session. What needs attention?');
+	});
+
+	test('does not ship cutesy or Claude-coded welcome copy', () => {
+		const samples = [
+			composeWelcomeGreeting(new Date(2026, 5, 19, 23, 15), '', () => 0),
+			composeWelcomeGreeting(new Date(2026, 5, 19, 23, 15), '', () => 0.5),
+			composeWelcomeGreeting(new Date(2026, 5, 19, 23, 15), 'Ernest', () => 0.99),
+			composeWelcomeGreeting(new Date(2026, 5, 19, 9, 0), 'Ernest', () => 0.99)
+		].join(' ');
+
+		expect(samples).not.toMatch(/night owl|midnight oil|returns/i);
 	});
 });

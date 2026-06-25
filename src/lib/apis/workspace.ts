@@ -78,6 +78,18 @@ export const connectGithub = async (token: string): Promise<void> => {
 	window.location.href = data.authorize_url;
 };
 
+export const disconnectGithub = async (
+	token: string
+): Promise<{ connected: boolean; login: null }> => {
+	const res = await fetch(`${base}/github/disconnect`, {
+		method: 'POST',
+		headers: authHeaders(token)
+	});
+	const data = await res.json().catch(() => ({}));
+	if (!res.ok) throw new Error(data?.error ?? `github disconnect failed (${res.status})`);
+	return data;
+};
+
 export type GithubRepo = { full_name: string; default_branch: string };
 
 /** The connected account's repos (most-recently-pushed first). */

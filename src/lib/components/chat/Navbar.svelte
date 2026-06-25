@@ -38,6 +38,7 @@
 	import DeskWorkspacePicker from '$lib/components/enos/DeskWorkspacePicker.svelte';
 	import { workspaceKindLabel } from '$lib/enos/workspaceBadge';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
+	import { deskChatTitleLabel, deskTitlePathLabel } from '$lib/enos/deskTitle';
 
 	const i18n = getContext('i18n');
 
@@ -93,10 +94,16 @@
 
 	const normalizeTitle = (value) => (typeof value === 'string' ? value.trim() : '');
 	const chatTitleLabel = () =>
-		normalizeTitle(title) ||
-		normalizeTitle(chat?.chat?.title) ||
-		normalizeTitle(chat?.title) ||
-		$i18n.t('New Chat');
+		deskChatTitleLabel({
+			title,
+			chatTitle: normalizeTitle(chat?.chat?.title) || normalizeTitle(chat?.title),
+			fallback: $i18n.t('New Chat')
+		});
+	const deskTitleLabel = () =>
+		deskTitlePathLabel({
+			projectName: deskWorkspaceFolder?.name,
+			chatName: chatTitleLabel()
+		});
 	const deskWorkspaceLabel = () =>
 		normalizeTitle(deskWorkspace?.name) || $i18n.t('Select workspace…');
 	const deskWorkspaceEmptyLabel = () => $i18n.t('No Project');
@@ -225,10 +232,10 @@
 									type="button"
 									id="chat-title-menu-button"
 									class="flex max-w-full items-center gap-1.5 rounded-xl px-2 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-850 transition"
-									aria-label={$i18n.t('Chat options')}
+									aria-label={deskTitleLabel()}
 									on:dblclick|preventDefault|stopPropagation={beginTitleRename}
 								>
-									<span class="truncate">{chatTitleLabel()}</span>
+									<span class="truncate">{deskTitleLabel()}</span>
 									<ChevronDown className="size-3 shrink-0" strokeWidth="2.5" />
 								</button>
 							</Menu>

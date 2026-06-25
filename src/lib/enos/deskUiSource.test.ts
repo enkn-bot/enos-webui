@@ -20,8 +20,9 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(sidebar).toContain('Boolean(folder?.data?.project_context_source)');
 		// Desk is project-first: the full standalone Chats section stays chat-surface-only.
 		expect(sidebar).toContain('$: showDeskChats = !isDeskSurface;');
-		// But no-project Desk chats still need a visible home.
-		expect(sidebar).toContain("name={$i18n.t('Unfiled')}");
+		// But no-project Desk chats still need a visible home with a plain user label.
+		expect(sidebar).toContain("name={$i18n.t('Chats')}");
+		expect(sidebar).not.toContain("name={$i18n.t('Unfiled')}");
 		expect(sidebar).toContain('deskLooseChatIds');
 		expect(sidebar).toContain('{#if showDeskUnfiledChats}');
 		expect(sidebar).toMatch(
@@ -247,7 +248,7 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(localFileNav).not.toContain('Project context ready');
 	});
 
-	test('desk web locks to cloud when a cloud workspace exists and presents a project environment card', () => {
+	test('desk web locks to cloud when a cloud workspace exists and presents a lean environment card', () => {
 		const picker = read('src/lib/components/enos/DeskWorkspacePicker.svelte');
 		const chat = read('src/lib/components/chat/Chat.svelte');
 		const nav = read('src/lib/components/chat/Navbar.svelte');
@@ -256,14 +257,32 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(picker).toContain('ensureWebDeskCloudSelected');
 		expect(picker).toContain('Open in desktop app');
 		expect(picker).toContain("{$i18n.t('Environment')}");
-		expect(picker).toContain("{$i18n.t('Project')}");
+		expect(picker).not.toContain("{$i18n.t('Project')}");
+		expect(picker).not.toContain('Loose Desk chats live in Unfiled');
 		expect(picker).toContain("{$i18n.t('Working in cloud')}");
 		expect(picker).toContain("{$i18n.t('GitHub source')}");
+		expect(picker).toContain('disconnectGithubAccount');
+		expect(picker).toContain("$i18n.t('Disconnect')");
+		expect(picker).toContain('confirmEnvironmentSwitch');
+		expect(picker).toContain('Switch to cloud?');
+		expect(picker).toContain('Switch to local?');
 		expect(picker).not.toContain('$selectedTerminalId === terminal.id ? null : terminal.id');
 
 		expect(chat).toContain('ensureWebDeskCloudDefault');
 		expect(chat).toContain('systemCloudWorkspaceId($terminalServers)');
 		expect(nav).toContain("title={$i18n.t('Project and environment')}");
+	});
+
+	test('desk title chrome shows project/chat path without renaming the path', () => {
+		const nav = read('src/lib/components/chat/Navbar.svelte');
+
+		expect(nav).toContain("import { deskChatTitleLabel, deskTitlePathLabel } from '$lib/enos/deskTitle';");
+		expect(nav).toContain('deskTitlePathLabel({');
+		expect(nav).toContain('projectName: deskWorkspaceFolder?.name');
+		expect(nav).toContain('chatName: chatTitleLabel()');
+		expect(nav).toContain('{deskTitleLabel()}');
+		expect(nav).toContain('titleDraft = chatTitleLabel();');
+		expect(nav).not.toContain('{chatTitleLabel()}</span>');
 	});
 
 	test('desk repairs currently opened loose legacy chats by tagging them to the Desk surface', () => {
