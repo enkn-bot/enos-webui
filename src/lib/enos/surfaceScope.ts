@@ -6,6 +6,13 @@ type SurfaceScopedItem = {
 		surface?: unknown;
 		[key: string]: unknown;
 	} | null;
+	data?: {
+		project_context_source?: {
+			kind?: unknown;
+			[key: string]: unknown;
+		} | null;
+		[key: string]: unknown;
+	} | null;
 };
 
 type SurfaceScopedChat = SurfaceScopedItem & { folder_id?: unknown };
@@ -34,6 +41,27 @@ export const filterBySurface = <T extends SurfaceScopedItem>(
 			return surfaceTag === 'desk' || (!surfaceTag && legacyDeskItemIds.has(String(item.id ?? '')));
 		}
 		return surfaceTag !== 'desk';
+	});
+};
+
+export const filterProjectsForDeskRuntime = <T extends SurfaceScopedItem>(
+	items: T[] | null | undefined,
+	args: {
+		surface: EnosSurface;
+		hasDesktopBridge: boolean;
+		legacyDeskItemIds?: Iterable<string>;
+	}
+): T[] => {
+	const list = filterBySurface(items, args.surface, {
+		legacyDeskItemIds: args.legacyDeskItemIds
+	});
+	if (args.surface !== 'desk' || args.hasDesktopBridge) {
+		return list;
+	}
+
+	return list.filter((item) => {
+		const kind = item?.data?.project_context_source?.kind;
+		return kind === 'cloud' || kind === 'github';
 	});
 };
 

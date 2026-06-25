@@ -1,7 +1,7 @@
 # Desk Project/Session UX Hardening
 
 **Date:** 2026-06-25
-**Status:** approved design, pending implementation plan
+**Status:** first implementation slice complete
 **Owner lane:** Codex / Desk renderer and desktop bridge
 **Related roadmap:** ENOS `docs/ROADMAP.md` C-UI / Desk polish
 

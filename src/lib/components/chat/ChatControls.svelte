@@ -56,6 +56,7 @@
 		type EnosDesktopWorkspace
 	} from '$lib/enos/desktopBridge';
 	import { cloudProjectContextSource } from '$lib/enos/cloudUpload';
+	import { resolveCloudProjectRoot } from '$lib/enos/cloudFiles';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
 
 	const i18n = getContext('i18n');
@@ -120,6 +121,9 @@
 		($settings?.terminalServers ?? []).find((server) => server?.url === $selectedTerminalId)
 			?.name ??
 		null;
+	$: selectedCloudProjectRoot = resolveCloudProjectRoot(
+		$selectedFolder?.data?.project_context_source
+	);
 	$: showLocalFileNav = isDeskSurface && canUseEnosLocalProjectFiles(desktopCapabilities);
 	$: showProjectFileNav = showLocalFileNav && Boolean($showLocalFileFolderId);
 	$: showDeskProjectFilesEmpty = showLocalFileNav && !$showLocalFileFolderId;
@@ -270,12 +274,13 @@
 
 		activeTab = 'files';
 		showControls.set(true);
-		showFileNavDir.set(imported.dest ? `${imported.dest.replace(/\/$/, '')}/` : '/home/user/');
+		const cloudSource = cloudProjectContextSource(archive, imported);
+		showFileNavDir.set(resolveCloudProjectRoot(cloudSource) ?? '/home/user/');
 
 		const folder = $selectedFolder?.id === folderId ? $selectedFolder : { id: folderId, data: {} };
 		const data = {
 			...(folder?.data ?? {}),
-			project_context_source: cloudProjectContextSource(archive, imported),
+			project_context_source: cloudSource,
 			project_context_updated_at: new Date().toISOString()
 		};
 
@@ -566,6 +571,7 @@
 									{chatId}
 									cloudWorkspace={isDeskSurface}
 									cloudWorkspaceName={selectedTerminalName}
+									cloudProjectRoot={selectedCloudProjectRoot}
 								/>
 							{:else if activeTab === 'files' && showProjectFileNav}
 								<LocalFileNav
@@ -707,6 +713,7 @@
 										{chatId}
 										cloudWorkspace={isDeskSurface}
 										cloudWorkspaceName={selectedTerminalName}
+										cloudProjectRoot={selectedCloudProjectRoot}
 									/>
 								{:else if activeTab === 'files' && showProjectFileNav}
 									<LocalFileNav

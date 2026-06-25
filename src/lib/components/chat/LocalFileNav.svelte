@@ -67,6 +67,7 @@
 	// the notice can point the user at where the files actually live.
 	let unreachable = false;
 	let unreachableRoot = '';
+	let recoveryActionsVisible = true;
 	let loadedFolderId: string | null = null;
 	let removeProjectFilesChangedListener = () => {};
 
@@ -145,6 +146,7 @@
 		error = null;
 		unreachable = false;
 		unreachableRoot = '';
+		recoveryActionsVisible = true;
 		try {
 			workspace = await bridge.getWorkspace(folderId);
 			if (workspace) {
@@ -177,6 +179,8 @@
 				? await bridge.chooseWorkspaceForFolder(folderId)
 				: await bridge.chooseWorkspace();
 			if (workspace) {
+				unreachable = false;
+				recoveryActionsVisible = true;
 				await loadDir('.');
 				await loadGitStatus();
 				await syncProjectContext();
@@ -202,6 +206,7 @@
 			if (path === '.' && workspace && isPathMissingError(e)) {
 				unreachable = true;
 				unreachableRoot = workspace?.rootDisplay ?? '';
+				recoveryActionsVisible = true;
 				error = null;
 			} else {
 				error = friendlyDesktopError(e);
@@ -482,20 +487,40 @@
 		<div class="flex-1 min-h-0 flex items-center justify-center px-6 text-center">
 			<div class="max-w-xs">
 				<div class="text-sm font-medium mb-1">
-					{$i18n.t('Files live on this project’s machine')}
+					{$i18n.t('Project folder missing')}
 				</div>
 				<div class="text-xs text-gray-400 dark:text-gray-500">
 					{#if unreachableRoot}
 						{$i18n.t(
-							'This project is bound to {{path}}, which isn’t available on this machine. Your chats here are read-only history — open ENOS Desk on that machine to browse or edit its files.',
+							'This project is bound to {{path}}, but that folder was moved, renamed, or deleted outside ENOS. Sessions stay here, but local files and agent actions are paused until you recover the folder.',
 							{ path: unreachableRoot }
 						)}
 					{:else}
 						{$i18n.t(
-							'This project’s files are on another machine. Your chats here are read-only history — open ENOS Desk on that machine to browse or edit its files.'
+							'This project folder was moved, renamed, or deleted outside ENOS. Sessions stay here, but local files and agent actions are paused until you recover the folder.'
 						)}
 					{/if}
 				</div>
+				{#if recoveryActionsVisible}
+					<div class="mt-4 flex flex-wrap justify-center gap-2">
+						<button
+							class="px-3 py-1.5 rounded-lg text-xs font-medium bg-black text-white dark:bg-white dark:text-black"
+							on:click={chooseWorkspace}
+							type="button"
+						>
+							{$i18n.t('Relink Folder')}
+						</button>
+						<button
+							class="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+							on:click={() => {
+								recoveryActionsVisible = false;
+							}}
+							type="button"
+						>
+							{$i18n.t('Keep Read-Only')}
+						</button>
+					</div>
+				{/if}
 			</div>
 		</div>
 	{:else if !workspace}

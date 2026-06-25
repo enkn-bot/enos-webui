@@ -8,6 +8,7 @@ describe('ENOS Desk UI source guardrails', () => {
 		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
 
 		// Chats are always scoped per surface now; legacy fallback lives in filterChatsBySurface.
+		expect(sidebar).toContain('filterProjectsForDeskRuntime');
 		expect(sidebar).toContain(
 			'$: sidebarChats = filterChatsBySurface($chats ?? [], currentSurface, deskFolderIds);'
 		);
@@ -18,10 +19,15 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(sidebar).toContain('deskFolderIds = allFolders');
 		expect(sidebar).toContain("folder?.meta?.surface === 'desk'");
 		expect(sidebar).toContain('Boolean(folder?.data?.project_context_source)');
+		expect(sidebar).toContain('hasDesktopBridge');
+		expect(sidebar).toMatch(
+			/const folderList = filterProjectsForDeskRuntime\([\s\S]*legacyDeskItemIds: legacyDeskProjectIds[\s\S]*hasDesktopBridge/
+		);
 		// Desk is project-first: the full standalone Chats section stays chat-surface-only.
 		expect(sidebar).toContain('$: showDeskChats = !isDeskSurface;');
-		// But no-project Desk chats still need a visible home with a plain user label.
-		expect(sidebar).toContain("name={$i18n.t('Chats')}");
+		// But no-project Desk sessions still need a visible home with Desk language.
+		expect(sidebar).toContain('deskSessionsLabel');
+		expect(sidebar).toContain('newChatLabel');
 		expect(sidebar).not.toContain("name={$i18n.t('Unfiled')}");
 		expect(sidebar).toContain('deskLooseChatIds');
 		expect(sidebar).toContain('{#if showDeskUnfiledChats}');
@@ -32,8 +38,8 @@ describe('ENOS Desk UI source guardrails', () => {
 		// Stores hold raw chats; the old opt-in scoping helper is gone.
 		expect(sidebar).not.toContain('scopeSidebarChats(');
 		expect(sidebar).not.toContain('shouldScopeSidebarChatsBySurface');
-		// Folders are still surface-scoped via filterBySurface.
-		expect(sidebar).toMatch(/const folderList = filterBySurface/);
+		// Folders are still surface-scoped, then web Desk hides local-only projects.
+		expect(sidebar).toMatch(/const folderList = filterProjectsForDeskRuntime/);
 	});
 
 	test('chat list summaries carry surface fields needed by the Desk sidebar', () => {
@@ -194,14 +200,31 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(nav).toContain('Local files live in the desktop app');
 	});
 
-	test('desk-web shows a calm "desktop only" cue on local-bound folders (visible, not blocked)', () => {
+	test('missing local folders show a recovery-first project home', () => {
+		const nav = read('src/lib/components/chat/LocalFileNav.svelte');
+
+		expect(nav).toContain('Project folder missing');
+		expect(nav).toContain('Relink Folder');
+		expect(nav).toContain('Keep Read-Only');
+		expect(nav).toContain('local files and agent actions are paused');
+		expect(nav).not.toContain('Files live on this project’s machine');
+	});
+
+	test('desk-web filters local-bound projects instead of rendering a desktop-only cue', () => {
 		const folder = read('src/lib/components/layout/Sidebar/RecursiveFolder.svelte');
-		// Browser desk (no bridge) + a local-bound project → a muted cue, not a block.
-		expect(folder).toContain('isDesktopOnlyHere');
-		expect(folder).toContain('workspaceBadgeFromFolder');
-		expect(folder).toContain('!getEnosDesktopBridge()');
-		expect(folder).toContain('{#if isDesktopOnlyHere}');
-		expect(folder).toContain('files are available in the ENOS desktop app');
+		// Browser Desk (no bridge) + local-bound project is filtered before this row renders.
+		expect(folder).not.toContain('isDesktopOnlyHere');
+		expect(folder).not.toContain('files are available in the ENOS desktop app');
+	});
+
+	test('Desk navbar uses session language while Chat keeps chat language', () => {
+		const nav = read('src/lib/components/chat/Navbar.svelte');
+
+		expect(nav).toContain("import { deskSurfaceLabel } from '$lib/enos/deskSessionLabels';");
+		expect(nav).toContain("deskSurfaceLabel('new', currentSurface)");
+		expect(nav).toContain("deskSurfaceLabel('rename', currentSurface)");
+		expect(nav).toContain('newChatLabel');
+		expect(nav).toContain('renameChatLabel');
 	});
 
 	test('cloud desk chat routes to OpenCode BEFORE the bridge gate (web path), local keeps the loop', () => {
@@ -237,10 +260,15 @@ describe('ENOS Desk UI source guardrails', () => {
 		const fileNav = read('src/lib/components/chat/FileNav.svelte');
 		const localFileNav = read('src/lib/components/chat/LocalFileNav.svelte');
 
+		expect(chatControls).toContain("import { resolveCloudProjectRoot } from '$lib/enos/cloudFiles';");
+		expect(chatControls).toContain('selectedCloudProjectRoot');
 		expect(chatControls).toContain('cloudWorkspace={isDeskSurface}');
 		expect(chatControls).toContain('cloudWorkspaceName={selectedTerminalName}');
+		expect(chatControls).toContain('cloudProjectRoot={selectedCloudProjectRoot}');
 		expect(fileNav).toContain('CLOUD_FILES_DEFAULT_PATH');
 		expect(fileNav).toContain('export let cloudWorkspace = false;');
+		expect(fileNav).toContain('export let cloudProjectRoot: string | null = null;');
+		expect(fileNav).toContain('previousCloudProjectRoot');
 		expect(fileNav).toContain('Cloud Files');
 		expect(fileNav).toContain('formatCloudFilesStatus(cloudWorkspaceName)');
 		expect(fileNav).toContain('resolveCloudFilesInitialPath');
@@ -365,6 +393,7 @@ describe('ENOS Desk UI source guardrails', () => {
 
 	test('cloud project creation creates a cloud workspace folder and points Files at it', () => {
 		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
+		const picker = read('src/lib/components/enos/DeskWorkspacePicker.svelte');
 
 		expect(sidebar).toContain('projectEnvironment');
 		expect(sidebar).toContain('createCloudProjectRoot');
@@ -374,6 +403,11 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(sidebar).toContain("kind: 'cloud'");
 		expect(sidebar).toContain('showFileNavDir.set(cloudPath)');
 		expect(sidebar).toContain('selectedTerminalId.set(ws.id)');
+		expect(picker).toContain("import { resolveCloudProjectRoot } from '$lib/enos/cloudFiles';");
+		expect(picker).toContain('const cloudSource = cloudProjectContextSource(archive, imported);');
+		expect(picker).toContain(
+			"showFileNavDir.set(resolveCloudProjectRoot(cloudSource) ?? '/home/user/')"
+		);
 	});
 
 	test('deleting the active desk project resets the visible chat pane to the welcome state', () => {
@@ -414,8 +448,9 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(chatControls).toContain('createCloudWorkspace(localStorage.token)');
 		expect(chatControls).toContain('uploadLocalProjectToCloud(localStorage.token, archive)');
 		expect(chatControls).toContain('selectedTerminalId.set(ws.id)');
+		expect(chatControls).toContain('const cloudSource = cloudProjectContextSource(archive, imported);');
 		expect(chatControls).toContain(
-			"showFileNavDir.set(imported.dest ? `${imported.dest.replace(/\\/$/, '')}/` : '/home/user/')"
+			"showFileNavDir.set(resolveCloudProjectRoot(cloudSource) ?? '/home/user/')"
 		);
 		expect(workspaceApi).toContain('/migrate/upload');
 		expect(desktopBridge).toContain('localProjectCloudUpload?: boolean');
@@ -506,14 +541,15 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(chat).toMatch(/never claim to[\s\S]*Claude, GPT, Gemini/);
 	});
 
-	test('cross-machine bound project degrades to a calm read-only notice', () => {
+	test('cross-machine bound project opens the recovery state', () => {
 		const nav = read('src/lib/components/chat/LocalFileNav.svelte');
-		// Bridge present but the bound folder is missing on THIS machine: show a calm
-		// "files live elsewhere / read-only history" notice instead of a raw error.
+		// Bridge present but bound folder missing on this machine: show recovery,
+		// not raw error or passive read-only copy.
 		expect(nav).toContain('let unreachable = false;');
 		expect(nav).toContain('isPathMissingError');
 		expect(nav).toContain('{:else if unreachable}');
-		expect(nav).toContain('Files live on this project’s machine');
-		expect(nav).toContain('read-only history');
+		expect(nav).toContain('Project folder missing');
+		expect(nav).toContain('Relink Folder');
+		expect(nav).toContain('Keep Read-Only');
 	});
 });

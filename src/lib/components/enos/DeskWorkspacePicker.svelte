@@ -21,6 +21,7 @@
 	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 	import { bindLocalWorkspaceToFolder } from '$lib/enos/bindLocalWorkspace';
 	import { cloudProjectContextSource } from '$lib/enos/cloudUpload';
+	import { resolveCloudProjectRoot } from '$lib/enos/cloudFiles';
 	import {
 		workspaceBadgeFromFolder,
 		deskCurrentLocation,
@@ -122,17 +123,18 @@
 			const archive = await bridge.exportProjectArchive(activeFolderId);
 			const imported = await uploadLocalProjectToCloud(localStorage.token, archive);
 			const servers = await getTerminalServers(localStorage.token);
+			const cloudSource = cloudProjectContextSource(archive, imported);
 
 			terminalServers.set(servers);
 			if (ws?.id) selectedTerminalId.set(ws.id);
-			showFileNavDir.set(imported.dest ? `${imported.dest.replace(/\/$/, '')}/` : '/home/user/');
+			showFileNavDir.set(resolveCloudProjectRoot(cloudSource) ?? '/home/user/');
 			showControls.set(true);
 
 			const folder =
 				$selectedFolder?.id === activeFolderId ? $selectedFolder : { id: activeFolderId, data: {} };
 			const data = {
 				...(folder?.data ?? {}),
-				project_context_source: cloudProjectContextSource(archive, imported),
+				project_context_source: cloudSource,
 				project_context_updated_at: new Date().toISOString()
 			};
 			const updated = await updateFolderById(localStorage.token, activeFolderId, { data });

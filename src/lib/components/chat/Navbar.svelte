@@ -40,6 +40,8 @@
 	import { workspaceKindLabel } from '$lib/enos/workspaceBadge';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
 	import { deskChatTitleLabel } from '$lib/enos/deskTitle';
+	import { surfaceFromIsDesk } from '$lib/enos/surfaceScope';
+	import { deskSurfaceLabel } from '$lib/enos/deskSessionLabels';
 
 	const i18n = getContext('i18n');
 
@@ -88,6 +90,7 @@
 	let titleInputElement: HTMLInputElement;
 	let showDeskWorkspacePicker = false;
 	let showDeskProjectMenu = false;
+	let currentSurface = surfaceFromIsDesk(false);
 	// Source-contract anchor: <DeskWorkspacePicker bind:show={showDeskWorkspacePicker}>
 
 	onMount(() => {
@@ -99,7 +102,7 @@
 		deskChatTitleLabel({
 			title,
 			chatTitle: normalizeTitle(chat?.chat?.title) || normalizeTitle(chat?.title),
-			fallback: $i18n.t('New Chat')
+			fallback: newChatLabel
 		});
 	const deskWorkspaceLabel = () =>
 		normalizeTitle(deskWorkspace?.name) || $i18n.t('Select workspace…');
@@ -112,6 +115,9 @@
 	$: hasDeskWorkspace = deskWorkspace?.kind != null;
 	$: deskWorkspaceKindLabel = $i18n.t(workspaceKindLabel(deskWorkspace?.kind));
 	$: deskWorkspaceReadOnly = Boolean(deskWorkspace?.readOnly);
+	$: currentSurface = surfaceFromIsDesk(isDeskSurface);
+	$: newChatLabel = $i18n.t(deskSurfaceLabel('new', currentSurface));
+	$: renameChatLabel = $i18n.t(deskSurfaceLabel('rename', currentSurface));
 
 	const beginTitleRename = async () => {
 		if (!isDeskSurface) return;
@@ -147,7 +153,7 @@
 	on:click={() => {
 		initNewChat();
 	}}
-	aria-label="New Chat"
+	aria-label={newChatLabel}
 />
 
 <nav
@@ -196,7 +202,7 @@
 								bind:value={titleDraft}
 								id="chat-title-rename-input"
 								class="max-w-full w-64 rounded-xl px-2 py-1.5 text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-850 border border-gray-200 dark:border-gray-700 outline-hidden"
-								aria-label={$i18n.t('Rename chat')}
+								aria-label={renameChatLabel}
 								on:keydown={(event) => {
 									if (event.key === 'Enter') {
 										event.preventDefault();
@@ -375,7 +381,7 @@
 					{/if}
 
 					{#if $mobile && !$temporaryChatEnabled && chat && chat.id}
-						<Tooltip content={$i18n.t('New Chat')}>
+						<Tooltip content={newChatLabel}>
 							<button
 								class=" flex {$showSidebar
 									? 'md:hidden'
@@ -383,7 +389,7 @@
 								on:click={() => {
 									initNewChat();
 								}}
-								aria-label="New Chat"
+								aria-label={newChatLabel}
 							>
 								<div class=" m-auto self-center">
 									<ChatPlus className=" size-4.5" strokeWidth="1.5" />

@@ -59,6 +59,7 @@
 	export let chatId: string | null = null;
 	export let cloudWorkspace = false;
 	export let cloudWorkspaceName: string | null = null;
+	export let cloudProjectRoot: string | null = null;
 
 	// ── Terminal panel state ────────────────────────────────────────────
 	let terminalExpanded = false;
@@ -96,10 +97,13 @@
 	};
 
 	// ── Directory state ──────────────────────────────────────────────────
-	let currentPath = cloudWorkspace ? savedCloudPath : savedPath;
+	let currentPath = cloudWorkspace
+		? resolveCloudFilesInitialPath(savedCloudPath, cloudProjectRoot)
+		: savedPath;
 	let entries: FileEntry[] = [];
 	let loading = false;
 	let error: string | null = null;
+	let previousCloudProjectRoot = cloudProjectRoot;
 
 	// ── Sort state ──────────────────────────────────────────────────────
 	type SortMode = 'name' | 'date';
@@ -322,9 +326,17 @@
 	};
 	const resolveInitialPath = (rawCwd: string | null | undefined) => {
 		const cwd = rawCwd ? normalizePath(rawCwd) : null;
-		if (cloudWorkspace) return resolveCloudFilesInitialPath(cwd);
+		if (cloudWorkspace) return resolveCloudFilesInitialPath(cwd, cloudProjectRoot);
 		return cwd ? (cwd.endsWith('/') ? cwd : cwd + '/') : '/';
 	};
+
+	$: if (mounted && cloudWorkspace && cloudProjectRoot !== previousCloudProjectRoot) {
+		previousCloudProjectRoot = cloudProjectRoot;
+		const dir = resolveCloudFilesInitialPath(rememberedPath(), cloudProjectRoot);
+		if (dir !== currentPath) {
+			loadDir(dir);
+		}
+	}
 
 	const buildBreadcrumbs = (path: string) => {
 		const parts = path.split('/').filter(Boolean);
@@ -833,17 +845,20 @@
 			filePath = normalizePath(filePath);
 
 			const lastSlash = filePath.lastIndexOf('/');
-			const dir = lastSlash > 0 ? filePath.substring(0, lastSlash + 1) : '/';
+			const requestedDir = lastSlash > 0 ? filePath.substring(0, lastSlash + 1) : '/';
+			const dir = cloudWorkspace
+				? resolveCloudFilesInitialPath(requestedDir, cloudProjectRoot)
+				: requestedDir;
 
 			if (selectedFile) {
 				if (selectedFile === filePath || currentPath.startsWith(dir)) {
 					const fileName = selectedFile.split('/').pop() ?? '';
 					await openEntry({ name: fileName, type: 'file', size: 0 });
+				} else {
+					await loadDir(dir);
 				}
 			} else {
-				if (currentPath.startsWith(dir) || dir.startsWith(currentPath)) {
-					await loadDir(currentPath);
-				}
+				await loadDir(dir);
 			}
 		});
 

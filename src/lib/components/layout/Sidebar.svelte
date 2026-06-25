@@ -92,12 +92,13 @@
 	import HotkeyHint from '../common/HotkeyHint.svelte';
 	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 	import {
-		filterBySurface,
 		filterChatsBySurface,
+		filterProjectsForDeskRuntime,
 		surfaceFromIsDesk,
 		withSurfaceMeta
 	} from '$lib/enos/surfaceScope';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
+	import { deskSurfaceLabel } from '$lib/enos/deskSessionLabels';
 	import UserAvatar from '$lib/components/enos/UserAvatar.svelte';
 
 	const BREAKPOINT = 768;
@@ -141,6 +142,8 @@
 	$: sidebarChats = filterChatsBySurface($chats ?? [], currentSurface, deskFolderIds);
 	$: sidebarPinnedChats = filterChatsBySurface($pinnedChats ?? [], currentSurface, deskFolderIds);
 	$: hasDesktopBridge = browser && Boolean(getEnosDesktopBridge());
+	$: newChatLabel = $i18n.t(deskSurfaceLabel('new', currentSurface));
+	$: deskSessionsLabel = $i18n.t(deskSurfaceLabel('collection', currentSurface));
 	// Desk is project-first: the full standalone Chats section stays chat-surface-only.
 	$: showDeskChats = !isDeskSurface;
 	$: deskLooseChatIds = [...sidebarPinnedChats, ...sidebarChats]
@@ -241,7 +244,9 @@
 						legacyDeskSet.has(String(folder.id)))
 			)
 			.map((folder) => String(folder.id));
-		const folderList = filterBySurface(allFolders, currentSurface, {
+		const folderList = filterProjectsForDeskRuntime(allFolders, {
+			surface: currentSurface,
+			hasDesktopBridge,
 			legacyDeskItemIds: legacyDeskProjectIds
 		});
 		_folders.set(folderList.sort((a, b) => b.updated_at - a.updated_at));
@@ -1112,7 +1117,7 @@
 
 			<div class="-mt-[0.5px]">
 				<div class="">
-					<Tooltip content={$i18n.t('New Chat')} placement="right">
+					<Tooltip content={newChatLabel} placement="right">
 						<a
 							class=" cursor-pointer flex rounded-xl hover:bg-gray-100 dark:hover:bg-gray-850 transition group"
 							href="/"
@@ -1123,7 +1128,7 @@
 
 								await startNewChatHandler();
 							}}
-							aria-label={$i18n.t('New Chat')}
+							aria-label={newChatLabel}
 						>
 							<div class=" self-center flex items-center justify-center size-9">
 								<PencilSquare className="size-4.5" />
@@ -1363,14 +1368,14 @@
 							href="/"
 							draggable="false"
 							on:click|preventDefault={startNewChatHandler}
-							aria-label={$i18n.t('New Chat')}
+							aria-label={newChatLabel}
 						>
 							<div class="self-center">
 								<PencilSquare className=" size-4.5" strokeWidth="2" />
 							</div>
 
 							<div class="flex flex-1 self-center translate-y-[0.5px]">
-								<div class=" self-center text-sm font-primary">{$i18n.t('New Chat')}</div>
+								<div class=" self-center text-sm font-primary">{newChatLabel}</div>
 							</div>
 
 							<HotkeyHint name="newChat" className=" group-hover:visible invisible" />
@@ -1636,13 +1641,13 @@
 					<Folder
 						id="sidebar-desk-unfiled-chats"
 						className="px-2 mt-0.5"
-						name={$i18n.t('Chats')}
+						name={deskSessionsLabel}
 						chevron={false}
 						addIcon={PencilSquare}
 						onAdd={() => {
 							startNewChatHandler();
 						}}
-						onAddLabel={$i18n.t('New Chat')}
+						onAddLabel={newChatLabel}
 						on:change={async () => {
 							selectedFolder.set(null);
 						}}
@@ -1715,7 +1720,7 @@
 						onAdd={() => {
 							startNewChatHandler();
 						}}
-						onAddLabel={$i18n.t('New Chat')}
+						onAddLabel={newChatLabel}
 						on:change={async (e) => {
 							selectedFolder.set(null);
 						}}

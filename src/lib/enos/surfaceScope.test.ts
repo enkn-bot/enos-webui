@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { filterBySurface, filterChatsBySurface } from './surfaceScope';
+import { filterBySurface, filterChatsBySurface, filterProjectsForDeskRuntime } from './surfaceScope';
 
 describe('filterBySurface', () => {
 	test('Desk only includes desk-tagged items', () => {
@@ -121,5 +121,54 @@ describe('filterChatsBySurface (folder-authoritative scoping)', () => {
 	test('empty / null input', () => {
 		expect(filterChatsBySurface([], 'desk', [])).toEqual([]);
 		expect(filterChatsBySurface(null, 'chat')).toEqual([]);
+	});
+});
+
+describe('filterProjectsForDeskRuntime', () => {
+	const projects = [
+		{
+			id: 'local',
+			meta: { surface: 'desk' },
+			data: { project_context_source: { kind: 'local', rootName: 'Local Project' } }
+		},
+		{
+			id: 'cloud',
+			meta: { surface: 'desk' },
+			data: { project_context_source: { kind: 'cloud', rootName: 'Cloud Project' } }
+		},
+		{
+			id: 'github',
+			meta: { surface: 'desk' },
+			data: { project_context_source: { kind: 'github', rootName: 'owner/repo' } }
+		},
+		{ id: 'legacy', meta: { surface: 'desk' }, data: {} },
+		{ id: 'chat', meta: { surface: 'chat' }, data: {} }
+	];
+
+	test('web Desk shows only cloud-runnable projects', () => {
+		expect(
+			filterProjectsForDeskRuntime(projects, {
+				surface: 'desk',
+				hasDesktopBridge: false
+			}).map((project) => project.id)
+		).toEqual(['cloud', 'github']);
+	});
+
+	test('desktop Desk keeps local, cloud, github, and legacy projects', () => {
+		expect(
+			filterProjectsForDeskRuntime(projects, {
+				surface: 'desk',
+				hasDesktopBridge: true
+			}).map((project) => project.id)
+		).toEqual(['local', 'cloud', 'github', 'legacy']);
+	});
+
+	test('chat surface behavior is unchanged', () => {
+		expect(
+			filterProjectsForDeskRuntime(projects, {
+				surface: 'chat',
+				hasDesktopBridge: false
+			}).map((project) => project.id)
+		).toEqual(['chat']);
 	});
 });
