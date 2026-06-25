@@ -134,6 +134,7 @@
 	import { surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
 	import { workspaceBadgeFromFolder, deskCurrentLocation } from '$lib/enos/workspaceBadge';
 	import { maybeGenerateOpencodeChatTitle } from '$lib/enos/opencodeTitle';
+	import { normalizeChatTitleEventData } from '$lib/enos/chatTitleEvents';
 
 	export let chatIdProp = '';
 
@@ -513,13 +514,33 @@
 		console.log(event);
 
 		if (event.chat_id === $chatId) {
+			const type = event?.data?.type ?? null;
+			const data = event?.data?.data ?? null;
+
+			if (type === 'chat:title') {
+				const title = normalizeChatTitleEventData(data);
+				if (title) {
+					chatTitle.set(title);
+					if (chat) {
+						chat = {
+							...chat,
+							title,
+							chat: {
+								...(chat.chat ?? {}),
+								title
+							}
+						};
+					}
+				}
+				currentChatPage.set(1);
+				await chats.set(await getChatList(localStorage.token, $currentChatPage));
+				return;
+			}
+
 			await tick();
 			let message = history.messages[event.message_id];
 
 			if (message) {
-				const type = event?.data?.type ?? null;
-				const data = event?.data?.data ?? null;
-
 				if (type === 'status') {
 					if (message?.statusHistory) {
 						message.statusHistory.push(data);
@@ -586,10 +607,6 @@
 				} else if (type === 'chat:message:favorite') {
 					// Update message favorite status
 					message.favorite = data.favorite;
-				} else if (type === 'chat:title') {
-					chatTitle.set(data);
-					currentChatPage.set(1);
-					await chats.set(await getChatList(localStorage.token, $currentChatPage));
 				} else if (type === 'chat:tags') {
 					chat = await getChatById(localStorage.token, $chatId);
 					allTags.set(await getAllTags(localStorage.token));

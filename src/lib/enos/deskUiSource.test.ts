@@ -257,6 +257,18 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(chat).not.toContain("console.error('[enos desk title]'");
 	});
 
+	test('active chat title events update Navbar before message lookup', () => {
+		const chat = read('src/lib/components/chat/Chat.svelte');
+		const titleEventIdx = chat.indexOf("if (type === 'chat:title') {");
+		const messageLookupIdx = chat.indexOf('let message = history.messages[event.message_id];');
+
+		expect(chat).toContain("import { normalizeChatTitleEventData } from '$lib/enos/chatTitleEvents';");
+		expect(titleEventIdx).toBeGreaterThan(-1);
+		expect(messageLookupIdx).toBeGreaterThan(-1);
+		expect(titleEventIdx).toBeLessThan(messageLookupIdx);
+		expect(chat).toContain('chatTitle.set(title);');
+	});
+
 	test('desk agent carries ENOS identity (three minds, no underlying-model leak) — B4', () => {
 		const chat = read('src/lib/components/chat/Chat.svelte');
 		// The desk agent must know it is ENOS (three minds), not leak/deny an underlying
