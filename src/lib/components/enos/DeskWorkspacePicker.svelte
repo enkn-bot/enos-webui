@@ -7,16 +7,20 @@
 		settings,
 		showDeskFolderPicker,
 		selectedFolder,
+		showControls,
 		showFileNavPath,
+		showFileNavDir,
 		showLocalFileFolderId,
 		terminalServers,
 		selectedTerminalId,
 		user
 	} from '$lib/stores';
 	import { getToolServersData } from '$lib/apis';
+	import { updateFolderById } from '$lib/apis/folders';
 	import { getTerminalServers } from '$lib/apis/terminal';
 	import {
 		createCloudWorkspace,
+		uploadLocalProjectToCloud,
 		getGithubStatus,
 		connectGithub,
 		disconnectGithub,
@@ -26,6 +30,7 @@
 	} from '$lib/apis/workspace';
 	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 	import { bindGithubRepoToFolder, bindLocalWorkspaceToFolder } from '$lib/enos/bindLocalWorkspace';
+	import { cloudProjectContextSource } from '$lib/enos/cloudUpload';
 	import {
 		workspaceBadgeFromFolder,
 		deskCurrentLocation,
@@ -115,12 +120,57 @@
 		}
 	};
 
+	let copyingLocalProjectToCloud = false;
+
+	const copyLocalProjectIntoCloudWorkspace = async () => {
+		if (!activeFolderId || copyingLocalProjectToCloud) return;
+
+		const bridge = getEnosDesktopBridge();
+		if (!bridge?.exportProjectArchive) {
+			throw new Error($i18n.t('Restart ENOS Desk to enable local project actions.'));
+		}
+
+		copyingLocalProjectToCloud = true;
+		try {
+			const ws = await createCloudWorkspace(localStorage.token);
+			const archive = await bridge.exportProjectArchive(activeFolderId);
+			const imported = await uploadLocalProjectToCloud(localStorage.token, archive);
+			const servers = await getTerminalServers(localStorage.token);
+
+			terminalServers.set(servers);
+			if (ws?.id) selectedTerminalId.set(ws.id);
+			showFileNavDir.set(imported.dest ? `${imported.dest.replace(/\/$/, '')}/` : '/home/user/');
+			showControls.set(true);
+
+			const folder =
+				$selectedFolder?.id === activeFolderId ? $selectedFolder : { id: activeFolderId, data: {} };
+			const data = {
+				...(folder?.data ?? {}),
+				project_context_source: cloudProjectContextSource(archive, imported),
+				project_context_updated_at: new Date().toISOString()
+			};
+			const updated = await updateFolderById(localStorage.token, activeFolderId, { data });
+			if ($selectedFolder?.id === activeFolderId) {
+				selectedFolder.set({
+					...folder,
+					...(updated ?? {}),
+					id: activeFolderId,
+					data
+				});
+			}
+
+			toast.success($i18n.t('Project copied to cloud'));
+		} finally {
+			copyingLocalProjectToCloud = false;
+		}
+	};
+
 	const confirmEnvironmentSwitch = (target: 'local' | 'cloud') => {
 		if (webDeskCloudLocked) return true;
 		if (target === 'cloud' && currentLocation === 'local') {
 			return window.confirm(
 				$i18n.t(
-					'Switch to cloud? Local files stay on this device until you copy the project to cloud.'
+					'Switch to cloud? This changes where ENOS runs. Use Cloud Workspace to copy this local project into cloud.'
 				)
 			);
 		}
@@ -194,6 +244,21 @@
 			: $selectedTerminalId === terminalId
 				? null
 				: terminalId;
+		if (nextId && currentLocation === 'local' && isLocalBound) {
+			const confirmed = window.confirm(
+				$i18n.t(
+					'Copy project to cloud? ENOS will upload this local folder to your private cloud workspace and continue there. Your files stay on this device too.'
+				)
+			);
+			if (!confirmed) return;
+			try {
+				await copyLocalProjectIntoCloudWorkspace();
+				show = false;
+			} catch (e) {
+				toast.error(e instanceof Error ? e.message : $i18n.t('Failed to copy project to cloud'));
+			}
+			return;
+		}
 		if (nextId && currentLocation !== 'cloud' && !confirmEnvironmentSwitch('cloud')) return;
 		selectedTerminalId.set(nextId);
 

@@ -264,7 +264,11 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(picker).toContain('disconnectGithubAccount');
 		expect(picker).toContain("$i18n.t('Disconnect')");
 		expect(picker).toContain('confirmEnvironmentSwitch');
-		expect(picker).toContain('Switch to cloud?');
+		expect(picker).toContain('copyLocalProjectIntoCloudWorkspace');
+		expect(picker).toContain('Copy project to cloud?');
+		expect(picker).toContain('exportProjectArchive');
+		expect(picker).toContain('uploadLocalProjectToCloud');
+		expect(picker).not.toContain('Local files stay on this device until you copy the project to cloud.');
 		expect(picker).toContain('Switch to local?');
 		expect(picker).not.toContain('$selectedTerminalId === terminal.id ? null : terminal.id');
 
