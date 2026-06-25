@@ -814,6 +814,21 @@
 		window.addEventListener('message', onMessageHandler);
 		$socket?.on('events', chatEventHandler);
 
+		const handleProjectDeleted = async (event: Event) => {
+			if (!isDeskSurface()) return;
+
+			const deletedFolderId = String((event as CustomEvent)?.detail?.folderId ?? '');
+			const activeFolderId = activeProjectFolderId();
+			if (deletedFolderId && activeFolderId && activeFolderId !== deletedFolderId) return;
+
+			selectedFolder.set(null);
+			showLocalFileFolderId.set(null);
+			showFileNavPath.set('.');
+			await goto('/');
+			await initNewChat();
+		};
+		window.addEventListener('enos:project-deleted', handleProjectDeleted);
+
 		$audioQueue?.destroy();
 
 		const audioQueueInstance = new AudioQueue(document.getElementById('audioElement'));
@@ -948,6 +963,7 @@
 				selectedFolderSubscribe();
 				foldersSubscribe();
 				window.removeEventListener('message', onMessageHandler);
+				window.removeEventListener('enos:project-deleted', handleProjectDeleted);
 				$socket?.off('events', chatEventHandler);
 				audioQueueInstance?.destroy();
 				audioQueue.set(null);

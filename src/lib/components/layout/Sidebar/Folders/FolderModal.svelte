@@ -49,7 +49,9 @@
 			? $i18n.t('Create cloud project')
 			: localWorkspace
 				? $i18n.t('Create from folder')
-				: $i18n.t('Create local project');
+				: projectStartMode === 'clean'
+					? $i18n.t('Create clean local project')
+					: $i18n.t('Create local project');
 
 	const defaultProjectEnvironment = (): ProjectEnvironment => (canUseLocalProject ? 'local' : 'cloud');
 
@@ -64,14 +66,14 @@
 		};
 		localWorkspace = null;
 		projectEnvironment = defaultProjectEnvironment();
-		projectStartMode = projectEnvironment === 'local' ? 'folder' : 'clean';
+		projectStartMode = 'clean';
 	};
 
 	const setProjectEnvironment = (environment: ProjectEnvironment) => {
 		if (environment === 'local' && !canUseLocalProject) return;
 		projectEnvironment = environment;
 		localWorkspace = null;
-		projectStartMode = environment === 'local' ? 'folder' : 'clean';
+		projectStartMode = 'clean';
 	};
 
 	const createCleanWorkspace = async () => {
@@ -80,6 +82,18 @@
 			throw new Error($i18n.t('Restart ENOS Desk to create a local project.'));
 		}
 		return await bridge.createCleanWorkspace(name.trim());
+	};
+
+	const selectLocalFolder = async () => {
+		projectEnvironment = 'local';
+		projectStartMode = 'folder';
+		const workspace = await onLocalFolderPick();
+		if (!workspace) return null;
+		localWorkspace = workspace;
+		if (!name?.trim()) {
+			name = workspace.name;
+		}
+		return workspace;
 	};
 
 	const submitHandler = async () => {
@@ -93,10 +107,11 @@
 
 			if (!edit && projectEnvironment === 'local' && !localWorkspace) {
 				if (projectStartMode === 'folder') {
-					toast.error($i18n.t('Choose a local folder or start clean.'));
-					return;
+					const workspace = await selectLocalFolder();
+					if (!workspace) return;
+				} else {
+					localWorkspace = await createCleanWorkspace();
 				}
-				localWorkspace = await createCleanWorkspace();
 			}
 
 			if ((data?.files ?? []).some((file) => file.status === 'uploading')) {
@@ -157,17 +172,6 @@
 		if (input) {
 			input.focus();
 			input.select();
-		}
-	};
-
-	const selectLocalFolder = async () => {
-		projectEnvironment = 'local';
-		projectStartMode = 'folder';
-		const workspace = await onLocalFolderPick();
-		if (!workspace) return;
-		localWorkspace = workspace;
-		if (!name?.trim()) {
-			name = workspace.name;
 		}
 	};
 
@@ -262,8 +266,31 @@
 
 						<div class="mt-4 rounded-2xl border border-gray-100 p-3 dark:border-gray-800">
 							{#if projectEnvironment === 'local'}
-								<div class="flex items-start justify-between gap-3">
-									<div class="min-w-0">
+								<div class="grid grid-cols-2 gap-2">
+									<button
+										type="button"
+										class="rounded-xl border px-3 py-2 text-left transition {projectStartMode ===
+										'clean'
+											? 'border-gray-900 bg-gray-50 dark:border-gray-100 dark:bg-gray-800'
+											: 'border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-850'}"
+										on:click={() => {
+											localWorkspace = null;
+											projectStartMode = 'clean';
+										}}
+									>
+										<div class="text-sm font-medium">{$i18n.t('Start clean')}</div>
+										<div class="mt-1 text-xs text-gray-500">
+											{$i18n.t('Create a new folder in Documents/ENOS.')}
+										</div>
+									</button>
+									<button
+										type="button"
+										class="rounded-xl border px-3 py-2 text-left transition {projectStartMode ===
+										'folder'
+											? 'border-gray-900 bg-gray-50 dark:border-gray-100 dark:bg-gray-800'
+											: 'border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-850'}"
+										on:click={selectLocalFolder}
+									>
 										<div class="text-sm font-medium">
 											{localWorkspace ? $i18n.t('Local folder selected') : $i18n.t('Choose local folder')}
 										</div>
@@ -271,25 +298,8 @@
 											{localWorkspace?.rootDisplay ??
 												$i18n.t('Pick an existing folder on this device.')}
 										</div>
-									</div>
-									<button
-										type="button"
-										class="shrink-0 rounded-full bg-gray-100 px-3 py-1.5 text-sm font-medium transition hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
-										on:click={selectLocalFolder}
-									>
-										{$i18n.t('Choose local folder')}
 									</button>
 								</div>
-								<button
-									type="button"
-									class="mt-3 text-sm font-medium text-gray-500 transition hover:text-gray-900 dark:hover:text-gray-100"
-									on:click={() => {
-										localWorkspace = null;
-										projectStartMode = 'clean';
-									}}
-								>
-									{$i18n.t('Start clean')}
-								</button>
 							{:else}
 								<div class="text-sm font-medium">{$i18n.t('Create cloud project')}</div>
 								<div class="mt-1 text-xs text-gray-500">

@@ -319,7 +319,8 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(menu).toContain('projectStatusLabel');
 		expect(menu).toContain('Working on your device');
 		expect(menu).toContain('Working in cloud');
-		expect(menu).toContain('No folder connected yet');
+		expect(menu).toContain('No workspace connected yet');
+		expect(menu).toContain('Choose Local or Cloud to connect files.');
 		expect(menu).not.toContain("{$i18n.t('Source')}");
 		expect(menu).not.toContain('getGithubStatus');
 		expect(menu).not.toContain('connectGithubAccount');
@@ -347,12 +348,15 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(modal).toContain('projectStartMode');
 		expect(modal).toContain("{$i18n.t('Local')}");
 		expect(modal).toContain("{$i18n.t('Cloud')}");
-		expect(modal).toContain("{$i18n.t('Choose local folder')}");
+		expect(modal).toContain('Choose local folder');
 		expect(modal).toContain("{$i18n.t('Start clean')}");
+		expect(modal).toContain("projectStartMode = 'clean'");
+		expect(modal).toContain('Create clean local project');
 		expect(modal).toContain("$i18n.t('Create local project')");
 		expect(modal).toContain("{$i18n.t('Create cloud project')}");
 		expect(modal).toContain('createCleanWorkspace');
 		expect(modal).toContain("placeholder={$i18n.t('Project name')}");
+		expect(modal).not.toContain("Choose a local folder or start clean.");
 		expect(modal).toMatch(/\{#if edit\}[\s\S]*Folder Background Image/);
 		expect(modal).toMatch(/\{#if edit\}[\s\S]*System Prompt/);
 		expect(modal).toMatch(/\{#if edit\}[\s\S]*Project Knowledge/);
@@ -370,6 +374,20 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(sidebar).toContain("kind: 'cloud'");
 		expect(sidebar).toContain('showFileNavDir.set(cloudPath)');
 		expect(sidebar).toContain('selectedTerminalId.set(ws.id)');
+	});
+
+	test('deleting the active desk project resets the visible chat pane to the welcome state', () => {
+		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
+		const placeholder = read('src/lib/components/chat/Placeholder.svelte');
+		const chat = read('src/lib/components/chat/Chat.svelte');
+
+		expect(sidebar).toContain('resetDeletedProjectView');
+		expect(sidebar).toContain("window.dispatchEvent(new CustomEvent('enos:project-deleted'");
+		expect(placeholder).toContain("new CustomEvent('enos:project-deleted'");
+		expect(chat).toContain('handleProjectDeleted');
+		expect(chat).toContain("window.addEventListener('enos:project-deleted', handleProjectDeleted)");
+		expect(chat).toContain('await initNewChat()');
+		expect(chat).toContain('showLocalFileFolderId.set(null)');
 	});
 
 	test('desk repairs currently opened loose legacy chats by tagging them to the Desk surface', () => {

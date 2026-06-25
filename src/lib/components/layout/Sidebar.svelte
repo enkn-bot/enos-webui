@@ -920,6 +920,18 @@
 		closeMobileSidebar();
 	};
 
+	const resetDeletedProjectView = async (folderId) => {
+		const wasActiveProject = $selectedFolder?.id === folderId || $showLocalFileFolderId === folderId;
+		if (!wasActiveProject) return;
+
+		window.dispatchEvent(new CustomEvent('enos:project-deleted', { detail: { folderId } }));
+		selectedChatId = null;
+		selectedFolder.set(null);
+		showLocalFileFolderId.set(null);
+		chatId.set('');
+		await goto('/');
+	};
+
 	const handleDeskProjectChat = async (folder = $selectedFolder) => {
 		selectedChatId = null;
 		chatId.set('');
@@ -1595,26 +1607,27 @@
 									await initFolders();
 								}
 							}
-						}}
-					>
-						<Folders
-							bind:folderRegistry
-							{folders}
-							{shiftKey}
-							onDelete={(folderId) => {
-								selectedFolder.set(null);
-								initChatList();
 							}}
-							on:update={() => {
-								initChatList();
-							}}
-							on:import={(e) => {
-								const { folderId, items } = e.detail;
-								importChatHandler(items, false, folderId);
-							}}
-							on:change={async () => {
-								initChatList();
-							}}
+						>
+							<Folders
+								bind:folderRegistry
+								{folders}
+								{shiftKey}
+								onDelete={async (folderId) => {
+									await resetDeletedProjectView(folderId);
+									await initFolders();
+									initChatList();
+								}}
+								on:update={() => {
+									initChatList();
+								}}
+								on:import={(e) => {
+									const { folderId, items } = e.detail;
+									importChatHandler(items, false, folderId);
+								}}
+								on:change={async () => {
+									initChatList();
+								}}
 						/>
 					</Folder>
 				{/if}

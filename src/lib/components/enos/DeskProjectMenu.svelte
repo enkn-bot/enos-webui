@@ -28,11 +28,11 @@
 	const statusLabelFor = (kind: string | null | undefined) => {
 		if (kind === 'local') return $i18n.t('Working on your device');
 		if (kind === 'cloud' || kind === 'github') return $i18n.t('Working in cloud');
-		return $i18n.t('No folder connected yet');
+		return $i18n.t('No workspace connected yet');
 	};
 
 	const detailLabelFor = (value: any) => {
-		if (!value) return '';
+		if (!value) return $i18n.t('Choose Local or Cloud to connect files.');
 		if (value.kind === 'local') return value.rootDisplay ?? value.rootName ?? '';
 		if (value.kind === 'cloud') return value.cloudPath ?? value.dest ?? value.rootName ?? '';
 		if (value.kind === 'github') {

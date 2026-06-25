@@ -101,6 +101,9 @@
 						await chats.set(await getChatList(localStorage.token, $currentChatPage));
 						currentChatPage.set(1);
 
+						window.dispatchEvent(
+							new CustomEvent('enos:project-deleted', { detail: { folderId: $selectedFolder?.id } })
+						);
 						selectedFolder.set(null);
 					}}
 				/>
