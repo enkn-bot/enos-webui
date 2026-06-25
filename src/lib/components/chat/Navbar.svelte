@@ -36,9 +36,10 @@
 	import Computer from '$lib/components/icons/Computer.svelte';
 	import Folder from '$lib/components/icons/Folder.svelte';
 	import DeskWorkspacePicker from '$lib/components/enos/DeskWorkspacePicker.svelte';
+	import DeskProjectMenu from '$lib/components/enos/DeskProjectMenu.svelte';
 	import { workspaceKindLabel } from '$lib/enos/workspaceBadge';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
-	import { deskChatTitleLabel, deskTitlePathLabel } from '$lib/enos/deskTitle';
+	import { deskChatTitleLabel } from '$lib/enos/deskTitle';
 
 	const i18n = getContext('i18n');
 
@@ -86,6 +87,7 @@
 	let titleDraft = '';
 	let titleInputElement: HTMLInputElement;
 	let showDeskWorkspacePicker = false;
+	let showDeskProjectMenu = false;
 	// Source-contract anchor: <DeskWorkspacePicker bind:show={showDeskWorkspacePicker}>
 
 	onMount(() => {
@@ -98,11 +100,6 @@
 			title,
 			chatTitle: normalizeTitle(chat?.chat?.title) || normalizeTitle(chat?.title),
 			fallback: $i18n.t('New Chat')
-		});
-	const deskTitleLabel = () =>
-		deskTitlePathLabel({
-			projectName: deskWorkspaceFolder?.name,
-			chatName: chatTitleLabel()
 		});
 	const deskWorkspaceLabel = () =>
 		normalizeTitle(deskWorkspace?.name) || $i18n.t('Select workspace…');
@@ -212,33 +209,57 @@
 								on:blur={commitTitleRename}
 							/>
 						{:else}
-							<Menu
-								{chat}
-								{shareEnabled}
-								{scrollToTop}
-								align="start"
-								shareHandler={() => {
-									showShareChatModal = !showShareChatModal;
-								}}
-								archiveChatHandler={() => {
-									archiveChatHandler(chat.id);
-								}}
-								deleteChatHandler={() => {
-									deleteChatHandler(chat.id);
-								}}
-								{moveChatHandler}
+							<div
+								class="flex max-w-full items-center gap-1 text-sm text-gray-600 dark:text-gray-400"
 							>
-								<button
-									type="button"
-									id="chat-title-menu-button"
-									class="flex max-w-full items-center gap-1.5 rounded-xl px-2 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-850 transition"
-									aria-label={deskTitleLabel()}
-									on:dblclick|preventDefault|stopPropagation={beginTitleRename}
+								{#if deskWorkspaceFolder?.name}
+									<DeskProjectMenu
+										bind:show={showDeskProjectMenu}
+										activeFolderId={deskWorkspaceFolderId}
+										activeFolder={deskWorkspaceFolder}
+									>
+										<button
+											type="button"
+											id="desk-project-menu-button"
+											class="flex max-w-[11rem] items-center gap-1 rounded-xl px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-850 transition"
+											aria-label={$i18n.t('Project') + ': ' + deskWorkspaceFolder.name}
+										>
+											<span class="truncate">{deskWorkspaceFolder.name}</span>
+											<ChevronDown className="size-3 shrink-0" strokeWidth="2.5" />
+										</button>
+									</DeskProjectMenu>
+									<span aria-hidden="true" class="shrink-0 text-gray-300 dark:text-gray-600">/</span
+									>
+								{/if}
+
+								<Menu
+									{chat}
+									{shareEnabled}
+									{scrollToTop}
+									align="start"
+									shareHandler={() => {
+										showShareChatModal = !showShareChatModal;
+									}}
+									archiveChatHandler={() => {
+										archiveChatHandler(chat.id);
+									}}
+									deleteChatHandler={() => {
+										deleteChatHandler(chat.id);
+									}}
+									{moveChatHandler}
 								>
-									<span class="truncate">{deskTitleLabel()}</span>
-									<ChevronDown className="size-3 shrink-0" strokeWidth="2.5" />
-								</button>
-							</Menu>
+									<button
+										type="button"
+										id="chat-title-menu-button"
+										class="flex max-w-[14rem] items-center gap-1.5 rounded-xl px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-850 transition"
+										aria-label={chatTitleLabel()}
+										on:dblclick|preventDefault|stopPropagation={beginTitleRename}
+									>
+										<span class="truncate">{chatTitleLabel()}</span>
+										<ChevronDown className="size-3 shrink-0" strokeWidth="2.5" />
+									</button>
+								</Menu>
+							</div>
 						{/if}
 					{:else if showModelSelector}
 						<ModelSelector bind:selectedModels showSetDefault={!shareEnabled} />
@@ -262,7 +283,7 @@
 								type="button"
 								class="max-w-[12rem] flex items-center gap-1.5 cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition text-sm"
 								aria-label={deskWorkspaceLabel()}
-								title={$i18n.t('Project and environment')}
+								title={$i18n.t('Environment')}
 							>
 								{#if hasDeskWorkspace}
 									{#if deskWorkspace?.kind === 'cloud'}

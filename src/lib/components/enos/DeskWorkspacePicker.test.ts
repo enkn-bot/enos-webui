@@ -14,7 +14,7 @@ describe('Desk workspace picker source contract', () => {
 		expect(navbar).not.toContain('<Plus');
 		expect(navbar).toContain('deskWorkspaceKindLabel');
 		expect(navbar).toContain('<ChevronDown');
-		expect(navbar).toContain("$i18n.t('Select')");
+		expect(navbar).toContain('deskWorkspaceEmptyLabel()');
 		// Binary current-location: badge shows env when there's a live location (kind),
 		// not merely when a name exists; read-only marker for a local project that can't
 		// be reached here (web, no bridge).
@@ -26,11 +26,10 @@ describe('Desk workspace picker source contract', () => {
 		expect(navbar).toContain('id="desk-workspace-status-button"');
 	});
 
-	test('picker offers local, cloud-workspace create, and a live GitHub connect (S5)', () => {
+	test('picker offers only the local/cloud environment decision', () => {
 		const picker = read('src/lib/components/enos/DeskWorkspacePicker.svelte');
 
 		expect(picker).toContain('showDeskFolderPicker.set(true)');
-		expect(picker).toContain('Desktop only');
 		expect(picker).toContain('Cloud');
 		// S5: provision an ENOS-managed cloud workspace via the control-plane API.
 		// One cloud workspace per user → the create action only shows when none exists,
@@ -39,32 +38,27 @@ describe('Desk workspace picker source contract', () => {
 		expect(picker).toMatch(/\{#if systemTerminals\.length === 0\}/);
 		expect(picker).toContain('createCloudWorkspace');
 		expect(picker).toContain('on:click={createCloud}');
-		// S5: GitHub is now a live OAuth connect (no longer a disabled "Coming soon").
-		expect(picker).toContain('Connect GitHub');
-		expect(picker).toContain('connectGithubAccount');
-		expect(picker).not.toContain('Coming soon');
-		// S5: when connected, a repo input clones owner/repo into the workspace.
-		expect(picker).toContain('cloneRepoIntoWorkspace');
-		expect(picker).toContain('cloneRepo');
-		expect(picker).toContain('owner/repo');
-		// S5 repo/branch support: repo autocomplete (datalist) + a branch field.
-		expect(picker).toContain('listGithubRepos');
-		expect(picker).toContain('enos-gh-repos');
-		expect(picker).toContain('branchInput');
+		// GitHub is project source, not environment.
+		expect(picker).not.toContain('Connect GitHub');
+		expect(picker).not.toContain('connectGithubAccount');
+		expect(picker).not.toContain('cloneRepoIntoWorkspace');
+		expect(picker).not.toContain('owner/repo');
+		expect(picker).not.toContain('listGithubRepos');
 		// Clean model: cloud = ENOS-managed ws-* only; the base "Add cloud
 		// environment…" external-terminal clutter is gone from the ENOS picker.
 		expect(picker).not.toContain('Add cloud environment');
 		expect(picker).toContain("startsWith('ws-')");
-		// Cloud rows still read as a compute terminal, not the project's file home.
-		expect(picker).toContain('Cloud terminal');
+		// Environment rows are concise: no terminal/source sublabels.
+		expect(picker).not.toContain('Cloud terminal');
+		expect(picker).not.toContain('directLabel');
 	});
 
-	test('Local row shows the bound folder name, but the ✓ marks the ACTIVE location (binary)', () => {
+	test('Local row keeps binary active-location check without project-source detail', () => {
 		const picker = read('src/lib/components/enos/DeskWorkspacePicker.svelte');
-		// Sublabel still shows the folder name when bound (context).
+		// Source detail moved into the project menu.
 		expect(picker).toContain('workspaceBadgeFromFolder(activeFolder)');
-		expect(picker).toContain('{:else if isLocalBound}');
-		expect(picker).toContain('{boundBadge.name}');
+		expect(picker).toContain('isLocalBound = hasDesktopBridge');
+		expect(picker).not.toContain('{boundBadge.name}');
 		// But the ✓ tracks the binary current location, not mere binding existence —
 		// so Local + Cloud can't both show a check at once.
 		expect(picker).toContain('deskCurrentLocation');
@@ -81,7 +75,7 @@ describe('Desk workspace picker source contract', () => {
 	});
 
 	test('GitHub clone binds repo metadata to the active Desk project', () => {
-		const picker = read('src/lib/components/enos/DeskWorkspacePicker.svelte');
+		const picker = read('src/lib/components/enos/DeskProjectMenu.svelte');
 
 		expect(picker).toContain('bindGithubRepoToFolder');
 		expect(picker).toContain('Select or create a project before cloning a repo.');

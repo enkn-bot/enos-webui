@@ -255,38 +255,66 @@ describe('ENOS Desk UI source guardrails', () => {
 
 		expect(picker).toContain('webDeskCloudLocked');
 		expect(picker).toContain('ensureWebDeskCloudSelected');
-		expect(picker).toContain('Open in desktop app');
 		expect(picker).toContain("{$i18n.t('Environment')}");
+		expect(picker).toContain("{$i18n.t('Local')}");
+		expect(picker).toContain("{$i18n.t('Cloud')}");
 		expect(picker).not.toContain("{$i18n.t('Project')}");
 		expect(picker).not.toContain('Loose Desk chats live in Unfiled');
-		expect(picker).toContain("{$i18n.t('Working in cloud')}");
-		expect(picker).toContain("{$i18n.t('GitHub source')}");
-		expect(picker).toContain('disconnectGithubAccount');
-		expect(picker).toContain("$i18n.t('Disconnect')");
+		expect(picker).not.toContain("{$i18n.t('GitHub source')}");
+		expect(picker).not.toContain('connectGithubAccount');
+		expect(picker).not.toContain('disconnectGithubAccount');
+		expect(picker).not.toContain('cloneRepoIntoWorkspace');
+		expect(picker).not.toContain('owner/repo');
+		expect(picker).not.toContain('Cloud terminal');
+		expect(picker).not.toContain('directLabel');
 		expect(picker).toContain('confirmEnvironmentSwitch');
 		expect(picker).toContain('copyLocalProjectIntoCloudWorkspace');
 		expect(picker).toContain('Copy project to cloud?');
 		expect(picker).toContain('exportProjectArchive');
 		expect(picker).toContain('uploadLocalProjectToCloud');
-		expect(picker).not.toContain('Local files stay on this device until you copy the project to cloud.');
+		expect(picker).not.toContain(
+			'Local files stay on this device until you copy the project to cloud.'
+		);
 		expect(picker).toContain('Switch to local?');
 		expect(picker).not.toContain('$selectedTerminalId === terminal.id ? null : terminal.id');
 
 		expect(chat).toContain('ensureWebDeskCloudDefault');
 		expect(chat).toContain('systemCloudWorkspaceId($terminalServers)');
-		expect(nav).toContain("title={$i18n.t('Project and environment')}");
+		expect(nav).toContain("title={$i18n.t('Environment')}");
+		expect(nav).not.toContain("title={$i18n.t('Project and environment')}");
 	});
 
-	test('desk title chrome shows project/chat path without renaming the path', () => {
+	test('desk title chrome splits project path from chat actions', () => {
 		const nav = read('src/lib/components/chat/Navbar.svelte');
 
-		expect(nav).toContain("import { deskChatTitleLabel, deskTitlePathLabel } from '$lib/enos/deskTitle';");
-		expect(nav).toContain('deskTitlePathLabel({');
-		expect(nav).toContain('projectName: deskWorkspaceFolder?.name');
-		expect(nav).toContain('chatName: chatTitleLabel()');
-		expect(nav).toContain('{deskTitleLabel()}');
+		expect(nav).toContain(
+			"import DeskProjectMenu from '$lib/components/enos/DeskProjectMenu.svelte';"
+		);
+		expect(nav).toContain('let showDeskProjectMenu = false;');
+		expect(nav).toContain('id="desk-project-menu-button"');
+		expect(nav).toContain('bind:show={showDeskProjectMenu}');
+		expect(nav).toContain('activeFolderId={deskWorkspaceFolderId}');
+		expect(nav).toContain('activeFolder={deskWorkspaceFolder}');
+		expect(nav).toContain('<span aria-hidden="true"');
+		expect(nav).toContain('>{chatTitleLabel()}</span>');
 		expect(nav).toContain('titleDraft = chatTitleLabel();');
-		expect(nav).not.toContain('{chatTitleLabel()}</span>');
+		expect(nav).not.toContain('deskTitlePathLabel');
+		expect(nav).not.toContain('{deskTitleLabel()}');
+	});
+
+	test('project menu owns project source and GitHub, separate from environment', () => {
+		const menu = read('src/lib/components/enos/DeskProjectMenu.svelte');
+
+		expect(menu).toContain("{$i18n.t('Project')}");
+		expect(menu).toContain('workspaceBadgeFromFolder(activeFolder)');
+		expect(menu).toContain('getGithubStatus');
+		expect(menu).toContain('connectGithubAccount');
+		expect(menu).toContain('disconnectGithubAccount');
+		expect(menu).toContain('cloneRepoIntoWorkspace');
+		expect(menu).toContain('bindGithubRepoToFolder');
+		expect(menu).toContain('owner/repo');
+		expect(menu).toContain('Connect GitHub');
+		expect(menu).toContain('Disconnect');
 	});
 
 	test('desk repairs currently opened loose legacy chats by tagging them to the Desk surface', () => {
