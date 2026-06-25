@@ -28,6 +28,7 @@
 	} from '$lib/enos/workspaceBadge';
 
 	import Dropdown from '$lib/components/common/Dropdown.svelte';
+	import ConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
 	import Check from '$lib/components/icons/Check.svelte';
 	import Cloud from '$lib/components/icons/Cloud.svelte';
 	import Folder from '$lib/components/icons/Folder.svelte';
@@ -103,6 +104,9 @@
 	};
 
 	let copyingLocalProjectToCloud = false;
+	let showEnvironmentSwitchConfirm = false;
+	let pendingSwitchTarget: 'local' | 'cloud' | null = null;
+	let pendingSwitchAction: (() => Promise<void> | void) | null = null;
 
 	const copyLocalProjectIntoCloudWorkspace = async () => {
 		if (!activeFolderId || copyingLocalProjectToCloud) return;
@@ -147,70 +151,72 @@
 		}
 	};
 
-	const confirmEnvironmentSwitch = (target: 'local' | 'cloud') => {
-		if (webDeskCloudLocked) return true;
-		if (target === 'cloud' && currentLocation === 'local') {
-			return window.confirm(
-				$i18n.t(
-					'Copy project to cloud? ENOS will upload this local folder to your private cloud workspace and continue there. Your files stay on this device too.'
-				)
-			);
+	const needsEnvironmentSwitchConfirm = (target: 'local' | 'cloud') => {
+		if (webDeskCloudLocked) return false;
+		return (
+			(target === 'cloud' && currentLocation === 'local') ||
+			(target === 'local' && currentLocation === 'cloud')
+		);
+	};
+
+	const environmentSwitchTitle = () =>
+		pendingSwitchTarget === 'cloud' ? 'Copy this project to cloud?' : 'Work locally?';
+
+	const environmentSwitchMessage = () =>
+		pendingSwitchTarget === 'cloud'
+			? 'ENOS will upload this local folder to your private cloud workspace and continue there. Files stay on this device too.'
+			: 'Choose or bind a folder on this device. Cloud files stay in cloud until cloud-to-local copy is added.';
+
+	const clearPendingSwitch = () => {
+		pendingSwitchTarget = null;
+		pendingSwitchAction = null;
+	};
+
+	const runWithEnvironmentConfirmation = async (
+		target: 'local' | 'cloud',
+		action: () => Promise<void> | void
+	) => {
+		if (!needsEnvironmentSwitchConfirm(target)) {
+			await action();
+			return;
 		}
-		if (target === 'local' && currentLocation === 'cloud') {
-			return window.confirm(
-				$i18n.t(
-					'Switch to local? Cloud files stay in cloud. Bind or select a local folder on this device.'
-				)
-			);
-		}
-		return true;
+		pendingSwitchTarget = target;
+		pendingSwitchAction = action;
+		showEnvironmentSwitchConfirm = true;
+	};
+
+	const confirmPendingSwitch = async () => {
+		const action = pendingSwitchAction;
+		clearPendingSwitch();
+		await action?.();
 	};
 
 	const selectLocal = async () => {
 		if (!hasDesktopBridge) return;
-		if (!confirmEnvironmentSwitch('local')) return;
-
-		if (activeFolderId) {
-			show = false;
-			await deactivateCloudWorkspace();
-			const updated = await bindLocalWorkspaceToFolder(
-				localStorage.token,
-				activeFolderId,
-				activeFolder
-			);
-			if (updated) {
-				await selectedFolder.set(updated);
-				showLocalFileFolderId.set(activeFolderId);
-				showFileNavPath.set('.');
-				toast.info($i18n.t('Working on your device'));
+		await runWithEnvironmentConfirmation('local', async () => {
+			if (activeFolderId) {
+				show = false;
+				await deactivateCloudWorkspace();
+				const updated = await bindLocalWorkspaceToFolder(
+					localStorage.token,
+					activeFolderId,
+					activeFolder
+				);
+				if (updated) {
+					await selectedFolder.set(updated);
+					showLocalFileFolderId.set(activeFolderId);
+					showFileNavPath.set('.');
+					toast.info($i18n.t('Working on your device'));
+				}
+				return;
 			}
-			return;
-		}
 
-		showDeskFolderPicker.set(true);
-		show = false;
+			show = false;
+			showDeskFolderPicker.set(true);
+		});
 	};
 
-	const selectSystem = async (terminal: (typeof systemTerminals)[0]) => {
-		const terminalId = terminal?.id ?? null;
-		if (!terminalId) return;
-
-		const nextId = webDeskCloudLocked
-			? terminalId
-			: $selectedTerminalId === terminalId
-				? null
-				: terminalId;
-		if (nextId && currentLocation === 'local' && isLocalBound) {
-			if (!confirmEnvironmentSwitch('cloud')) return;
-			try {
-				await copyLocalProjectIntoCloudWorkspace();
-				show = false;
-			} catch (e) {
-				toast.error(e instanceof Error ? e.message : $i18n.t('Failed to copy project to cloud'));
-			}
-			return;
-		}
-		if (nextId && currentLocation !== 'cloud' && !confirmEnvironmentSwitch('cloud')) return;
+	const activateSystemTerminal = async (nextId: string | null) => {
 		selectedTerminalId.set(nextId);
 
 		if ($settings?.terminalServers?.some((server) => server.enabled)) {
@@ -231,17 +237,45 @@
 		if (nextId) toast.info($i18n.t('Working in cloud'));
 	};
 
+	const selectSystem = async (terminal: (typeof systemTerminals)[0]) => {
+		const terminalId = terminal?.id ?? null;
+		if (!terminalId) return;
+
+		const nextId = webDeskCloudLocked
+			? terminalId
+			: $selectedTerminalId === terminalId
+				? null
+				: terminalId;
+		if (nextId && currentLocation === 'local' && isLocalBound) {
+			await runWithEnvironmentConfirmation('cloud', async () => {
+				try {
+					await copyLocalProjectIntoCloudWorkspace();
+					show = false;
+				} catch (e) {
+					toast.error(e instanceof Error ? e.message : $i18n.t('Failed to copy project to cloud'));
+				}
+			});
+			return;
+		}
+		if (nextId && currentLocation !== 'cloud') {
+			await runWithEnvironmentConfirmation('cloud', () => activateSystemTerminal(nextId));
+			return;
+		}
+		await activateSystemTerminal(nextId);
+	};
+
 	let creatingCloud = false;
 	const createCloud = async () => {
 		if (creatingCloud) return;
 		if (currentLocation === 'local' && isLocalBound) {
-			if (!confirmEnvironmentSwitch('cloud')) return;
-			try {
-				await copyLocalProjectIntoCloudWorkspace();
-				show = false;
-			} catch (e) {
-				toast.error(e instanceof Error ? e.message : $i18n.t('Failed to copy project to cloud'));
-			}
+			await runWithEnvironmentConfirmation('cloud', async () => {
+				try {
+					await copyLocalProjectIntoCloudWorkspace();
+					show = false;
+				} catch (e) {
+					toast.error(e instanceof Error ? e.message : $i18n.t('Failed to copy project to cloud'));
+				}
+			});
 			return;
 		}
 
@@ -337,3 +371,15 @@
 		</div>
 	</div>
 </Dropdown>
+
+<ConfirmDialog
+	bind:show={showEnvironmentSwitchConfirm}
+	title={$i18n.t(environmentSwitchTitle())}
+	confirmLabel={$i18n.t(pendingSwitchTarget === 'cloud' ? 'Copy to cloud' : 'Continue')}
+	onConfirm={confirmPendingSwitch}
+	on:cancel={clearPendingSwitch}
+>
+	<div class="text-sm text-gray-500 dark:text-gray-400 flex-1">
+		{$i18n.t(environmentSwitchMessage())}
+	</div>
+</ConfirmDialog>

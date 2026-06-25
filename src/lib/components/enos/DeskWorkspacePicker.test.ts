@@ -38,7 +38,7 @@ describe('Desk workspace picker source contract', () => {
 		expect(picker).toMatch(/\{#if systemTerminals\.length === 0\}/);
 		expect(picker).toContain('createCloudWorkspace');
 		expect(picker).toContain('on:click={createCloud}');
-		// GitHub is project source, not environment.
+		// GitHub is not an environment row.
 		expect(picker).not.toContain('Connect GitHub');
 		expect(picker).not.toContain('connectGithubAccount');
 		expect(picker).not.toContain('cloneRepoIntoWorkspace');
@@ -74,17 +74,14 @@ describe('Desk workspace picker source contract', () => {
 		expect(picker).toMatch(/deactivateCloudWorkspace[\s\S]*selectedTerminalId\.set\(null\)/);
 	});
 
-	test('GitHub clone binds repo metadata to the active Desk project', () => {
-		const picker = read('src/lib/components/enos/DeskProjectMenu.svelte');
+	test('project menu does not expose GitHub account or clone plumbing', () => {
+		const menu = read('src/lib/components/enos/DeskProjectMenu.svelte');
 
-		expect(picker).toContain('bindGithubRepoToFolder');
-		expect(picker).toContain('Select or create a project before cloning a repo.');
-		expect(picker).toMatch(
-			/const cloned = await cloneRepo\(localStorage\.token, repo, branchInput\.trim\(\)\)/
-		);
-		expect(picker).toMatch(
-			/bindGithubRepoToFolder\(\s*localStorage\.token,\s*activeFolderId,\s*activeFolder,\s*cloned\s*\)/
-		);
-		expect(picker).toMatch(/if \(updated\)[\s\S]*selectedFolder\.set\(updated\)/);
+		expect(menu).toContain('projectStatusLabel');
+		expect(menu).not.toContain('bindGithubRepoToFolder');
+		expect(menu).not.toContain('Select or create a project before cloning a repo.');
+		expect(menu).not.toContain('cloneRepo');
+		expect(menu).not.toContain('Connect GitHub');
+		expect(menu).not.toContain('owner/repo');
 	});
 });

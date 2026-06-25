@@ -267,15 +267,20 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(picker).not.toContain('owner/repo');
 		expect(picker).not.toContain('Cloud terminal');
 		expect(picker).not.toContain('directLabel');
-		expect(picker).toContain('confirmEnvironmentSwitch');
+		expect(picker).toContain(
+			"import ConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';"
+		);
+		expect(picker).not.toContain('window.confirm');
+		expect(picker).toContain('pendingSwitchTarget');
 		expect(picker).toContain('copyLocalProjectIntoCloudWorkspace');
-		expect(picker).toContain('Copy project to cloud?');
+		expect(picker).toContain('Copy this project to cloud?');
 		expect(picker).toContain('exportProjectArchive');
 		expect(picker).toContain('uploadLocalProjectToCloud');
 		expect(picker).not.toContain(
 			'Local files stay on this device until you copy the project to cloud.'
 		);
-		expect(picker).toContain('Switch to local?');
+		expect(picker).toContain('Work locally?');
+		expect(picker).toContain('Cloud files stay in cloud until cloud-to-local copy is added.');
 		expect(picker).not.toContain('$selectedTerminalId === terminal.id ? null : terminal.id');
 
 		expect(chat).toContain('ensureWebDeskCloudDefault');
@@ -298,23 +303,32 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(nav).toContain('<span aria-hidden="true"');
 		expect(nav).toContain('>{chatTitleLabel()}</span>');
 		expect(nav).toContain('titleDraft = chatTitleLabel();');
+		const projectButton =
+			nav.match(/<button[\s\S]*id="desk-project-menu-button"[\s\S]*?<\/button>/)?.[0] ?? '';
+		expect(projectButton).toContain('{deskWorkspaceFolder.name}');
+		expect(projectButton).not.toContain('ChevronDown');
 		expect(nav).not.toContain('deskTitlePathLabel');
 		expect(nav).not.toContain('{deskTitleLabel()}');
 	});
 
-	test('project menu owns project source and GitHub, separate from environment', () => {
+	test('project menu stays project-scoped and does not expose GitHub plumbing', () => {
 		const menu = read('src/lib/components/enos/DeskProjectMenu.svelte');
 
 		expect(menu).toContain("{$i18n.t('Project')}");
 		expect(menu).toContain('workspaceBadgeFromFolder(activeFolder)');
-		expect(menu).toContain('getGithubStatus');
-		expect(menu).toContain('connectGithubAccount');
-		expect(menu).toContain('disconnectGithubAccount');
-		expect(menu).toContain('cloneRepoIntoWorkspace');
-		expect(menu).toContain('bindGithubRepoToFolder');
-		expect(menu).toContain('owner/repo');
-		expect(menu).toContain('Connect GitHub');
-		expect(menu).toContain('Disconnect');
+		expect(menu).toContain('projectStatusLabel');
+		expect(menu).toContain('Working on your device');
+		expect(menu).toContain('Working in cloud');
+		expect(menu).toContain('No folder connected yet');
+		expect(menu).not.toContain("{$i18n.t('Source')}");
+		expect(menu).not.toContain('getGithubStatus');
+		expect(menu).not.toContain('connectGithubAccount');
+		expect(menu).not.toContain('disconnectGithubAccount');
+		expect(menu).not.toContain('cloneRepoIntoWorkspace');
+		expect(menu).not.toContain('bindGithubRepoToFolder');
+		expect(menu).not.toContain('owner/repo');
+		expect(menu).not.toContain('Connect GitHub');
+		expect(menu).not.toContain('Disconnect');
 	});
 
 	test('desk repairs currently opened loose legacy chats by tagging them to the Desk surface', () => {

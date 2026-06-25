@@ -225,7 +225,6 @@
 											aria-label={$i18n.t('Project') + ': ' + deskWorkspaceFolder.name}
 										>
 											<span class="truncate">{deskWorkspaceFolder.name}</span>
-											<ChevronDown className="size-3 shrink-0" strokeWidth="2.5" />
 										</button>
 									</DeskProjectMenu>
 									<span aria-hidden="true" class="shrink-0 text-gray-300 dark:text-gray-600">/</span
