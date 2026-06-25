@@ -44,6 +44,25 @@ export const filterBySurface = <T extends SurfaceScopedItem>(
 	});
 };
 
+export const isCloudRunnableProjectSource = (
+	source: { kind?: unknown; [key: string]: unknown } | null | undefined
+): boolean => {
+	const kind = source?.kind;
+	return kind === 'cloud' || kind === 'github';
+};
+
+export const isProjectAvailableInDeskRuntime = <T extends SurfaceScopedItem>(
+	item: T | null | undefined,
+	args: {
+		surface: EnosSurface;
+		hasDesktopBridge: boolean;
+	}
+): boolean => {
+	if (!item) return false;
+	if (args.surface !== 'desk' || args.hasDesktopBridge) return true;
+	return isCloudRunnableProjectSource(item.data?.project_context_source);
+};
+
 export const filterProjectsForDeskRuntime = <T extends SurfaceScopedItem>(
 	items: T[] | null | undefined,
 	args: {
@@ -60,8 +79,7 @@ export const filterProjectsForDeskRuntime = <T extends SurfaceScopedItem>(
 	}
 
 	return list.filter((item) => {
-		const kind = item?.data?.project_context_source?.kind;
-		return kind === 'cloud' || kind === 'github';
+		return isProjectAvailableInDeskRuntime(item, args);
 	});
 };
 

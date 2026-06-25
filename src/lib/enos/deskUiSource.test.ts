@@ -227,6 +227,16 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(nav).toContain('renameChatLabel');
 	});
 
+	test('direct web Desk access to unavailable local projects redirects with cloud guidance', () => {
+		const chat = read('src/lib/components/chat/Chat.svelte');
+
+		expect(chat).toContain('isProjectAvailableInDeskRuntime');
+		expect(chat).toContain('redirectUnavailableDeskProject');
+		expect(chat).toContain('Local projects open in ENOS Desktop');
+		expect(chat).toMatch(/hydrateProjectFolderFromChat[\s\S]*redirectUnavailableDeskProject/);
+		expect(chat).toMatch(/restoreLastDeskProjectFolder[\s\S]*isProjectAvailableInDeskRuntime/);
+	});
+
 	test('cloud desk chat routes to OpenCode BEFORE the bridge gate (web path), local keeps the loop', () => {
 		const chat = read('src/lib/components/chat/Chat.svelte');
 		// The cloud-workspace check must run before the `!hasDesktopBridge ... return false`
@@ -408,6 +418,20 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(picker).toContain(
 			"showFileNavDir.set(resolveCloudProjectRoot(cloudSource) ?? '/home/user/')"
 		);
+	});
+
+	test('cloud project create failures keep the modal open and avoid duplicate roots', () => {
+		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
+		const modal = read('src/lib/components/layout/Sidebar/Folders/FolderModal.svelte');
+
+		expect(sidebar).toContain('nextCloudProjectRootName');
+		expect(sidebar).toContain('existingCloudProjectRootNames');
+		expect(sidebar).toContain('Could not create a unique cloud project folder.');
+		expect(sidebar).toContain('return false;');
+		expect(sidebar).toContain('const created = await createFolder(folder);');
+		expect(sidebar).toContain('if (created) showCreateFolderModal = false;');
+		expect(modal).toContain('const submitted = await onSubmit');
+		expect(modal).toContain('if (submitted === false) return;');
 	});
 
 	test('deleting the active desk project resets the visible chat pane to the welcome state', () => {

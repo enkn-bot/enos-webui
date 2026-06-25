@@ -131,7 +131,11 @@
 	import { bridgeTransport, runOpencodeDeskTurn } from '$lib/enos/deskOpencode';
 	import { DESK_FILE_TOOLS, describeDeskTool, executeDeskFileTool } from '$lib/enos/deskFileTools';
 	import { deskSurfaceGroundingLine, groundingLine } from '$lib/enos/grounding';
-	import { surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
+	import {
+		isProjectAvailableInDeskRuntime,
+		surfaceFromIsDesk,
+		withSurfaceMeta
+	} from '$lib/enos/surfaceScope';
 	import {
 		workspaceBadgeFromFolder,
 		deskCurrentLocation,
@@ -1475,7 +1479,11 @@
 		});
 
 		if (chat) {
-			await hydrateProjectFolderFromChat(chat);
+			const projectFolderId = projectFolderIdFromChat(chat);
+			const hydratedProject = await hydrateProjectFolderFromChat(chat);
+			if (projectFolderId && !hydratedProject && isDeskSurface()) {
+				return false;
+			}
 
 			tags = await getTagsById(localStorage.token, $chatId).catch(async (error) => {
 				return [];
@@ -1853,12 +1861,42 @@
 	let deskChatFolder: any = null;
 	let deskActiveFolder: any = null;
 	let deskWorkspaceBadge = workspaceBadgeFromFolder(null);
-	// Desktop bridge presence (stable per session) — gates whether "Local" work is
-	// even possible on this surface. False in a browser → local projects are read-only.
+	// Desktop bridge presence (stable per session) gates whether Local work can run here.
+	// Browser Desk is cloud-only.
 	let deskLocalBridgePresent = false;
 	let repairedDeskLooseChatIds = new Set<string>();
 	const isDeskSurface = () => isDeskHostname();
 	const currentSurface = () => surfaceFromIsDesk(isDeskSurface());
+	const isFolderAvailableHere = (folder) =>
+		isProjectAvailableInDeskRuntime(folder, {
+			surface: currentSurface(),
+			hasDesktopBridge: deskLocalBridgePresent
+		});
+
+	const redirectUnavailableDeskProject = async (folder) => {
+		if (!isDeskSurface() || !folder?.id || isFolderAvailableHere(folder)) return false;
+
+		if ($selectedFolder?.id === folder?.id) {
+			selectedFolder.set(null);
+		}
+		if ($showLocalFileFolderId === folder?.id) {
+			showLocalFileFolderId.set(null);
+		}
+
+		if (folder?.id) {
+			localStorage.removeItem(ENOS_DESK_LAST_PROJECT_FOLDER_ID);
+		}
+
+		toast.info(
+			$i18n.t(
+				'Local projects open in ENOS Desktop. Move this project to Cloud from the desktop app to use it here.'
+			)
+		);
+		if ($page.url.pathname !== '/') {
+			await goto('/');
+		}
+		return true;
+	};
 
 	$: deskChatFolder = ($folders, knownProjectFolderById(projectFolderIdFromChat(chat)));
 	// Desk is project-first: badge + workspace binding follow the project you're in
@@ -1868,9 +1906,7 @@
 	$: deskActiveFolder = $selectedFolder ?? deskChatFolder ?? null;
 	// Badge = where work is happening NOW (binary), NOT the project's stored origin.
 	// Derived from the SAME signals the Files panel uses (cloud terminal active vs
-	// desktop bridge + local project) so the two can never disagree. When a local
-	// project is viewed where it can't be reached (web, no bridge), location is null →
-	// render it as read-only Local (files don't teleport; "Continue in cloud" is the path).
+	// desktop bridge + local project) so the two can never disagree.
 	$: deskActiveProjectKind = workspaceBadgeFromFolder(deskActiveFolder).kind;
 	$: deskLocation = deskCurrentLocation({
 		cloudWorkspaceActive: Boolean($selectedTerminalId),
@@ -1954,7 +1990,7 @@
 				: [];
 
 		return list
-			.filter((folder) => folder?.id)
+			.filter((folder) => folder?.id && isFolderAvailableHere(folder))
 			.sort((a, b) => (b?.updated_at ?? 0) - (a?.updated_at ?? 0))
 			.at(0);
 	};
@@ -1963,6 +1999,9 @@
 		if (!isDeskSurface()) return null;
 
 		if ($selectedFolder?.id) {
+			if (await redirectUnavailableDeskProject($selectedFolder)) {
+				return null;
+			}
 			rememberDeskProjectFolder($selectedFolder);
 			if ($showLocalFileFolderId !== $selectedFolder.id) {
 				showLocalFileFolderId.set($selectedFolder.id);
@@ -1981,16 +2020,21 @@
 			});
 		}
 
-		folder = folder?.id ? folder : firstKnownProjectFolder();
-
-		if (folder?.id) {
+		if (folder?.id && !(await redirectUnavailableDeskProject(folder))) {
 			await selectedFolder.set(folder);
 			showLocalFileFolderId.set(folder.id);
 			rememberDeskProjectFolder(folder);
 			return folder;
 		}
 
-		return null;
+		folder = firstKnownProjectFolder();
+
+		if (!folder?.id) return null;
+
+		await selectedFolder.set(folder);
+		showLocalFileFolderId.set(folder.id);
+		rememberDeskProjectFolder(folder);
+		return folder;
 	};
 
 	const hydrateProjectFolderFromChat = async (source = chat) => {
@@ -1998,6 +2042,9 @@
 		if (!folderId) return null;
 
 		if ($selectedFolder?.id === folderId) {
+			if (await redirectUnavailableDeskProject($selectedFolder)) {
+				return null;
+			}
 			if ($showLocalFileFolderId !== folderId) {
 				showLocalFileFolderId.set(folderId);
 			}
@@ -2013,6 +2060,9 @@
 		}
 
 		if (folder?.id) {
+			if (await redirectUnavailableDeskProject(folder)) {
+				return null;
+			}
 			await selectedFolder.set(folder);
 			showLocalFileFolderId.set(folder.id);
 			rememberDeskProjectFolder(folder);

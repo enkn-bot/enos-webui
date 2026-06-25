@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'vitest';
 
-import { filterBySurface, filterChatsBySurface, filterProjectsForDeskRuntime } from './surfaceScope';
+import {
+	filterBySurface,
+	filterChatsBySurface,
+	filterProjectsForDeskRuntime,
+	isProjectAvailableInDeskRuntime
+} from './surfaceScope';
 
 describe('filterBySurface', () => {
 	test('Desk only includes desk-tagged items', () => {
@@ -170,5 +175,26 @@ describe('filterProjectsForDeskRuntime', () => {
 				hasDesktopBridge: false
 			}).map((project) => project.id)
 		).toEqual(['chat']);
+	});
+
+	test('direct web Desk access treats local and legacy projects as unavailable', () => {
+		expect(
+			isProjectAvailableInDeskRuntime(projects[0], {
+				surface: 'desk',
+				hasDesktopBridge: false
+			})
+		).toBe(false);
+		expect(
+			isProjectAvailableInDeskRuntime(projects[1], {
+				surface: 'desk',
+				hasDesktopBridge: false
+			})
+		).toBe(true);
+		expect(
+			isProjectAvailableInDeskRuntime(projects[3], {
+				surface: 'desk',
+				hasDesktopBridge: false
+			})
+		).toBe(false);
 	});
 });

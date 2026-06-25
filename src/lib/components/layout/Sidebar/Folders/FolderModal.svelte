@@ -128,7 +128,7 @@
 				return;
 			}
 
-			await onSubmit({
+			const submitted = await onSubmit({
 				name,
 				meta,
 				data,
@@ -136,6 +136,7 @@
 				projectEnvironment,
 				parent_id: edit ? undefined : parentId
 			});
+			if (submitted === false) return;
 			show = false;
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : `${error}`);

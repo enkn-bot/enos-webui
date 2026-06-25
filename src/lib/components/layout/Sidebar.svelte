@@ -362,9 +362,44 @@
 		return cleaned || 'Project';
 	};
 
+	const cloudRootNameFromPath = (path) =>
+		String(path ?? '')
+			.replace(/\\/g, '/')
+			.replace(/\/+$/, '')
+			.split('/')
+			.filter(Boolean)
+			.at(-1);
+
+	const existingCloudProjectRootNames = () => {
+		const names = new Set();
+		for (const folder of Object.values(folders)) {
+			const source = folder?.data?.project_context_source ?? {};
+			if (source?.kind !== 'cloud' && source?.kind !== 'github') continue;
+			for (const value of [
+				source?.rootName,
+				cloudRootNameFromPath(source?.cloudPath),
+				cloudRootNameFromPath(source?.dest)
+			]) {
+				if (!String(value ?? '').trim()) continue;
+				names.add(safeCloudProjectRootName(value).toLowerCase());
+			}
+		}
+		return names;
+	};
+
+	const nextCloudProjectRootName = (baseRootName, usedRootNames) => {
+		let rootName = baseRootName;
+		let i = 1;
+		while (usedRootNames.has(rootName.toLowerCase())) {
+			rootName = safeCloudProjectRootName(`${baseRootName} ${i}`);
+			i += 1;
+		}
+		return rootName;
+	};
+
 	const createCloudProjectRoot = async (projectName) => {
-		const rootName = safeCloudProjectRootName(projectName);
-		const cloudPath = `/home/user/${rootName}/`;
+		const baseRootName = safeCloudProjectRootName(projectName);
+		const usedRootNames = existingCloudProjectRootNames();
 		const ws = await createCloudWorkspace(localStorage.token);
 		const servers = await getTerminalServers(localStorage.token);
 		terminalServers.set(servers);
@@ -376,20 +411,25 @@
 			throw new Error($i18n.t('Cloud workspace is not ready yet.'));
 		}
 
-		const created = await createDirectory(terminal.url, (terminal as any).key, cloudPath);
-		if (!created) {
-			throw new Error($i18n.t('Failed to create cloud project folder.'));
+		for (let attempt = 0; attempt < 20; attempt += 1) {
+			const rootName = nextCloudProjectRootName(baseRootName, usedRootNames);
+			const cloudPath = `/home/user/${rootName}/`;
+			const created = await createDirectory(terminal.url, (terminal as any).key, cloudPath);
+			if (created) {
+				showFileNavDir.set(cloudPath);
+				return { cloudPath, rootName, ws };
+			}
+			usedRootNames.add(rootName.toLowerCase());
 		}
 
-		showFileNavDir.set(cloudPath);
-		return { cloudPath, rootName, ws };
+		throw new Error($i18n.t('Could not create a unique cloud project folder.'));
 	};
 
 	const createFolder = async ({ name, meta, data, parent_id, localWorkspace, projectEnvironment }) => {
 		name = name?.trim();
 		if (!name) {
 			toast.error($i18n.t('Folder name cannot be empty.'));
-			return;
+			return false;
 		}
 
 		// Check for duplicate names in the same parent
@@ -422,7 +462,7 @@
 				};
 			} catch (error) {
 				toast.error(error instanceof Error ? error.message : `${error}`);
-				return;
+				return false;
 			}
 		}
 
@@ -494,7 +534,9 @@
 			// newFolderId = res.id;
 			await initFolders();
 			showFolders = true;
+			return true;
 		}
+		return false;
 	};
 
 	const handleDeskLocalFolderPick = async () => {
@@ -1041,8 +1083,9 @@
 	showLocalFolderAction={isDeskSurface && hasDesktopBridge}
 	onLocalFolderPick={handleDeskLocalFolderPick}
 	onSubmit={async (folder) => {
-		await createFolder(folder);
-		showCreateFolderModal = false;
+		const created = await createFolder(folder);
+		if (created) showCreateFolderModal = false;
+		return created;
 	}}
 />
 
