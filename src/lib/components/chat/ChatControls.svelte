@@ -291,7 +291,6 @@
 
 		toast.success($i18n.t('Project copied to cloud'));
 	};
-	export const copyLocalProjectToCloud = handleCopyLocalProjectToCloud;
 
 	// While we programmatically open/resize the pane it can transition through a
 	// "collapsed" (size 0) state — the pane starts at defaultSize={0} and opening

@@ -111,7 +111,6 @@
 	import EventConfirmDialog from '../common/ConfirmDialog.svelte';
 	import DeleteConfirmDialog from '../common/ConfirmDialog.svelte';
 	import Placeholder from './Placeholder.svelte';
-	import DeskProjectHome from './DeskProjectHome.svelte';
 	import FilesOverlay from './MessageInput/FilesOverlay.svelte';
 	import NotificationToast from '../NotificationToast.svelte';
 	import EnosOrb from '../common/EnosOrb.svelte';
@@ -1838,11 +1837,6 @@
 	let deskChatFolder: any = null;
 	let deskActiveFolder: any = null;
 	let deskWorkspaceBadge = workspaceBadgeFromFolder(null);
-	let deskProjectHomeWorkspaceLabel = '';
-	let deskProjectHomeSourceKind: string | null = null;
-	let deskProjectHomeCanCopyToCloud = false;
-	let deskProjectHomeCanCloneFromGithub = false;
-	let showDeskProjectHome = false;
 	// Desktop bridge presence (stable per session) — gates whether "Local" work is
 	// even possible on this surface. False in a browser → local projects are read-only.
 	let deskLocalBridgePresent = false;
@@ -1872,48 +1866,6 @@
 		kind: deskLocation ?? (deskLocationReadOnly ? 'local' : null),
 		name: workspaceBadgeFromFolder(deskActiveFolder).name,
 		readOnly: deskLocationReadOnly
-	};
-	$: deskProjectHomeWorkspaceLabel =
-		deskWorkspaceBadge.kind === 'cloud'
-			? $i18n.t('Working in cloud')
-			: deskWorkspaceBadge.kind === 'local' && deskWorkspaceBadge.readOnly
-				? $i18n.t('Local project. Open in the desktop app to work on this device.')
-				: deskWorkspaceBadge.kind === 'local'
-					? $i18n.t('Working on your device')
-					: $i18n.t('Select an environment');
-	$: deskProjectHomeSourceKind = deskActiveFolder?.data?.project_context_source?.kind ?? null;
-	$: deskProjectHomeCanCopyToCloud = deskLocalBridgePresent && deskProjectHomeSourceKind === 'local';
-	$: deskProjectHomeCanCloneFromGithub =
-		deskWorkspaceBadge.kind === 'cloud' && deskProjectHomeSourceKind !== 'github';
-	$: showDeskProjectHome =
-		isDeskSurface() &&
-		Boolean($selectedFolder?.id) &&
-		createMessagesList(history, history.currentId).length === 0;
-
-	const openDeskProjectFiles = async () => {
-		if (deskActiveFolder?.id && $showLocalFileFolderId !== deskActiveFolder.id) {
-			showLocalFileFolderId.set(deskActiveFolder.id);
-		}
-
-		const handled = await (controlPaneComponent as any)?.openTray?.('files');
-		if (!handled) showControls.set(true);
-	};
-
-	const copyDeskProjectToCloud = async () => {
-		if (!deskActiveFolder?.id) return;
-		try {
-			const copyHandler = (controlPaneComponent as any)?.copyLocalProjectToCloud;
-			if (typeof copyHandler !== 'function') {
-				throw new Error($i18n.t('Project copy is not ready yet.'));
-			}
-			await copyHandler(deskActiveFolder.id, null);
-		} catch (error) {
-			toast.error(error instanceof Error ? error.message : $i18n.t('Failed to copy project to cloud'));
-		}
-	};
-
-	const openDeskEnvironmentPicker = () => {
-		document.getElementById('desk-workspace-status-button')?.click();
 	};
 
 	const ensureWebDeskCloudDefault = () => {
@@ -4229,94 +4181,41 @@
 							</div>
 						{:else}
 							<div class="flex items-center h-full">
-								{#if showDeskProjectHome}
-									<DeskProjectHome
-										folder={$selectedFolder}
-										workspaceLabel={deskProjectHomeWorkspaceLabel}
-										canCopyProjectToCloud={deskProjectHomeCanCopyToCloud}
-										canCloneFromGithub={deskProjectHomeCanCloneFromGithub}
-										{history}
-										bind:selectedModels
-										bind:messageInput
-										bind:files
-										bind:prompt
-										bind:autoScroll
-										bind:selectedToolIds
-										bind:selectedSkillIds
-										bind:selectedFilterIds
-										bind:imageGenerationEnabled
-										bind:codeInterpreterEnabled
-										bind:webSearchEnabled
-										bind:atSelectedModel
-										bind:showCommands
-										bind:dragged
-										{pendingOAuthTools}
-										toolServers={$toolServers}
-										{stopResponse}
-										{createMessagePair}
-										{onUpload}
-										onFolderUpdate={async () => {
-											await chats.set(await getChatList(localStorage.token, $currentChatPage));
-											currentChatPage.set(1);
-										}}
-										onFolderDelete={async () => {
-											await chats.set(await getChatList(localStorage.token, $currentChatPage));
-											currentChatPage.set(1);
-											selectedFolder.set(null);
-										}}
-										onChange={(data) => {
-											if (!$temporaryChatEnabled) {
-												saveDraft(data);
-											}
-										}}
-										on:open-files={openDeskProjectFiles}
-										on:copy-to-cloud={copyDeskProjectToCloud}
-										on:open-environment={openDeskEnvironmentPicker}
-										on:submit={async (e) => {
-											clearDraft();
-											if (e.detail || files.length > 0) {
-												await tick();
-												submitHandler(e.detail);
-											}
-										}}
-									/>
-								{:else}
-									<Placeholder
-										{history}
-										bind:selectedModels
-										bind:messageInput
-										bind:files
-										bind:prompt
-										bind:autoScroll
-										bind:selectedToolIds
-										bind:selectedSkillIds
-										bind:selectedFilterIds
-										bind:imageGenerationEnabled
-										bind:codeInterpreterEnabled
-										bind:webSearchEnabled
-										bind:atSelectedModel
-										bind:showCommands
-										bind:dragged
-										{pendingOAuthTools}
-										toolServers={$toolServers}
-										{stopResponse}
-										{createMessagePair}
-										{onSelect}
-										{onUpload}
-										onChange={(data) => {
-											if (!$temporaryChatEnabled) {
-												saveDraft(data);
-											}
-										}}
-										on:submit={async (e) => {
-											clearDraft();
-											if (e.detail || files.length > 0) {
-												await tick();
-												submitHandler(e.detail);
-											}
-										}}
-									/>
-								{/if}
+								<Placeholder
+									{history}
+									bind:selectedModels
+									bind:messageInput
+									bind:files
+									bind:prompt
+									bind:autoScroll
+									bind:selectedToolIds
+									bind:selectedSkillIds
+									bind:selectedFilterIds
+									bind:imageGenerationEnabled
+									bind:codeInterpreterEnabled
+									bind:webSearchEnabled
+									bind:atSelectedModel
+									bind:showCommands
+									bind:dragged
+									{pendingOAuthTools}
+									toolServers={$toolServers}
+									{stopResponse}
+									{createMessagePair}
+									{onSelect}
+									{onUpload}
+									onChange={(data) => {
+										if (!$temporaryChatEnabled) {
+											saveDraft(data);
+										}
+									}}
+									on:submit={async (e) => {
+										clearDraft();
+										if (e.detail || files.length > 0) {
+											await tick();
+											submitHandler(e.detail);
+										}
+									}}
+								/>
 							</div>
 						{/if}
 					</div>

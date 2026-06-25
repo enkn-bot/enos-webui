@@ -285,25 +285,6 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(nav).not.toContain('{chatTitleLabel()}</span>');
 	});
 
-	test('desk selected-project empty state uses a project home, not generic chat placeholder chrome', () => {
-		const chat = read('src/lib/components/chat/Chat.svelte');
-		const projectHome = read('src/lib/components/chat/DeskProjectHome.svelte');
-
-		expect(chat).toContain("import DeskProjectHome from './DeskProjectHome.svelte';");
-		expect(chat).toContain('showDeskProjectHome');
-		expect(chat).toContain('<DeskProjectHome');
-		expect(projectHome).toContain('export let folder');
-		expect(projectHome).toContain('export let workspaceLabel');
-		expect(projectHome).toContain('getChatListByFolderId');
-		expect(projectHome).toContain('<MessageInput');
-		expect(projectHome).toContain('New project chat');
-		expect(projectHome).toContain('Open files');
-		expect(projectHome).toContain('Copy to cloud');
-		expect(projectHome).toContain('Clone from GitHub');
-		expect(projectHome).toContain('No project chats yet');
-		expect(projectHome).not.toContain('No chats found');
-	});
-
 	test('desk repairs currently opened loose legacy chats by tagging them to the Desk surface', () => {
 		const chat = read('src/lib/components/chat/Chat.svelte');
 
