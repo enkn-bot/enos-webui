@@ -197,6 +197,7 @@ export type EnosDesktopBridge = {
 	chooseWorkspace: () => Promise<EnosDesktopWorkspace | null>;
 	chooseWorkspaceForFolder: (folderId: string) => Promise<EnosDesktopWorkspace | null>;
 	bindWorkspaceToFolder: (folderId: string) => Promise<EnosDesktopWorkspace | null>;
+	createCleanWorkspace?: (projectName: string) => Promise<EnosDesktopWorkspace | null>;
 	openGithubOAuth?: (
 		authorizeUrl: string
 	) => Promise<{ ok: true; url?: string } | { ok: false; error: string; url?: string }>;

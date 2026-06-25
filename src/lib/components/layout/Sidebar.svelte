@@ -32,8 +32,11 @@
 		sidebarWidth,
 		activeChatIds,
 		showFileNavPath,
+		showFileNavDir,
 		showLocalFileFolderId,
-		showDeskFolderPicker
+		showDeskFolderPicker,
+		terminalServers,
+		selectedTerminalId
 	} from '$lib/stores';
 	import { onMount, getContext, tick, onDestroy } from 'svelte';
 
@@ -71,6 +74,8 @@
 	import Tooltip from '../common/Tooltip.svelte';
 	import Folders from './Sidebar/Folders.svelte';
 	import { getChannels, createNewChannel } from '$lib/apis/channels';
+	import { getTerminalServers, createDirectory } from '$lib/apis/terminal';
+	import { createCloudWorkspace } from '$lib/apis/workspace';
 	import ChannelModal from './Sidebar/ChannelModal.svelte';
 	import ChannelItem from './Sidebar/ChannelItem.svelte';
 	import PencilSquare from '../icons/PencilSquare.svelte';
@@ -341,7 +346,41 @@
 		}
 	};
 
-	const createFolder = async ({ name, meta, data, parent_id, localWorkspace }) => {
+	const safeCloudProjectRootName = (value) => {
+		const cleaned = String(value ?? '')
+			.trim()
+			.replace(/[<>:"/\\|?*\u0000-\u001f]+/g, '-')
+			.replace(/\s+/g, ' ')
+			.replace(/^\.+$/, '')
+			.slice(0, 80)
+			.trim();
+		return cleaned || 'Project';
+	};
+
+	const createCloudProjectRoot = async (projectName) => {
+		const rootName = safeCloudProjectRootName(projectName);
+		const cloudPath = `/home/user/${rootName}/`;
+		const ws = await createCloudWorkspace(localStorage.token);
+		const servers = await getTerminalServers(localStorage.token);
+		terminalServers.set(servers);
+
+		if (ws?.id) selectedTerminalId.set(ws.id);
+
+		const terminal = servers.find((server) => server.id === ws?.id) ?? servers[0];
+		if (!terminal?.url || !(terminal as any)?.key) {
+			throw new Error($i18n.t('Cloud workspace is not ready yet.'));
+		}
+
+		const created = await createDirectory(terminal.url, (terminal as any).key, cloudPath);
+		if (!created) {
+			throw new Error($i18n.t('Failed to create cloud project folder.'));
+		}
+
+		showFileNavDir.set(cloudPath);
+		return { cloudPath, rootName, ws };
+	};
+
+	const createFolder = async ({ name, meta, data, parent_id, localWorkspace, projectEnvironment }) => {
 		name = name?.trim();
 		if (!name) {
 			toast.error($i18n.t('Folder name cannot be empty.'));
@@ -362,6 +401,26 @@
 			name = `${name} ${i}`;
 		}
 
+		let nextData = data;
+		let cloudProjectRoot = null;
+		if (projectEnvironment === 'cloud' && isDeskSurface && !localWorkspace) {
+			try {
+				cloudProjectRoot = await createCloudProjectRoot(name);
+				nextData = {
+					...(data ?? {}),
+					project_context_source: {
+						kind: 'cloud',
+						rootName: cloudProjectRoot.rootName,
+						cloudPath: cloudProjectRoot.cloudPath
+					},
+					project_context_updated_at: new Date().toISOString()
+				};
+			} catch (error) {
+				toast.error(error instanceof Error ? error.message : `${error}`);
+				return;
+			}
+		}
+
 		// Add a dummy folder to the list to show the user that the folder is being created
 		const tempId = uuidv4();
 		folders = {
@@ -370,6 +429,7 @@
 				id: tempId,
 				name: name,
 				meta: withSurfaceMeta({ meta }, currentSurface).meta,
+				data: nextData,
 				parent_id: parent_id,
 				created_at: Date.now(),
 				updated_at: Date.now()
@@ -382,7 +442,7 @@
 				{
 					name,
 					meta,
-					data,
+					data: nextData,
 					parent_id
 				},
 				currentSurface
@@ -417,6 +477,14 @@
 				// keep the desk right pane closed by default (user opens via toggle).
 				showFileNavPath.set('.');
 				await saveProjectDigestForFolder(res.id, optimisticFolder);
+			} else if (cloudProjectRoot) {
+				const cloudFolder = {
+					...res,
+					data: nextData
+				};
+				await selectedFolder.set(cloudFolder);
+				showFileNavDir.set(cloudProjectRoot.cloudPath);
+				toast.success($i18n.t('Working in cloud'));
 			}
 			// newFolderId = res.id;
 			await initFolders();

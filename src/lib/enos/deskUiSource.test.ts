@@ -331,6 +331,47 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(menu).not.toContain('Disconnect');
 	});
 
+	test('project menu hides duplicate local detail labels', () => {
+		const menu = read('src/lib/components/enos/DeskProjectMenu.svelte');
+
+		expect(menu).toContain('showProjectDetailLabel');
+		expect(menu).toContain('projectDetailLabel !== projectName');
+		expect(menu).not.toContain('{#if projectDetailLabel}');
+	});
+
+	test('new project modal is lean and workspace-first in create mode', () => {
+		const modal = read('src/lib/components/layout/Sidebar/Folders/FolderModal.svelte');
+
+		expect(modal).toContain("{$i18n.t('New Project')}");
+		expect(modal).toContain('projectEnvironment');
+		expect(modal).toContain('projectStartMode');
+		expect(modal).toContain("{$i18n.t('Local')}");
+		expect(modal).toContain("{$i18n.t('Cloud')}");
+		expect(modal).toContain("{$i18n.t('Choose local folder')}");
+		expect(modal).toContain("{$i18n.t('Start clean')}");
+		expect(modal).toContain("$i18n.t('Create local project')");
+		expect(modal).toContain("{$i18n.t('Create cloud project')}");
+		expect(modal).toContain('createCleanWorkspace');
+		expect(modal).toContain("placeholder={$i18n.t('Project name')}");
+		expect(modal).toMatch(/\{#if edit\}[\s\S]*Folder Background Image/);
+		expect(modal).toMatch(/\{#if edit\}[\s\S]*System Prompt/);
+		expect(modal).toMatch(/\{#if edit\}[\s\S]*Project Knowledge/);
+		expect(modal).not.toContain("placeholder={$i18n.t('Enter folder name')}");
+	});
+
+	test('cloud project creation creates a cloud workspace folder and points Files at it', () => {
+		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
+
+		expect(sidebar).toContain('projectEnvironment');
+		expect(sidebar).toContain('createCloudProjectRoot');
+		expect(sidebar).toContain('createCloudWorkspace(localStorage.token)');
+		expect(sidebar).toContain('createDirectory(');
+		expect(sidebar).toContain('project_context_source: {');
+		expect(sidebar).toContain("kind: 'cloud'");
+		expect(sidebar).toContain('showFileNavDir.set(cloudPath)');
+		expect(sidebar).toContain('selectedTerminalId.set(ws.id)');
+	});
+
 	test('desk repairs currently opened loose legacy chats by tagging them to the Desk surface', () => {
 		const chat = read('src/lib/components/chat/Chat.svelte');
 

@@ -22,6 +22,7 @@
 	$: sourceKind = source?.kind ?? badge.kind;
 	$: projectStatusLabel = statusLabelFor(sourceKind);
 	$: projectDetailLabel = detailLabelFor(source);
+	$: showProjectDetailLabel = Boolean(projectDetailLabel && projectDetailLabel !== projectName);
 	$: projectIcon = sourceKind === 'cloud' || sourceKind === 'github' ? 'cloud' : 'folder';
 
 	const statusLabelFor = (kind: string | null | undefined) => {
@@ -76,7 +77,7 @@
 						<div class="truncate text-xs text-gray-500 dark:text-gray-400">
 							{projectStatusLabel}
 						</div>
-						{#if projectDetailLabel}
+						{#if showProjectDetailLabel}
 							<div class="mt-1 truncate text-xs text-gray-400 dark:text-gray-500">
 								{projectDetailLabel}
 							</div>

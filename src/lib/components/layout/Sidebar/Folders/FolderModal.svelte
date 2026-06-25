@@ -1,19 +1,21 @@
 <script lang="ts">
-	import { getContext, createEventDispatcher, onMount, tick } from 'svelte';
+	import { getContext, tick } from 'svelte';
 
 	import Spinner from '$lib/components/common/Spinner.svelte';
 	import Modal from '$lib/components/common/Modal.svelte';
 	import XMark from '$lib/components/icons/XMark.svelte';
 
 	import { toast } from 'svelte-sonner';
-	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
 	import { user, config } from '$lib/stores';
 
 	import Textarea from '$lib/components/common/Textarea.svelte';
 	import Knowledge from '$lib/components/workspace/Models/Knowledge.svelte';
 	import { getFolderById } from '$lib/apis/folders';
+	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 	const i18n = getContext('i18n');
+
+	type ProjectEnvironment = 'local' | 'cloud';
+	type ProjectStartMode = 'folder' | 'clean';
 
 	export let show = false;
 	export let onSubmit: Function = (e) => {};
@@ -34,37 +36,97 @@
 		files: []
 	};
 	let localWorkspace = null;
+	let projectEnvironment: ProjectEnvironment = 'cloud';
+	let projectStartMode: ProjectStartMode = 'clean';
+	let lastShow = false;
 
 	let loading = false;
+
+	$: canUseLocalProject = showLocalFolderAction && Boolean(getEnosDesktopBridge());
+	$: submitLabel = edit
+		? $i18n.t('Save')
+		: projectEnvironment === 'cloud'
+			? $i18n.t('Create cloud project')
+			: localWorkspace
+				? $i18n.t('Create from folder')
+				: $i18n.t('Create local project');
+
+	const defaultProjectEnvironment = (): ProjectEnvironment => (canUseLocalProject ? 'local' : 'cloud');
+
+	const resetCreateState = () => {
+		name = '';
+		meta = {
+			background_image_url: null
+		};
+		data = {
+			system_prompt: '',
+			files: []
+		};
+		localWorkspace = null;
+		projectEnvironment = defaultProjectEnvironment();
+		projectStartMode = projectEnvironment === 'local' ? 'folder' : 'clean';
+	};
+
+	const setProjectEnvironment = (environment: ProjectEnvironment) => {
+		if (environment === 'local' && !canUseLocalProject) return;
+		projectEnvironment = environment;
+		localWorkspace = null;
+		projectStartMode = environment === 'local' ? 'folder' : 'clean';
+	};
+
+	const createCleanWorkspace = async () => {
+		const bridge = getEnosDesktopBridge();
+		if (!bridge?.createCleanWorkspace) {
+			throw new Error($i18n.t('Restart ENOS Desk to create a local project.'));
+		}
+		return await bridge.createCleanWorkspace(name.trim());
+	};
 
 	const submitHandler = async () => {
 		loading = true;
 
-		if ((data?.files ?? []).some((file) => file.status === 'uploading')) {
-			toast.error($i18n.t('Please wait until all files are uploaded.'));
-			loading = false;
-			return;
-		}
+		try {
+			if (!name.trim()) {
+				toast.error($i18n.t('Project name is required.'));
+				return;
+			}
 
-		// Check folder max file count limit
-		const maxFileCount = $config?.features?.folder_max_file_count ?? '';
-		if (maxFileCount && (data?.files ?? []).length > maxFileCount) {
-			toast.error(
-				$i18n.t('Maximum number of files per folder is {{max}}.', { max: maxFileCount ?? 0 })
-			);
-			loading = false;
-			return;
-		}
+			if (!edit && projectEnvironment === 'local' && !localWorkspace) {
+				if (projectStartMode === 'folder') {
+					toast.error($i18n.t('Choose a local folder or start clean.'));
+					return;
+				}
+				localWorkspace = await createCleanWorkspace();
+			}
 
-		await onSubmit({
-			name,
-			meta,
-			data,
-			localWorkspace,
-			parent_id: edit ? undefined : parentId
-		});
-		show = false;
-		loading = false;
+			if ((data?.files ?? []).some((file) => file.status === 'uploading')) {
+				toast.error($i18n.t('Please wait until all files are uploaded.'));
+				return;
+			}
+
+			// Check folder max file count limit
+			const maxFileCount = $config?.features?.folder_max_file_count ?? '';
+			if (maxFileCount && (data?.files ?? []).length > maxFileCount) {
+				toast.error(
+					$i18n.t('Maximum number of files per folder is {{max}}.', { max: maxFileCount ?? 0 })
+				);
+				return;
+			}
+
+			await onSubmit({
+				name,
+				meta,
+				data,
+				localWorkspace,
+				projectEnvironment,
+				parent_id: edit ? undefined : parentId
+			});
+			show = false;
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : `${error}`);
+		} finally {
+			loading = false;
+		}
 	};
 
 	const init = async () => {
@@ -82,6 +144,8 @@
 				system_prompt: '',
 				files: []
 			};
+		} else {
+			resetCreateState();
 		}
 
 		focusInput();
@@ -97,6 +161,8 @@
 	};
 
 	const selectLocalFolder = async () => {
+		projectEnvironment = 'local';
+		projectStartMode = 'folder';
 		const workspace = await onLocalFolderPick();
 		if (!workspace) return;
 		localWorkspace = workspace;
@@ -105,20 +171,13 @@
 		}
 	};
 
-	$: if (show) {
+	$: if (show && !lastShow) {
 		init();
 	}
+	$: lastShow = show;
 
 	$: if (!show && !edit) {
-		name = '';
-		meta = {
-			background_image_url: null
-		};
-		data = {
-			system_prompt: '',
-			files: []
-		};
-		localWorkspace = null;
+		resetCreateState();
 	}
 </script>
 
@@ -129,7 +188,7 @@
 				{#if edit}
 					{$i18n.t('Edit Project')}
 				{:else}
-					{$i18n.t('Create Project')}
+					{$i18n.t('New Project')}
 				{/if}
 			</div>
 			<button
@@ -159,12 +218,88 @@
 								class="w-full text-sm bg-transparent placeholder:text-gray-300 dark:placeholder:text-gray-700 outline-hidden"
 								type="text"
 								bind:value={name}
-								placeholder={$i18n.t('Enter folder name')}
+								placeholder={$i18n.t('Project name')}
 								autocomplete="off"
 							/>
 						</div>
 					</div>
 
+					{#if !edit}
+						<div class="mt-5">
+							<div class="mb-2 text-xs text-gray-500">{$i18n.t('Environment')}</div>
+							<div class="grid grid-cols-2 gap-2">
+								<button
+									type="button"
+									class="rounded-2xl border px-3 py-2 text-left transition {projectEnvironment ===
+									'local'
+										? 'border-gray-900 bg-gray-50 dark:border-gray-100 dark:bg-gray-800'
+										: 'border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-850'} {!canUseLocalProject
+										? 'cursor-not-allowed opacity-45'
+										: ''}"
+									disabled={!canUseLocalProject}
+									on:click={() => setProjectEnvironment('local')}
+								>
+									<div class="text-sm font-medium">{$i18n.t('Local')}</div>
+									<div class="text-xs text-gray-500">
+										{canUseLocalProject
+											? $i18n.t('This device')
+											: $i18n.t('Open in desktop app')}
+									</div>
+								</button>
+								<button
+									type="button"
+									class="rounded-2xl border px-3 py-2 text-left transition {projectEnvironment ===
+									'cloud'
+										? 'border-gray-900 bg-gray-50 dark:border-gray-100 dark:bg-gray-800'
+										: 'border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-850'}"
+									on:click={() => setProjectEnvironment('cloud')}
+								>
+									<div class="text-sm font-medium">{$i18n.t('Cloud')}</div>
+									<div class="text-xs text-gray-500">{$i18n.t('ENOS workspace')}</div>
+								</button>
+							</div>
+						</div>
+
+						<div class="mt-4 rounded-2xl border border-gray-100 p-3 dark:border-gray-800">
+							{#if projectEnvironment === 'local'}
+								<div class="flex items-start justify-between gap-3">
+									<div class="min-w-0">
+										<div class="text-sm font-medium">
+											{localWorkspace ? $i18n.t('Local folder selected') : $i18n.t('Choose local folder')}
+										</div>
+										<div class="mt-1 truncate text-xs text-gray-500">
+											{localWorkspace?.rootDisplay ??
+												$i18n.t('Pick an existing folder on this device.')}
+										</div>
+									</div>
+									<button
+										type="button"
+										class="shrink-0 rounded-full bg-gray-100 px-3 py-1.5 text-sm font-medium transition hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
+										on:click={selectLocalFolder}
+									>
+										{$i18n.t('Choose local folder')}
+									</button>
+								</div>
+								<button
+									type="button"
+									class="mt-3 text-sm font-medium text-gray-500 transition hover:text-gray-900 dark:hover:text-gray-100"
+									on:click={() => {
+										localWorkspace = null;
+										projectStartMode = 'clean';
+									}}
+								>
+									{$i18n.t('Start clean')}
+								</button>
+							{:else}
+								<div class="text-sm font-medium">{$i18n.t('Create cloud project')}</div>
+								<div class="mt-1 text-xs text-gray-500">
+									{$i18n.t('Start in your private cloud workspace.')}
+								</div>
+							{/if}
+						</div>
+					{/if}
+
+					{#if edit}
 					<input
 						id="folder-background-image-input"
 						type="file"
@@ -258,6 +393,7 @@
 							</div>
 						</Knowledge>
 					</div>
+					{/if}
 
 					<div class="flex justify-end pt-3 text-sm font-medium gap-1.5">
 						<button
@@ -267,7 +403,7 @@
 							type="submit"
 							disabled={loading}
 						>
-							{$i18n.t('Save')}
+							{submitLabel}
 
 							{#if loading}
 								<div class="ml-2 self-center">
