@@ -130,7 +130,7 @@
 	import { composeDeskMessageContent } from '$lib/enos/deskReasoning';
 	import { bridgeTransport, runOpencodeDeskTurn } from '$lib/enos/deskOpencode';
 	import { DESK_FILE_TOOLS, describeDeskTool, executeDeskFileTool } from '$lib/enos/deskFileTools';
-	import { groundingLine } from '$lib/enos/grounding';
+	import { deskSurfaceGroundingLine, groundingLine } from '$lib/enos/grounding';
 	import { surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
 	import { workspaceBadgeFromFolder, deskCurrentLocation } from '$lib/enos/workspaceBadge';
 	import { maybeGenerateOpencodeChatTitle } from '$lib/enos/opencodeTitle';
@@ -3222,6 +3222,26 @@
 			activePath: activeProjectFilePath,
 			prompt: projectActionPrompt
 		});
+		const deskSurfaceLine = isDeskSurface()
+			? deskSurfaceGroundingLine({
+					projectName:
+						workspaceBadgeFromFolder(projectFolder).name ||
+						(typeof projectFolder?.name === 'string' ? projectFolder.name.trim() : ''),
+					location: deskLocation,
+					hasProject: Boolean(projectFolder?.id ?? activeProjectId),
+					readOnly: deskLocationReadOnly
+				})
+			: '';
+
+		if (deskSurfaceLine) {
+			messages = [
+				...messages,
+				{
+					role: 'system',
+					content: deskSurfaceLine
+				}
+			];
+		}
 
 		if (projectContextDigest) {
 			messages = [

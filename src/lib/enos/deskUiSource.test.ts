@@ -18,8 +18,15 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(sidebar).toContain('deskFolderIds = allFolders');
 		expect(sidebar).toContain("folder?.meta?.surface === 'desk'");
 		expect(sidebar).toContain('Boolean(folder?.data?.project_context_source)');
-		// Desk is project-first: no standalone loose Chats section (chat surface only).
+		// Desk is project-first: the full standalone Chats section stays chat-surface-only.
 		expect(sidebar).toContain('$: showDeskChats = !isDeskSurface;');
+		// But no-project Desk chats still need a visible home.
+		expect(sidebar).toContain(
+			'$: showDeskUnfiledChats = isDeskSurface && sidebarChats.length > 0;'
+		);
+		expect(sidebar).toContain("name={$i18n.t('Unfiled')}");
+		expect(sidebar).toContain('deskLooseChatIds');
+		expect(sidebar).toContain('{#if showDeskUnfiledChats}');
 		// Stores hold raw chats; the old opt-in scoping helper is gone.
 		expect(sidebar).not.toContain('scopeSidebarChats(');
 		expect(sidebar).not.toContain('shouldScopeSidebarChatsBySurface');
@@ -228,7 +235,9 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(chatControls).toContain('createCloudWorkspace(localStorage.token)');
 		expect(chatControls).toContain('uploadLocalProjectToCloud(localStorage.token, archive)');
 		expect(chatControls).toContain('selectedTerminalId.set(ws.id)');
-		expect(chatControls).toContain("showFileNavDir.set(imported.dest ? `${imported.dest.replace(/\\/$/, '')}/` : '/home/user/')");
+		expect(chatControls).toContain(
+			"showFileNavDir.set(imported.dest ? `${imported.dest.replace(/\\/$/, '')}/` : '/home/user/')"
+		);
 		expect(workspaceApi).toContain('/migrate/upload');
 		expect(desktopBridge).toContain('localProjectCloudUpload?: boolean');
 	});
@@ -276,12 +285,31 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(chat).not.toContain("console.error('[enos desk title]'");
 	});
 
+	test('Desk no-project state is explicit in chrome and prompt grounding', () => {
+		const nav = read('src/lib/components/chat/Navbar.svelte');
+		const chat = read('src/lib/components/chat/Chat.svelte');
+		const grounding = read('src/lib/enos/grounding.ts');
+
+		expect(nav).toContain("const deskWorkspaceEmptyLabel = () => $i18n.t('No Project');");
+		expect(nav).toContain('deskWorkspaceEmptyLabel()');
+		expect(nav).not.toContain(">{$i18n.t('Select')}</span>");
+		expect(chat).toContain(
+			"import { deskSurfaceGroundingLine, groundingLine } from '$lib/enos/grounding';"
+		);
+		expect(chat).toContain('deskSurfaceGroundingLine({');
+		expect(chat).toContain('deskSurfaceLine');
+		expect(grounding).toContain('not a terminal');
+		expect(grounding).toContain('chat-only');
+	});
+
 	test('active chat title events update Navbar before message lookup', () => {
 		const chat = read('src/lib/components/chat/Chat.svelte');
 		const titleEventIdx = chat.indexOf("if (type === 'chat:title') {");
 		const messageLookupIdx = chat.indexOf('let message = history.messages[event.message_id];');
 
-		expect(chat).toContain("import { normalizeChatTitleEventData } from '$lib/enos/chatTitleEvents';");
+		expect(chat).toContain(
+			"import { normalizeChatTitleEventData } from '$lib/enos/chatTitleEvents';"
+		);
 		expect(titleEventIdx).toBeGreaterThan(-1);
 		expect(messageLookupIdx).toBeGreaterThan(-1);
 		expect(titleEventIdx).toBeLessThan(messageLookupIdx);

@@ -31,3 +31,32 @@ export const groundingLine = (now: Date = new Date()): string => {
 		'Never say you do not know the current date or year.'
 	);
 };
+
+export const deskSurfaceGroundingLine = (args: {
+	projectName?: string | null;
+	location?: 'local' | 'cloud' | null;
+	hasProject?: boolean;
+	readOnly?: boolean;
+}): string => {
+	const projectName = String(args.projectName ?? '').trim();
+
+	if (!args.hasProject) {
+		return (
+			'Surface: ENOS Desk; no project is selected. This is a chat-only Desk ' +
+			'conversation, not a terminal. Project files, local tools, and cloud workspace ' +
+			'actions are inactive until the user selects or creates a project.'
+		);
+	}
+
+	const location =
+		args.location === 'cloud'
+			? 'cloud'
+			: args.location === 'local'
+				? 'your device'
+				: args.readOnly
+					? 'read-only history'
+					: 'no active workspace';
+	const project = projectName || 'the selected project';
+
+	return `Surface: ENOS Desk. Active project: ${project}. Working in ${location}.`;
+};

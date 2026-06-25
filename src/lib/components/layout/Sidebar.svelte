@@ -136,10 +136,10 @@
 	$: sidebarChats = filterChatsBySurface($chats ?? [], currentSurface, deskFolderIds);
 	$: sidebarPinnedChats = filterChatsBySurface($pinnedChats ?? [], currentSurface, deskFolderIds);
 	$: hasDesktopBridge = browser && Boolean(getEnosDesktopBridge());
-	// Desk is project-first: no standalone loose Chats section. Chats on desk live
-	// inside projects (new chat -> active project). Loose chatting lives on enoschat.
-	// The Chats section renders only on the chat surface.
+	// Desk is project-first: the full standalone Chats section stays chat-surface-only.
 	$: showDeskChats = !isDeskSurface;
+	$: deskLooseChatIds = sidebarChats.map((chat) => chat?.id).filter(Boolean);
+	$: showDeskUnfiledChats = isDeskSurface && sidebarChats.length > 0;
 	$: if ($showDeskFolderPicker) {
 		showCreateFolderModal = true;
 		showDeskFolderPicker.set(false);
@@ -404,9 +404,7 @@
 						project_context_source: {
 							kind: 'local',
 							rootName: localWorkspace?.name ?? res?.name ?? '',
-							...(localWorkspace?.rootDisplay
-								? { rootDisplay: localWorkspace.rootDisplay }
-								: {})
+							...(localWorkspace?.rootDisplay ? { rootDisplay: localWorkspace.rootDisplay } : {})
 						}
 					}
 				};
@@ -1168,7 +1166,7 @@
 								aria-label={$i18n.t('User menu')}
 							>
 								<div class="self-center relative">
-										<UserAvatar name={$user?.name} className="size-7" />
+									<UserAvatar name={$user?.name} className="size-7" />
 
 									{#if $config?.features?.enable_user_status}
 										<div class="absolute -bottom-0.5 -right-0.5">
@@ -1440,20 +1438,20 @@
 									</div>
 									<div class="flex-1 text-ellipsis line-clamp-1">
 										{note.title}
-										</div>
-										<button
-											class="invisible group-hover:visible self-center p-0.5 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition"
-											on:click|preventDefault|stopPropagation={async () => {
-												await toggleNotePinnedStatusById(localStorage.token, note.id);
-												const _pinnedNotes = await getPinnedNoteList(localStorage.token).catch(
-													() => []
-												);
-												pinnedNotes.set(_pinnedNotes);
-											}}
-											aria-label={$i18n.t('Unpin')}
-										>
-											<XMark className="size-3.5" strokeWidth="2" />
-										</button>
+									</div>
+									<button
+										class="invisible group-hover:visible self-center p-0.5 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition"
+										on:click|preventDefault|stopPropagation={async () => {
+											await toggleNotePinnedStatusById(localStorage.token, note.id);
+											const _pinnedNotes = await getPinnedNoteList(localStorage.token).catch(
+												() => []
+											);
+											pinnedNotes.set(_pinnedNotes);
+										}}
+										aria-label={$i18n.t('Unpin')}
+									>
+										<XMark className="size-3.5" strokeWidth="2" />
+									</button>
 								</a>
 							{/each}
 						</div>
@@ -1547,6 +1545,53 @@
 								initChatList();
 							}}
 						/>
+					</Folder>
+				{/if}
+
+				{#if showDeskUnfiledChats}
+					<Folder
+						id="sidebar-desk-unfiled-chats"
+						className="px-2 mt-0.5"
+						name={$i18n.t('Unfiled')}
+						chevron={false}
+						addIcon={PencilSquare}
+						onAdd={() => {
+							startNewChatHandler();
+						}}
+						onAddLabel={$i18n.t('New Chat')}
+						on:change={async () => {
+							selectedFolder.set(null);
+						}}
+					>
+						<div class="sr-only">{deskLooseChatIds.length}</div>
+						<div class="flex flex-col overflow-y-auto scrollbar-hidden pt-1.5">
+							{#each sidebarChats as chat, idx (`desk-unfiled-chat-${chat?.id ?? idx}`)}
+								<ChatItem
+									className=""
+									id={chat.id}
+									title={chat.title}
+									createdAt={chat.created_at}
+									updatedAt={chat.updated_at}
+									lastReadAt={chat.last_read_at}
+									{shiftKey}
+									selected={selectedChatId === chat.id}
+									openFilesOnSelect={false}
+									on:select={() => {
+										selectedChatId = chat.id;
+									}}
+									on:unselect={() => {
+										selectedChatId = null;
+									}}
+									on:change={async () => {
+										initChatList();
+									}}
+									on:tag={(e) => {
+										const { type, name } = e.detail;
+										tagEventHandler(type, name, chat.id);
+									}}
+								/>
+							{/each}
+						</div>
 					</Folder>
 				{/if}
 
@@ -1829,7 +1874,7 @@
 								aria-label={$i18n.t('User menu')}
 							>
 								<div class=" self-center mr-3 relative flex-shrink-0">
-										<UserAvatar name={$user?.name} className="size-7" />
+									<UserAvatar name={$user?.name} className="size-7" />
 
 									{#if $config?.features?.enable_user_status}
 										<div class="absolute -bottom-0.5 -right-0.5">

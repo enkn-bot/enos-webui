@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { groundingLine } from './grounding';
+import { deskSurfaceGroundingLine, groundingLine } from './grounding';
 
 describe('groundingLine', () => {
 	it('states the current date with weekday, month, year, and time', () => {
@@ -17,5 +17,20 @@ describe('groundingLine', () => {
 		const line = groundingLine();
 		expect(line.startsWith('Current date and time:')).toBe(true);
 		expect(line).toContain(String(new Date().getFullYear()));
+	});
+});
+
+describe('deskSurfaceGroundingLine', () => {
+	it('identifies a no-project Desk chat as chat-only, not terminal', () => {
+		const line = deskSurfaceGroundingLine({
+			projectName: '',
+			location: null,
+			hasProject: false
+		});
+
+		expect(line).toContain('ENOS Desk');
+		expect(line).toContain('no project is selected');
+		expect(line).toContain('chat-only');
+		expect(line).toContain('not a terminal');
 	});
 });
