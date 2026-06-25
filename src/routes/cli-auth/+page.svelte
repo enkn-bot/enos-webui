@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
-	import { buildCliAuthPost } from '$lib/enos/cliAuth';
+	import { buildCliAuthPost, getCliAuthToken } from '$lib/enos/cliAuth';
 
 	let status = 'Connecting ENOS Terminal...';
 	let detail = 'Return to your terminal when this finishes.';
@@ -11,7 +11,10 @@
 		const params = new URLSearchParams(window.location.search);
 		const redirect = params.get('redirect') ?? '';
 		const state = params.get('state') ?? '';
-		const sessionValue = localStorage.getItem('token') ?? '';
+		const sessionValue = getCliAuthToken({
+			localStorageToken: localStorage.getItem('token'),
+			cookie: document.cookie
+		});
 
 		if (!sessionValue) {
 			const returnPath = `${window.location.pathname}${window.location.search}`;

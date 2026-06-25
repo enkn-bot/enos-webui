@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { buildCliAuthPost, isAllowedCliRedirect } from './cliAuth';
+import { buildCliAuthPost, getCliAuthToken, isAllowedCliRedirect } from './cliAuth';
 
 describe('CLI browser auth helpers', () => {
 	test('allows only loopback callback redirects', () => {
@@ -43,5 +43,15 @@ describe('CLI browser auth helpers', () => {
 				token: 'owui-token'
 			})
 		).toThrow('Unsafe CLI callback URL');
+	});
+
+	test('uses localStorage token before falling back to OWUI token cookie', () => {
+		expect(getCliAuthToken({ localStorageToken: ' local-token ', cookie: 'token=cookie-token' })).toBe(
+			'local-token'
+		);
+		expect(getCliAuthToken({ localStorageToken: '', cookie: 'theme=dark; token=cookie-token' })).toBe(
+			'cookie-token'
+		);
+		expect(getCliAuthToken({ localStorageToken: '', cookie: 'theme=dark' })).toBe('');
 	});
 });

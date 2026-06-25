@@ -12,6 +12,23 @@ export const isAllowedCliRedirect = (value: string) => {
 	}
 };
 
+const getCookieValue = (cookie: string, name: string) => {
+	const encodedName = name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1');
+	const match = cookie.match(new RegExp(`(?:^|; )${encodedName}=([^;]*)`));
+	return match ? decodeURIComponent(match[1]).trim() : '';
+};
+
+export const getCliAuthToken = ({
+	localStorageToken,
+	cookie
+}: {
+	localStorageToken: string | null | undefined;
+	cookie: string;
+}) => {
+	const stored = (localStorageToken ?? '').trim();
+	return stored || getCookieValue(cookie, 'token');
+};
+
 export const buildCliAuthPost = ({
 	redirect,
 	state,
