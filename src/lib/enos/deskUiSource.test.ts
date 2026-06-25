@@ -34,6 +34,17 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(sidebar).toMatch(/const folderList = filterBySurface/);
 	});
 
+	test('chat list summaries carry surface fields needed by the Desk sidebar', () => {
+		const chatsModel = read('backend/open_webui/models/chats.py');
+
+		expect(chatsModel).toMatch(/class ChatTitleIdResponse\(BaseModel\):[\s\S]*meta: dict = \{\}/);
+		expect(chatsModel).toMatch(/class ChatTitleIdResponse\(BaseModel\):[\s\S]*folder_id: str \| None = None/);
+		expect(chatsModel).toContain('Chat.meta');
+		expect(chatsModel).toContain('Chat.folder_id');
+		expect(chatsModel).toContain("'meta': chat[5]");
+		expect(chatsModel).toContain("'folder_id': chat[6]");
+	});
+
 	test('a new local project binds optimistically so the badge reads "Local" before the digest scan', () => {
 		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
 		// The project_context_source (kind:'local') must be set on the selectedFolder BEFORE

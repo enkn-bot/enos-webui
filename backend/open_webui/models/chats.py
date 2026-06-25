@@ -179,6 +179,8 @@ class ChatTitleIdResponse(BaseModel):
     updated_at: int
     created_at: int
     last_read_at: int | None = None
+    meta: dict = {}
+    folder_id: str | None = None
 
 
 class SharedChatResponse(BaseModel):
@@ -785,9 +787,15 @@ class ChatTable:
         db: AsyncSession | None = None,
     ) -> list[ChatTitleIdResponse]:
         async with get_async_db_context(db) as session:
-            stmt = select(Chat.id, Chat.title, Chat.updated_at, Chat.created_at).filter_by(
-                user_id=user_id, archived=True
-            )
+            stmt = select(
+                Chat.id,
+                Chat.title,
+                Chat.updated_at,
+                Chat.created_at,
+                Chat.last_read_at,
+                Chat.meta,
+                Chat.folder_id,
+            ).filter_by(user_id=user_id, archived=True)
 
             if filter:
                 query_key = filter.get('query')
@@ -824,6 +832,9 @@ class ChatTable:
                         'title': chat[1],
                         'updated_at': chat[2],
                         'created_at': chat[3],
+                        'last_read_at': chat[4],
+                        'meta': chat[5] or {},
+                        'folder_id': chat[6],
                     }
                 )
                 for chat in all_chats
@@ -852,9 +863,15 @@ class ChatTable:
         db: AsyncSession | None = None,
     ) -> list[ChatTitleIdResponse]:
         async with get_async_db_context(db) as session:
-            stmt = select(Chat.id, Chat.title, Chat.updated_at, Chat.created_at, Chat.last_read_at).filter_by(
-                user_id=user_id
-            )
+            stmt = select(
+                Chat.id,
+                Chat.title,
+                Chat.updated_at,
+                Chat.created_at,
+                Chat.last_read_at,
+                Chat.meta,
+                Chat.folder_id,
+            ).filter_by(user_id=user_id)
             if not include_archived:
                 stmt = stmt.filter_by(archived=False)
 
@@ -891,6 +908,8 @@ class ChatTable:
                         'updated_at': chat[2],
                         'created_at': chat[3],
                         'last_read_at': chat[4],
+                        'meta': chat[5] or {},
+                        'folder_id': chat[6],
                     }
                 )
                 for chat in all_chats
@@ -907,9 +926,15 @@ class ChatTable:
         db: AsyncSession | None = None,
     ) -> list[ChatTitleIdResponse]:
         async with get_async_db_context(db) as session:
-            stmt = select(Chat.id, Chat.title, Chat.updated_at, Chat.created_at, Chat.last_read_at).filter_by(
-                user_id=user_id
-            )
+            stmt = select(
+                Chat.id,
+                Chat.title,
+                Chat.updated_at,
+                Chat.created_at,
+                Chat.last_read_at,
+                Chat.meta,
+                Chat.folder_id,
+            ).filter_by(user_id=user_id)
 
             if not include_folders:
                 stmt = stmt.filter_by(folder_id=None)
@@ -938,6 +963,8 @@ class ChatTable:
                         'updated_at': chat[2],
                         'created_at': chat[3],
                         'last_read_at': chat[4],
+                        'meta': chat[5] or {},
+                        'folder_id': chat[6],
                     }
                 )
                 for chat in all_chats
@@ -1096,7 +1123,15 @@ class ChatTable:
     ) -> list[ChatTitleIdResponse]:
         async with get_async_db_context(db) as session:
             result = await session.execute(
-                select(Chat.id, Chat.title, Chat.updated_at, Chat.created_at, Chat.last_read_at)
+                select(
+                    Chat.id,
+                    Chat.title,
+                    Chat.updated_at,
+                    Chat.created_at,
+                    Chat.last_read_at,
+                    Chat.meta,
+                    Chat.folder_id,
+                )
                 .filter_by(user_id=user_id, pinned=True, archived=False)
                 .order_by(Chat.updated_at.desc())
             )
@@ -1109,6 +1144,8 @@ class ChatTable:
                         'updated_at': chat[2],
                         'created_at': chat[3],
                         'last_read_at': chat[4],
+                        'meta': chat[5] or {},
+                        'folder_id': chat[6],
                     }
                 )
                 for chat in all_chats
@@ -1326,7 +1363,15 @@ class ChatTable:
     ) -> list[ChatTitleIdResponse]:
         async with get_async_db_context(db) as session:
             stmt = (
-                select(Chat.id, Chat.title, Chat.updated_at, Chat.created_at, Chat.last_read_at)
+                select(
+                    Chat.id,
+                    Chat.title,
+                    Chat.updated_at,
+                    Chat.created_at,
+                    Chat.last_read_at,
+                    Chat.meta,
+                    Chat.folder_id,
+                )
                 .filter_by(folder_id=folder_id, user_id=user_id)
                 .filter(or_(Chat.pinned == False, Chat.pinned == None))
                 .filter_by(archived=False)
@@ -1348,6 +1393,8 @@ class ChatTable:
                         'updated_at': chat[2],
                         'created_at': chat[3],
                         'last_read_at': chat[4],
+                        'meta': chat[5] or {},
+                        'folder_id': chat[6],
                     }
                 )
                 for chat in all_chats
@@ -1403,9 +1450,15 @@ class ChatTable:
         db: AsyncSession | None = None,
     ) -> list[ChatTitleIdResponse]:
         async with get_async_db_context(db) as session:
-            stmt = select(Chat.id, Chat.title, Chat.updated_at, Chat.created_at, Chat.last_read_at).filter_by(
-                user_id=user_id
-            )
+            stmt = select(
+                Chat.id,
+                Chat.title,
+                Chat.updated_at,
+                Chat.created_at,
+                Chat.last_read_at,
+                Chat.meta,
+                Chat.folder_id,
+            ).filter_by(user_id=user_id)
             tag_id = tag_name.replace(' ', '_').lower()
 
             bind = await session.connection()
@@ -1439,6 +1492,8 @@ class ChatTable:
                         'updated_at': chat[2],
                         'created_at': chat[3],
                         'last_read_at': chat[4],
+                        'meta': chat[5] or {},
+                        'folder_id': chat[6],
                     }
                 )
                 for chat in all_chats
