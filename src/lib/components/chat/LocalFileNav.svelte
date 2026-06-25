@@ -26,6 +26,7 @@
 	import Eye from '../icons/Eye.svelte';
 	import Pencil from '../icons/Pencil.svelte';
 	import GarbageBin from '../icons/GarbageBin.svelte';
+	import CloudArrowUp from '../icons/CloudArrowUp.svelte';
 
 	const i18n = getContext('i18n');
 
@@ -39,6 +40,10 @@
 		folderId: string,
 		digest: EnosDesktopProjectDigest
 	) => void | Promise<void> = () => {};
+	export let onCopyToCloud: (
+		folderId: string,
+		workspace: EnosDesktopWorkspace
+	) => void | Promise<void> = () => {};
 
 	let bridge: EnosDesktopBridge | null = null;
 	let workspace: EnosDesktopWorkspace | null = null;
@@ -50,6 +55,7 @@
 	let loading = false;
 	let fileLoading = false;
 	let syncingProjectContext = false;
+	let copyingToCloud = false;
 	let error: string | null = null;
 	// Desk in the browser (no desktop runtime). This is a supported lite mode,
 	// not an error — local files / Git live in the desktop app only.
@@ -103,7 +109,9 @@
 			message.includes('rename-project-entry') ||
 			message.includes('delete-project-entry') ||
 			message.includes('reveal-project-entry') ||
-			message.includes('get-project-git-status')
+			message.includes('get-project-git-status') ||
+			message.includes('export-project-archive') ||
+			message.includes('exportProjectArchive')
 		) {
 			return $i18n.t('Restart ENOS Desk to enable local project actions.');
 		}
@@ -244,6 +252,24 @@
 		await loadDir(currentPath);
 		await loadGitStatus();
 		await syncProjectContext();
+	};
+
+	const copyProjectToCloud = async () => {
+		if (!bridge || !folderId || !workspace || copyingToCloud) return;
+		if (!bridge.exportProjectArchive) {
+			error = $i18n.t('Restart ENOS Desk to enable local project actions.');
+			return;
+		}
+
+		copyingToCloud = true;
+		error = null;
+		try {
+			await onCopyToCloud(folderId, workspace);
+		} catch (e) {
+			error = friendlyDesktopError(e);
+		} finally {
+			copyingToCloud = false;
+		}
 	};
 
 	const actionLabel = (result: EnosDesktopProjectActionRequest) => {
@@ -412,7 +438,7 @@
 				</div>
 				{#if workspace && folderId}
 					<div class="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
-						{$i18n.t('Working on this device')}
+						{$i18n.t('Working on your device')}
 					</div>
 					<div class="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
 						{#if gitStatus?.isRepo}
@@ -529,6 +555,19 @@
 							{$i18n.t('Project file actions')}
 						</div>
 						{#if folderId}
+							<button
+								class="select-none flex rounded-xl py-1.5 px-3 w-full hover:bg-gray-50 dark:hover:bg-gray-800 transition items-center gap-2 text-sm disabled:opacity-50"
+								on:click={copyProjectToCloud}
+								disabled={copyingToCloud}
+								type="button"
+							>
+								{#if copyingToCloud}
+									<Spinner className="size-4" />
+								{:else}
+									<CloudArrowUp className="size-4" />
+								{/if}
+								<span>{$i18n.t(copyingToCloud ? 'Copying Project' : 'Copy Project to Cloud')}</span>
+							</button>
 							<button
 								class="select-none flex rounded-xl py-1.5 px-3 w-full hover:bg-gray-50 dark:hover:bg-gray-800 transition items-center gap-2 text-sm"
 								on:click={createFile}

@@ -16,6 +16,7 @@ export type EnosDesktopCapabilities = {
 	localProjectGitRead?: boolean;
 	localProjectGitWrite: boolean;
 	localProjectGitClone: boolean;
+	localProjectCloudUpload?: boolean;
 	githubOAuth?: boolean;
 	opencodeServe?: boolean;
 };
@@ -73,6 +74,16 @@ export type EnosDesktopProjectDirectoryListing = EnosDesktopDirectoryListing & {
 
 export type EnosDesktopProjectFilePreview = EnosDesktopFilePreview & {
 	action: 'readProjectFile';
+};
+
+export type EnosDesktopProjectArchive = {
+	action: 'exportProjectArchive';
+	format: 'tar';
+	encoding: 'base64';
+	rootName: string;
+	bytes: number;
+	data: string;
+	excluded?: string[];
 };
 
 export type EnosDesktopProjectWriteRequest = {
@@ -195,6 +206,7 @@ export type EnosDesktopBridge = {
 	buildProjectDigest: (folderId: string) => Promise<EnosDesktopProjectDigest>;
 	listProjectFiles: (folderId: string, path?: string) => Promise<EnosDesktopProjectDirectoryListing>;
 	readProjectFile: (folderId: string, path: string) => Promise<EnosDesktopProjectFilePreview>;
+	exportProjectArchive?: (folderId: string) => Promise<EnosDesktopProjectArchive>;
 	requestProjectFileWrite: (
 		folderId: string,
 		path: string,
@@ -330,6 +342,10 @@ export const canUseEnosLocalProjectGitRead = (
 export const canUseEnosLocalProjectGitClone = (
 	capabilities?: EnosDesktopCapabilities | null
 ) => Boolean(canUseEnosLocalProjectFiles(capabilities) && capabilities?.localProjectGitClone);
+
+export const canUseEnosLocalProjectCloudUpload = (
+	capabilities?: EnosDesktopCapabilities | null
+) => Boolean(canUseEnosLocalProjectFiles(capabilities) && capabilities?.localProjectCloudUpload);
 
 export const canUseEnosLocalOpencode = (capabilities?: EnosDesktopCapabilities | null) =>
 	Boolean(capabilities?.opencodeServe);

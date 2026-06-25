@@ -210,8 +210,27 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(fileNav).toContain('Cloud Files');
 		expect(fileNav).toContain('formatCloudFilesStatus(cloudWorkspaceName)');
 		expect(fileNav).toContain('resolveCloudFilesInitialPath');
-		expect(localFileNav).toContain('Working on this device');
+		expect(localFileNav).toContain('Working on your device');
 		expect(localFileNav).not.toContain('Project context ready');
+	});
+
+	test('local project can be copied into the active cloud workspace from Files', () => {
+		const chatControls = read('src/lib/components/chat/ChatControls.svelte');
+		const localFileNav = read('src/lib/components/chat/LocalFileNav.svelte');
+		const workspaceApi = read('src/lib/apis/workspace.ts');
+		const desktopBridge = read('src/lib/enos/desktopBridge.ts');
+
+		expect(localFileNav).toContain('onCopyToCloud');
+		expect(localFileNav).toContain('copyProjectToCloud');
+		expect(localFileNav).toContain('Copy Project to Cloud');
+		expect(localFileNav).toContain('exportProjectArchive');
+		expect(chatControls).toContain('handleCopyLocalProjectToCloud');
+		expect(chatControls).toContain('createCloudWorkspace(localStorage.token)');
+		expect(chatControls).toContain('uploadLocalProjectToCloud(localStorage.token, archive)');
+		expect(chatControls).toContain('selectedTerminalId.set(ws.id)');
+		expect(chatControls).toContain("showFileNavDir.set(imported.dest ? `${imported.dest.replace(/\\/$/, '')}/` : '/home/user/')");
+		expect(workspaceApi).toContain('/migrate/upload');
+		expect(desktopBridge).toContain('localProjectCloudUpload?: boolean');
 	});
 
 	test('persisted ENOS web sources render real labels instead of raw tool ids', () => {

@@ -23,6 +23,7 @@
 		showEmbeds,
 		settings,
 		showFileNavPath,
+		showFileNavDir,
 		showLocalFileFolderId,
 		pendingTrayOpen,
 		selectedFolder,
@@ -32,6 +33,8 @@
 
 	import { uploadFile } from '$lib/apis/files';
 	import { updateFolderById } from '$lib/apis/folders';
+	import { getTerminalServers } from '$lib/apis/terminal';
+	import { createCloudWorkspace, uploadLocalProjectToCloud } from '$lib/apis/workspace';
 	import { toast } from 'svelte-sonner';
 
 	import Controls from './Controls/Controls.svelte';
@@ -46,10 +49,13 @@
 	import XMark from '../icons/XMark.svelte';
 	import {
 		canUseEnosLocalProjectFiles,
+		getEnosDesktopBridge,
 		getEnosDesktopBridgeCapabilities,
 		type EnosDesktopCapabilities,
-		type EnosDesktopProjectDigest
+		type EnosDesktopProjectDigest,
+		type EnosDesktopWorkspace
 	} from '$lib/enos/desktopBridge';
+	import { cloudProjectContextSource } from '$lib/enos/cloudUpload';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
 
 	const i18n = getContext('i18n');
@@ -243,6 +249,47 @@
 				data
 			});
 		}
+	};
+
+	const handleCopyLocalProjectToCloud = async (
+		folderId: string,
+		_workspace: EnosDesktopWorkspace
+	) => {
+		const bridge = getEnosDesktopBridge();
+		if (!bridge?.exportProjectArchive) {
+			throw new Error('Restart ENOS Desk to enable local project actions.');
+		}
+
+		const ws = await createCloudWorkspace(localStorage.token);
+		const archive = await bridge.exportProjectArchive(folderId);
+		const imported = await uploadLocalProjectToCloud(localStorage.token, archive);
+
+		const servers = await getTerminalServers(localStorage.token);
+		terminalServers.set(servers);
+		if (ws?.id) selectedTerminalId.set(ws.id);
+
+		activeTab = 'files';
+		showControls.set(true);
+		showFileNavDir.set(imported.dest ? `${imported.dest.replace(/\/$/, '')}/` : '/home/user/');
+
+		const folder = $selectedFolder?.id === folderId ? $selectedFolder : { id: folderId, data: {} };
+		const data = {
+			...(folder?.data ?? {}),
+			project_context_source: cloudProjectContextSource(archive, imported),
+			project_context_updated_at: new Date().toISOString()
+		};
+
+		const updated = await updateFolderById(localStorage.token, folderId, { data });
+		if ($selectedFolder?.id === folderId) {
+			selectedFolder.set({
+				...folder,
+				...(updated ?? {}),
+				id: folderId,
+				data
+			});
+		}
+
+		toast.success($i18n.t('Project copied to cloud'));
 	};
 
 	// While we programmatically open/resize the pane it can transition through a
@@ -525,6 +572,7 @@
 									folderId={$showLocalFileFolderId}
 									onAttach={handleTerminalAttach}
 									onProjectDigest={handleProjectDigest}
+									onCopyToCloud={handleCopyLocalProjectToCloud}
 								/>
 							{:else if activeTab === 'files' && showDeskProjectFilesEmpty}
 								<div class="h-full flex items-center justify-center px-6 text-center">
@@ -665,6 +713,7 @@
 										folderId={$showLocalFileFolderId}
 										onAttach={handleTerminalAttach}
 										onProjectDigest={handleProjectDigest}
+										onCopyToCloud={handleCopyLocalProjectToCloud}
 									/>
 								{:else if activeTab === 'files' && showDeskProjectFilesEmpty}
 									<div class="h-full flex items-center justify-center px-6 text-center">

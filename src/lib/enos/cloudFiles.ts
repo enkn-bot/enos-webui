@@ -10,5 +10,5 @@ export const resolveCloudFilesInitialPath = (rawCwd: string | null | undefined) 
 
 export const formatCloudFilesStatus = (workspaceName: string | null | undefined) => {
 	const name = workspaceName?.trim();
-	return name ? `Working in cloud workspace · ${name}` : 'Working in cloud workspace';
+	return name ? `Working in cloud · ${name}` : 'Working in cloud';
 };

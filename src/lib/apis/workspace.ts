@@ -2,6 +2,11 @@
 // it to the workspace service alongside OWUI). Every call carries the OWUI token;
 // the service verifies it and scopes everything to the calling user.
 import { WEBUI_BASE_URL } from '$lib/constants';
+import {
+	decodeProjectArchive,
+	type CloudImportResult,
+	type EnosDesktopProjectArchive
+} from '$lib/enos/cloudUpload';
 import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 
 const base = `${WEBUI_BASE_URL}/api/ws`;
@@ -31,6 +36,24 @@ export const getCloudWorkspace = async (token: string): Promise<CloudWorkspace |
 	const res = await fetch(`${base}/workspaces`, { headers: authHeaders(token) });
 	if (!res.ok) return null;
 	return (await res.json())?.workspace ?? null;
+};
+
+export const uploadLocalProjectToCloud = async (
+	token: string,
+	archive: EnosDesktopProjectArchive
+): Promise<CloudImportResult> => {
+	const body = decodeProjectArchive(archive);
+	const res = await fetch(`${base}/migrate/upload`, {
+		method: 'POST',
+		headers: {
+			Authorization: `Bearer ${token}`,
+			'Content-Type': 'application/x-tar'
+		},
+		body
+	});
+	const data = await res.json().catch(() => ({}));
+	if (!res.ok) throw new Error(data?.error ?? `upload failed (${res.status})`);
+	return data;
 };
 
 export const getGithubStatus = async (
