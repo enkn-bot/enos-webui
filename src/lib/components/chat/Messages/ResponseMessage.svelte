@@ -63,6 +63,7 @@
 	import StatusHistory from './ResponseMessage/StatusHistory.svelte';
 	import FullHeightIframe from '$lib/components/common/FullHeightIframe.svelte';
 	import OutputEditView from './OutputEditView.svelte';
+	import { isDeskHostname } from '$lib/enos/deskRuntime';
 
 	interface MessageType {
 		id: string;
@@ -170,6 +171,7 @@
 	$: model = $models.find((m) => m.id === history.messages[messageId]?.model);
 
 	$: statusEntries = message?.statusHistory ?? [...(message?.status ? [message?.status] : [])];
+	$: isDeskSurface = isDeskHostname();
 	$: hasVisibleStatus =
 		(model?.info?.meta?.capabilities?.status_updates ?? true) &&
 		statusEntries.length > 0 &&
@@ -708,7 +710,10 @@
 				<div class="chat-{message.role} w-full min-w-full markdown-prose">
 					<div>
 							{#if model?.info?.meta?.capabilities?.status_updates ?? true}
-								<StatusHistory statusHistory={message?.statusHistory} modelId={message.model} />
+								<StatusHistory
+									statusHistory={message?.statusHistory}
+									compactDesk={isDeskSurface}
+								/>
 							{/if}
 
 						{#if displayFiles.length > 0}

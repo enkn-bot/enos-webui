@@ -194,6 +194,36 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(terminalBranch).toBeLessThan(localBranch);
 	});
 
+	test('persisted ENOS web sources render real labels instead of raw tool ids', () => {
+		const contentRenderer = read('src/lib/components/chat/Messages/ContentRenderer.svelte');
+		const citations = read('src/lib/components/chat/Messages/Citations.svelte');
+
+		expect(contentRenderer).toContain("import { getEnosSourceIds } from '$lib/enos/sourceLabels';");
+		expect(contentRenderer).toContain('sourceIds = getEnosSourceIds');
+		expect(contentRenderer).not.toContain('source?.source?.name ?? id');
+		expect(citations).toContain("from '$lib/enos/sourceLabels';");
+		expect(citations).toContain('getEnosCitationLabel');
+		expect(citations).toContain('getEnosCitationUrl');
+		expect(citations).toContain('citation.source.url');
+	});
+
+	test('Desk status narration uses compact ENOS presentation without changing Chat history', () => {
+		const responseMessage = read('src/lib/components/chat/Messages/ResponseMessage.svelte');
+		const statusHistory = read('src/lib/components/chat/Messages/ResponseMessage/StatusHistory.svelte');
+		const statusItem = read(
+			'src/lib/components/chat/Messages/ResponseMessage/StatusHistory/StatusItem.svelte'
+		);
+
+		expect(responseMessage).toContain("import { isDeskHostname } from '$lib/enos/deskRuntime';");
+		expect(responseMessage).toContain('compactDesk={isDeskSurface}');
+		expect(statusHistory).toContain('export let compactDesk = false;');
+		expect(statusHistory).toContain('{#if compactDesk}');
+		expect(statusHistory).toContain('aria-label={$i18n.t');
+		expect(statusItem).toContain("import { formatDeskStatusLabel } from '$lib/enos/deskStatus';");
+		expect(statusItem).toContain('{formatDeskStatusLabel(status)}');
+		expect(statusItem).toContain('WebSearchResults');
+	});
+
 	test('desk agent carries ENOS identity (three minds, no underlying-model leak) — B4', () => {
 		const chat = read('src/lib/components/chat/Chat.svelte');
 		// The desk agent must know it is ENOS (three minds), not leak/deny an underlying

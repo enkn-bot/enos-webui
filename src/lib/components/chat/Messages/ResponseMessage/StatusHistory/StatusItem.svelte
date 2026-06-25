@@ -3,13 +3,26 @@
 	const i18n = getContext('i18n');
 	import WebSearchResults from '../WebSearchResults.svelte';
 	import Search from '$lib/components/icons/Search.svelte';
+	import { formatDeskStatusLabel } from '$lib/enos/deskStatus';
 
 	export let status = null;
 	export let done = false;
-	export let modelId = null;
+	export let compactDesk = false;
 </script>
 
-{#if !status?.hidden && status?.description !== 'No search query generated'}
+{#if compactDesk && !status?.hidden && status?.description !== 'No search query generated'}
+	<div class="status-description flex items-center gap-2 py-0.5 w-full text-left">
+		<div class="flex flex-col justify-center -space-y-0.5">
+			<div
+				class="{(done || status?.done) === false
+					? 'shimmer'
+					: ''} text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
+			>
+				{formatDeskStatusLabel(status)}
+			</div>
+		</div>
+	</div>
+{:else if !status?.hidden && status?.description !== 'No search query generated'}
 	<!-- enos: suppress the base "No search query generated" status. ENOS runs
 	     web-search query-generation on every turn (web-search-primary), so for
 	     non-search answers (known facts) the query step returns empty and base
