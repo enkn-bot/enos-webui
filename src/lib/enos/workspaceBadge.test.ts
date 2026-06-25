@@ -3,7 +3,8 @@ import { describe, expect, test } from 'vitest';
 import {
 	workspaceBadgeFromFolder,
 	workspaceKindLabel,
-	deskCurrentLocation
+	deskCurrentLocation,
+	systemCloudWorkspaceId
 } from './workspaceBadge';
 
 describe('workspaceBadgeFromFolder', () => {
@@ -78,25 +79,41 @@ describe('workspaceKindLabel', () => {
 describe('deskCurrentLocation (binary where-work-happens-now)', () => {
 	test('a selected cloud workspace wins → cloud (even with a local project + bridge)', () => {
 		expect(
-			deskCurrentLocation({ cloudWorkspaceActive: true, localBridgePresent: true, projectKind: 'local' })
+			deskCurrentLocation({
+				cloudWorkspaceActive: true,
+				localBridgePresent: true,
+				projectKind: 'local'
+			})
 		).toBe('cloud');
 	});
 
 	test('desktop bridge + local project, no cloud selected → local', () => {
 		expect(
-			deskCurrentLocation({ cloudWorkspaceActive: false, localBridgePresent: true, projectKind: 'local' })
+			deskCurrentLocation({
+				cloudWorkspaceActive: false,
+				localBridgePresent: true,
+				projectKind: 'local'
+			})
 		).toBe('local');
 	});
 
 	test('local project on web (no bridge, no cloud) → null = not workable here', () => {
 		expect(
-			deskCurrentLocation({ cloudWorkspaceActive: false, localBridgePresent: false, projectKind: 'local' })
+			deskCurrentLocation({
+				cloudWorkspaceActive: false,
+				localBridgePresent: false,
+				projectKind: 'local'
+			})
 		).toBeNull();
 	});
 
 	test('no project + no cloud → null (Select)', () => {
 		expect(
-			deskCurrentLocation({ cloudWorkspaceActive: false, localBridgePresent: true, projectKind: null })
+			deskCurrentLocation({
+				cloudWorkspaceActive: false,
+				localBridgePresent: true,
+				projectKind: null
+			})
 		).toBeNull();
 	});
 
@@ -104,7 +121,30 @@ describe('deskCurrentLocation (binary where-work-happens-now)', () => {
 		// Same input the Files panel keys off ($selectedTerminalId) → both read cloud,
 		// killing the "Local badge + cloud /home/user files" mismatch.
 		expect(
-			deskCurrentLocation({ cloudWorkspaceActive: true, localBridgePresent: false, projectKind: 'local' })
+			deskCurrentLocation({
+				cloudWorkspaceActive: true,
+				localBridgePresent: false,
+				projectKind: 'local'
+			})
 		).toBe('cloud');
+	});
+});
+
+describe('systemCloudWorkspaceId', () => {
+	test('selects the ENOS-managed cloud workspace and ignores direct terminals', () => {
+		expect(
+			systemCloudWorkspaceId([
+				{ id: 'direct://not-system', name: 'Direct' },
+				{ id: 'ws-123', name: 'Cloud Workspace' },
+				{ id: 'ws-456', name: 'Other Workspace' }
+			])
+		).toBe('ws-123');
+	});
+
+	test('returns null when no ENOS cloud workspace exists', () => {
+		expect(
+			systemCloudWorkspaceId([{ url: 'https://terminal.example' }, { id: 'legacy-m11' }])
+		).toBeNull();
+		expect(systemCloudWorkspaceId(null)).toBeNull();
 	});
 });

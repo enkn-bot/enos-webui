@@ -273,6 +273,13 @@ class ChatTable:
         """Recursively remove null bytes from strings in dict/list structures."""
         return sanitize_data_for_db(obj)
 
+    def _row_meta_from_chat(self, chat: dict | None, existing: dict | None = None) -> dict:
+        row_meta = dict(existing or {})
+        chat_meta = chat.get('meta') if isinstance(chat, dict) else None
+        if isinstance(chat_meta, dict):
+            row_meta.update(self._clean_null_bytes(chat_meta))
+        return row_meta
+
     def _sanitize_chat_row(self, chat_item):
         """
         Clean a Chat SQLAlchemy model's title + chat JSON,
@@ -308,6 +315,7 @@ class ChatTable:
                         form_data.chat['title'] if 'title' in form_data.chat else 'New Chat'
                     ),
                     'chat': self._clean_null_bytes(form_data.chat),
+                    'meta': self._row_meta_from_chat(form_data.chat),
                     'folder_id': form_data.folder_id,
                     'created_at': int(time.time()),
                     'updated_at': int(time.time()),
@@ -344,7 +352,7 @@ class ChatTable:
                 'user_id': user_id,
                 'title': self._clean_null_bytes(form_data.chat['title'] if 'title' in form_data.chat else 'New Chat'),
                 'chat': self._clean_null_bytes(form_data.chat),
-                'meta': form_data.meta,
+                'meta': self._row_meta_from_chat(form_data.chat, form_data.meta),
                 'pinned': form_data.pinned,
                 'folder_id': form_data.folder_id,
                 'created_at': (form_data.created_at if form_data.created_at else int(time.time())),
@@ -416,6 +424,7 @@ class ChatTable:
                     return None
 
                 chat_item.chat = self._clean_null_bytes(chat)
+                chat_item.meta = self._row_meta_from_chat(chat, chat_item.meta)
                 chat_item.title = self._clean_null_bytes(chat['title']) if 'title' in chat else 'New Chat'
 
                 chat_item.updated_at = int(time.time())

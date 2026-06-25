@@ -24,7 +24,11 @@
 	} from '$lib/apis/workspace';
 	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 	import { bindGithubRepoToFolder, bindLocalWorkspaceToFolder } from '$lib/enos/bindLocalWorkspace';
-	import { workspaceBadgeFromFolder, deskCurrentLocation } from '$lib/enos/workspaceBadge';
+	import {
+		workspaceBadgeFromFolder,
+		deskCurrentLocation,
+		systemCloudWorkspaceId
+	} from '$lib/enos/workspaceBadge';
 
 	import Dropdown from '$lib/components/common/Dropdown.svelte';
 	import Check from '$lib/components/icons/Check.svelte';
@@ -62,6 +66,14 @@
 	$: systemTerminals = ($terminalServers ?? []).filter(
 		(terminal) => terminal.id && String(terminal.id).startsWith('ws-')
 	);
+	$: webDeskCloudLocked = !hasDesktopBridge;
+	$: firstSystemTerminalId = systemCloudWorkspaceId($terminalServers);
+	const ensureWebDeskCloudSelected = () => {
+		if (webDeskCloudLocked && firstSystemTerminalId && !$selectedTerminalId) {
+			selectedTerminalId.set(firstSystemTerminalId);
+		}
+	};
+	$: ensureWebDeskCloudSelected();
 	$: directTerminals = ($settings?.terminalServers ?? []).filter((terminal) => terminal.url);
 	$: canUseDirectTerminals =
 		$user?.role === 'admin' || ($user?.permissions?.features?.direct_tool_servers ?? true);
@@ -152,7 +164,12 @@
 		const terminalId = terminal.id ?? null;
 		if (!terminalId) return;
 
-		selectedTerminalId.set($selectedTerminalId === terminalId ? null : terminalId);
+		const nextId = webDeskCloudLocked
+			? terminalId
+			: $selectedTerminalId === terminalId
+				? null
+				: terminalId;
+		selectedTerminalId.set(nextId);
 
 		if ($settings?.terminalServers?.some((server) => server.enabled)) {
 			const updatedServers = ($settings.terminalServers ?? []).map((server) => ({
@@ -268,8 +285,34 @@
 
 	<div slot="content">
 		<div
-			class="min-w-64 max-w-64 rounded-2xl px-1 py-1 border border-gray-100 dark:border-gray-800 z-50 bg-white dark:bg-gray-850 dark:text-white shadow-lg max-h-80 overflow-y-auto overflow-x-hidden scrollbar-thin"
+			class="min-w-72 max-w-80 rounded-2xl px-1 py-1 border border-gray-100 dark:border-gray-800 z-50 bg-white dark:bg-gray-850 dark:text-white shadow-lg max-h-96 overflow-y-auto overflow-x-hidden scrollbar-thin"
 		>
+			<div class="px-3 py-2">
+				<div
+					class="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider"
+				>
+					{$i18n.t('Project')}
+				</div>
+				<div class="mt-1 truncate text-sm font-medium text-gray-800 dark:text-gray-100">
+					{activeFolder?.name || $i18n.t('No Project')}
+				</div>
+				<div class="mt-0.5 truncate text-xs text-gray-400 dark:text-gray-500">
+					{activeFolder
+						? $i18n.t('Project chats and files stay together')
+						: $i18n.t('Loose Desk chats live in Unfiled')}
+				</div>
+			</div>
+
+			<hr class="border-gray-100 dark:border-gray-800 my-1" />
+
+			<div class="flex items-center justify-between px-3 py-1">
+				<span
+					class="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider"
+				>
+					{$i18n.t('Environment')}
+				</span>
+			</div>
+
 			<button
 				type="button"
 				disabled={!hasDesktopBridge}
@@ -284,7 +327,7 @@
 						<span class="truncate">{$i18n.t('Local')}</span>
 						<span class="truncate text-xs text-gray-400 dark:text-gray-500">
 							{#if !hasDesktopBridge}
-								{$i18n.t('Available in the desktop app')}
+								{$i18n.t('Open in desktop app')}
 							{:else if isLocalBound}
 								{boundBadge.name}
 							{:else if activeFolderId}
@@ -360,7 +403,11 @@
 							     while the badge says Local. The real cloud-hosted project (kind:'cloud'
 							     + migration) is roadmap, not this. -->
 							<span class="truncate text-xs text-gray-400 dark:text-gray-500">
-								{$i18n.t('Cloud terminal')}
+								{#if $selectedTerminalId === terminal.id || webDeskCloudLocked}
+									{$i18n.t('Working in cloud')}
+								{:else}
+									{$i18n.t('Cloud terminal')}
+								{/if}
 							</span>
 						</div>
 					</div>
@@ -394,6 +441,14 @@
 			{/if}
 
 			<hr class="border-gray-100 dark:border-gray-800 my-1" />
+
+			<div class="flex items-center justify-between px-3 py-1">
+				<span
+					class="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider"
+				>
+					{$i18n.t('GitHub source')}
+				</span>
+			</div>
 
 			<button
 				type="button"

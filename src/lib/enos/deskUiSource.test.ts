@@ -48,6 +48,18 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(chatsModel).toContain("'folder_id': chat[6]");
 	});
 
+	test('chat create/update mirrors chat meta into the row used by sidebar summaries', () => {
+		const chatsModel = read('backend/open_webui/models/chats.py');
+
+		expect(chatsModel).toContain('def _row_meta_from_chat');
+		expect(chatsModel).toMatch(
+			/ChatModel\([\s\S]*'meta': self\._row_meta_from_chat\(form_data\.chat\)/
+		);
+		expect(chatsModel).toMatch(
+			/chat_item\.chat = self\._clean_null_bytes\(chat\)[\s\S]*chat_item\.meta = self\._row_meta_from_chat\(chat, chat_item\.meta\)/
+		);
+	});
+
 	test('a new local project binds optimistically so the badge reads "Local" before the digest scan', () => {
 		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
 		// The project_context_source (kind:'local') must be set on the selectedFolder BEFORE
@@ -233,6 +245,35 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(fileNav).toContain('resolveCloudFilesInitialPath');
 		expect(localFileNav).toContain('Working on your device');
 		expect(localFileNav).not.toContain('Project context ready');
+	});
+
+	test('desk web locks to cloud when a cloud workspace exists and presents a project environment card', () => {
+		const picker = read('src/lib/components/enos/DeskWorkspacePicker.svelte');
+		const chat = read('src/lib/components/chat/Chat.svelte');
+		const nav = read('src/lib/components/chat/Navbar.svelte');
+
+		expect(picker).toContain('webDeskCloudLocked');
+		expect(picker).toContain('ensureWebDeskCloudSelected');
+		expect(picker).toContain('Open in desktop app');
+		expect(picker).toContain("{$i18n.t('Environment')}");
+		expect(picker).toContain("{$i18n.t('Project')}");
+		expect(picker).toContain("{$i18n.t('Working in cloud')}");
+		expect(picker).toContain("{$i18n.t('GitHub source')}");
+		expect(picker).not.toContain('$selectedTerminalId === terminal.id ? null : terminal.id');
+
+		expect(chat).toContain('ensureWebDeskCloudDefault');
+		expect(chat).toContain('systemCloudWorkspaceId($terminalServers)');
+		expect(nav).toContain("title={$i18n.t('Project and environment')}");
+	});
+
+	test('desk repairs currently opened loose legacy chats by tagging them to the Desk surface', () => {
+		const chat = read('src/lib/components/chat/Chat.svelte');
+
+		expect(chat).toContain('repairDeskLooseChatSurface');
+		expect(chat).toContain('repairedDeskLooseChatIds');
+		expect(chat).toContain("currentSurface() !== 'desk'");
+		expect(chat).toContain('projectFolderIdFromChat(source)');
+		expect(chat).toContain("meta: withSurfaceMeta({ meta: existingMeta }, 'desk').meta");
 	});
 
 	test('local project can be copied into the active cloud workspace from Files', () => {

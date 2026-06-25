@@ -255,6 +255,7 @@
 								type="button"
 								class="max-w-[12rem] flex items-center gap-1.5 cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition text-sm"
 								aria-label={deskWorkspaceLabel()}
+								title={$i18n.t('Project and environment')}
 							>
 								{#if hasDeskWorkspace}
 									{#if deskWorkspace?.kind === 'cloud'}

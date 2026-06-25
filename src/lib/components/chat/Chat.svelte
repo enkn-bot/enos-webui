@@ -132,7 +132,11 @@
 	import { DESK_FILE_TOOLS, describeDeskTool, executeDeskFileTool } from '$lib/enos/deskFileTools';
 	import { deskSurfaceGroundingLine, groundingLine } from '$lib/enos/grounding';
 	import { surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
-	import { workspaceBadgeFromFolder, deskCurrentLocation } from '$lib/enos/workspaceBadge';
+	import {
+		workspaceBadgeFromFolder,
+		deskCurrentLocation,
+		systemCloudWorkspaceId
+	} from '$lib/enos/workspaceBadge';
 	import { maybeGenerateOpencodeChatTitle } from '$lib/enos/opencodeTitle';
 	import { normalizeChatTitleEventData } from '$lib/enos/chatTitleEvents';
 
@@ -1836,6 +1840,9 @@
 	// Desktop bridge presence (stable per session) — gates whether "Local" work is
 	// even possible on this surface. False in a browser → local projects are read-only.
 	let deskLocalBridgePresent = false;
+	let repairedDeskLooseChatIds = new Set<string>();
+	const isDeskSurface = () => isDeskHostname();
+	const currentSurface = () => surfaceFromIsDesk(isDeskSurface());
 
 	$: deskChatFolder = ($folders, knownProjectFolderById(projectFolderIdFromChat(chat)));
 	// Desk is project-first: badge + workspace binding follow the project you're in
@@ -1861,6 +1868,13 @@
 		readOnly: deskLocationReadOnly
 	};
 
+	const ensureWebDeskCloudDefault = () => {
+		if (!isDeskSurface() || deskLocalBridgePresent || $selectedTerminalId) return;
+		const cloudId = systemCloudWorkspaceId($terminalServers);
+		if (cloudId) selectedTerminalId.set(cloudId);
+	};
+	$: ensureWebDeskCloudDefault();
+
 	// Entering a LOCAL-bound project defaults the location to Local: a globally-persisted
 	// cloud-terminal selection must not make your local project open as Cloud (location
 	// follows the project). Runs once per project entry (folder-id guarded), so an explicit
@@ -1885,8 +1899,29 @@
 	};
 	$: applyLocalLocationDefault(deskActiveFolder, deskLocalBridgePresent);
 
-	const isDeskSurface = () => isDeskHostname();
-	const currentSurface = () => surfaceFromIsDesk(isDeskSurface());
+	const repairDeskLooseChatSurface = async (source = chat) => {
+		if (currentSurface() !== 'desk' || $temporaryChatEnabled) return;
+		const id = source?.id ?? source?.chat?.id ?? $chatId;
+		if (!id || repairedDeskLooseChatIds.has(id)) return;
+		if (projectFolderIdFromChat(source)) return;
+
+		const existingMeta = source?.meta ?? source?.chat?.meta ?? {};
+		if (existingMeta?.surface === 'desk' || existingMeta?.surface === 'chat') return;
+
+		repairedDeskLooseChatIds.add(id);
+		try {
+			const updated = await updateChatById(localStorage.token, id, {
+				meta: withSurfaceMeta({ meta: existingMeta }, 'desk').meta
+			});
+			if (updated && $chatId === id) chat = updated;
+			currentChatPage.set(1);
+			await chats.set(await getChatList(localStorage.token, $currentChatPage));
+			await pinnedChats.set(await getPinnedChatList(localStorage.token));
+		} catch (error) {
+			console.warn('[desk loose chat repair]', error);
+		}
+	};
+	$: repairDeskLooseChatSurface(chat);
 
 	const rememberDeskProjectFolder = (folder) => {
 		if (isDeskSurface() && folder?.id) {

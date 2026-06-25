@@ -57,3 +57,12 @@ export const deskCurrentLocation = (args: {
 	if (args.localBridgePresent && args.projectKind === 'local') return 'local';
 	return null;
 };
+
+export const systemCloudWorkspaceId = (
+	terminals: Array<{ id?: unknown }> | null | undefined
+): string | null => {
+	const match = (Array.isArray(terminals) ? terminals : []).find((terminal) =>
+		String(terminal?.id ?? '').startsWith('ws-')
+	);
+	return match?.id ? String(match.id) : null;
+};
