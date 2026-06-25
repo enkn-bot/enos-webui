@@ -109,6 +109,11 @@
 	$: showTerminalFileNav =
 		hasSelectedTerminalAccess || (isDeskSurface && hasConfiguredTerminal && canUseDirectTerminal);
 	$: showActiveTerminalFileNav = showTerminalFileNav && Boolean($selectedTerminalId);
+	$: selectedTerminalName =
+		($terminalServers ?? []).find((t) => t.id && t.id === $selectedTerminalId)?.name ??
+		($settings?.terminalServers ?? []).find((server) => server?.url === $selectedTerminalId)
+			?.name ??
+		null;
 	$: showLocalFileNav = isDeskSurface && canUseEnosLocalProjectFiles(desktopCapabilities);
 	$: showProjectFileNav = showLocalFileNav && Boolean($showLocalFileFolderId);
 	$: showDeskProjectFilesEmpty = showLocalFileNav && !$showLocalFileFolderId;
@@ -474,9 +479,9 @@
 								{#each visibleControlTabs as tab}
 									<button
 										class="px-2.5 py-1 text-sm rounded-lg transition whitespace-nowrap {activeTab ===
-											tab
-												? 'bg-gray-100 dark:bg-gray-800 font-medium text-gray-900 dark:text-white'
-												: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
+										tab
+											? 'bg-gray-100 dark:bg-gray-800 font-medium text-gray-900 dark:text-white'
+											: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
 										on:click={() => selectControlTab(tab)}
 									>
 										{$i18n.t(controlTabLabel(tab))}
@@ -509,9 +514,18 @@
 									onClose={() => showControls.set(false)}
 								/>
 							{:else if activeTab === 'files' && showActiveTerminalFileNav}
-								<FileNav onAttach={handleTerminalAttach} {chatId} />
+								<FileNav
+									onAttach={handleTerminalAttach}
+									{chatId}
+									cloudWorkspace={isDeskSurface}
+									cloudWorkspaceName={selectedTerminalName}
+								/>
 							{:else if activeTab === 'files' && showProjectFileNav}
-								<LocalFileNav folderId={$showLocalFileFolderId} onAttach={handleTerminalAttach} onProjectDigest={handleProjectDigest} hasProjectDigest={Boolean($selectedFolder?.data?.project_context_digest)} projectContextUpdatedAt={$selectedFolder?.data?.project_context_updated_at ?? null} />
+								<LocalFileNav
+									folderId={$showLocalFileFolderId}
+									onAttach={handleTerminalAttach}
+									onProjectDigest={handleProjectDigest}
+								/>
 							{:else if activeTab === 'files' && showDeskProjectFilesEmpty}
 								<div class="h-full flex items-center justify-center px-6 text-center">
 									<div class="max-w-xs text-sm text-gray-500 dark:text-gray-400">
@@ -639,9 +653,19 @@
 										onClose={() => showControls.set(false)}
 									/>
 								{:else if activeTab === 'files' && showActiveTerminalFileNav}
-									<FileNav onAttach={handleTerminalAttach} overlay={dragged} {chatId} />
+									<FileNav
+										onAttach={handleTerminalAttach}
+										overlay={dragged}
+										{chatId}
+										cloudWorkspace={isDeskSurface}
+										cloudWorkspaceName={selectedTerminalName}
+									/>
 								{:else if activeTab === 'files' && showProjectFileNav}
-									<LocalFileNav folderId={$showLocalFileFolderId} onAttach={handleTerminalAttach} onProjectDigest={handleProjectDigest} hasProjectDigest={Boolean($selectedFolder?.data?.project_context_digest)} projectContextUpdatedAt={$selectedFolder?.data?.project_context_updated_at ?? null} />
+									<LocalFileNav
+										folderId={$showLocalFileFolderId}
+										onAttach={handleTerminalAttach}
+										onProjectDigest={handleProjectDigest}
+									/>
 								{:else if activeTab === 'files' && showDeskProjectFilesEmpty}
 									<div class="h-full flex items-center justify-center px-6 text-center">
 										<div class="max-w-xs text-sm text-gray-500 dark:text-gray-400">

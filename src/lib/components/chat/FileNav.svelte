@@ -1,6 +1,13 @@
 <script context="module">
+	import {
+		CLOUD_FILES_DEFAULT_PATH,
+		formatCloudFilesStatus,
+		resolveCloudFilesInitialPath
+	} from '$lib/enos/cloudFiles';
+
 	// Persists across mount/unmount cycles (module-level, not per-instance)
 	let savedPath = '/';
+	let savedCloudPath = CLOUD_FILES_DEFAULT_PATH;
 </script>
 
 <script lang="ts">
@@ -50,6 +57,8 @@
 	export let onAttach: ((blob: Blob, name: string, contentType: string) => void) | null = null;
 	export let overlay = false;
 	export let chatId: string | null = null;
+	export let cloudWorkspace = false;
+	export let cloudWorkspaceName: string | null = null;
 
 	// ── Terminal panel state ────────────────────────────────────────────
 	let terminalExpanded = false;
@@ -87,7 +96,7 @@
 	};
 
 	// ── Directory state ──────────────────────────────────────────────────
-	let currentPath = savedPath;
+	let currentPath = cloudWorkspace ? savedCloudPath : savedPath;
 	let entries: FileEntry[] = [];
 	let loading = false;
 	let error: string | null = null;
@@ -267,7 +276,7 @@
 			if (chatChanged && chatId && !oldChatId) {
 				// Chat just got created (null → real ID): persist the current
 				// browsed path as the new session's cwd — don't re-fetch.
-				setCwd(terminal.url, terminal.key, savedPath, chatId);
+				setCwd(terminal.url, terminal.key, rememberedPath(), chatId);
 			} else if (terminalChanged || chatChanged) {
 				// Terminal switched, new chat started, or switched between
 				// existing chats — re-fetch the session cwd.
@@ -281,9 +290,8 @@
 					}
 
 					const rawCwd = await getCwd(terminal.url, terminal.key, chatId ?? undefined);
-					const cwd = rawCwd ? normalizePath(rawCwd) : null;
-					const dir = cwd ? (cwd.endsWith('/') ? cwd : cwd + '/') : '/';
-					savedPath = dir;
+					const dir = resolveInitialPath(rawCwd);
+					rememberPath(dir);
 					loadDir(dir);
 				})();
 			}
@@ -304,6 +312,19 @@
 
 	/** Normalize Windows backslashes to forward slashes. */
 	const normalizePath = (p: string) => p.replace(/\\/g, '/');
+	const rememberedPath = () => (cloudWorkspace ? savedCloudPath : savedPath);
+	const rememberPath = (path: string) => {
+		if (cloudWorkspace) {
+			savedCloudPath = path;
+		} else {
+			savedPath = path;
+		}
+	};
+	const resolveInitialPath = (rawCwd: string | null | undefined) => {
+		const cwd = rawCwd ? normalizePath(rawCwd) : null;
+		if (cloudWorkspace) return resolveCloudFilesInitialPath(cwd);
+		return cwd ? (cwd.endsWith('/') ? cwd : cwd + '/') : '/';
+	};
 
 	const buildBreadcrumbs = (path: string) => {
 		const parts = path.split('/').filter(Boolean);
@@ -356,7 +377,7 @@
 		clearFilePreview();
 		clearSelection();
 		currentPath = path;
-		savedPath = path;
+		rememberPath(path);
 		pushNavHistory(path);
 
 		const result = await listFiles(terminal.url, terminal.key, path, chatId ?? undefined);
@@ -833,13 +854,12 @@
 			const config = await getTerminalConfig(terminal.url, terminal.key);
 			terminalEnabled = config?.features?.terminal !== false;
 
-			if (chatId || savedPath === '/') {
+			if (cloudWorkspace || chatId || rememberedPath() === '/') {
 				// Fetch session-specific cwd from the server (or global default for new chats)
 				const rawCwd = await getCwd(terminal.url, terminal.key, chatId ?? undefined);
-				const cwd = rawCwd ? normalizePath(rawCwd) : null;
-				if (cwd) savedPath = cwd.endsWith('/') ? cwd : cwd + '/';
+				rememberPath(resolveInitialPath(rawCwd));
 			}
-			loadDir(savedPath);
+			loadDir(rememberedPath());
 		}
 
 		mounted = true;
@@ -939,6 +959,17 @@
 		{/if}
 
 		{#if previewPort === null}
+			{#if cloudWorkspace}
+				<div class="px-3 pb-2 shrink-0">
+					<div class="text-sm font-medium text-gray-700 dark:text-gray-200">
+						{$i18n.t('Cloud Files')}
+					</div>
+					<div class="text-xs text-gray-400 dark:text-gray-500 truncate">{currentPath}</div>
+					<div class="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
+						{formatCloudFilesStatus(cloudWorkspaceName)}
+					</div>
+				</div>
+			{/if}
 			<FileNavToolbar
 				breadcrumbs={buildBreadcrumbs(currentPath)}
 				{selectedFile}

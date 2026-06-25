@@ -39,8 +39,6 @@
 		folderId: string,
 		digest: EnosDesktopProjectDigest
 	) => void | Promise<void> = () => {};
-	export let hasProjectDigest = false;
-	export let projectContextUpdatedAt: string | null = null;
 
 	let bridge: EnosDesktopBridge | null = null;
 	let workspace: EnosDesktopWorkspace | null = null;
@@ -65,11 +63,6 @@
 	let unreachableRoot = '';
 	let loadedFolderId: string | null = null;
 	let removeProjectFilesChangedListener = () => {};
-	let localHasProjectDigest = false;
-	let localProjectContextUpdatedAt: string | null = null;
-
-	$: localHasProjectDigest = hasProjectDigest || Boolean(localProjectContextUpdatedAt);
-	$: if (projectContextUpdatedAt) localProjectContextUpdatedAt = projectContextUpdatedAt;
 
 	const pathCrumbs = (name: string, path: string) => {
 		const parts = path === '.' ? [] : path.split('/').filter(Boolean);
@@ -100,7 +93,7 @@
 	const friendlyDesktopError = (e: any) => {
 		const message = e?.message ?? String(e);
 		if (
-			message.includes("No handler registered") ||
+			message.includes('No handler registered') ||
 			message.includes('build-project-digest') ||
 			message.includes('list-project-files') ||
 			message.includes('read-project-file') ||
@@ -365,7 +358,6 @@
 		try {
 			const digest = await bridge.buildProjectDigest(activeFolderId);
 			if (folderId === activeFolderId) {
-				localProjectContextUpdatedAt = digest.generatedAt;
 				Promise.resolve(onProjectDigest(activeFolderId, digest)).catch(() => {});
 			}
 		} catch (e) {
@@ -420,21 +412,13 @@
 				</div>
 				{#if workspace && folderId}
 					<div class="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
-						{#if syncingProjectContext}
-							{$i18n.t('Updating project context...')}
-						{:else if localHasProjectDigest}
-							{$i18n.t('Project context ready')}
-							{#if localProjectContextUpdatedAt}
-								<span>· {new Date(localProjectContextUpdatedAt).toLocaleString()}</span>
-							{/if}
-						{:else}
-							{$i18n.t('Preparing project context...')}
-						{/if}
+						{$i18n.t('Working on this device')}
 					</div>
 					<div class="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
 						{#if gitStatus?.isRepo}
 							<span class="truncate text-gray-400 dark:text-gray-500">
-								{$i18n.t('Git:')} {gitStatus.branch ?? 'unknown'}
+								{$i18n.t('Git:')}
+								{gitStatus.branch ?? 'unknown'}
 								{#if gitStatus.statusLines.length > 0}
 									· {gitStatus.statusLines.length} {$i18n.t('changes')}
 								{/if}
@@ -505,7 +489,9 @@
 			</div>
 		</div>
 	{:else}
-		<div class="flex items-center gap-2 px-3 pb-1.5 shrink-0 border-b border-gray-50 dark:border-gray-800">
+		<div
+			class="flex items-center gap-2 px-3 pb-1.5 shrink-0 border-b border-gray-50 dark:border-gray-800"
+		>
 			<div class="min-w-0 flex-1 flex items-center gap-1 overflow-x-auto scrollbar-none text-xs">
 				{#each pathCrumbs(workspace.name, currentPath) as crumb, index}
 					{#if index > 0}
@@ -585,10 +571,12 @@
 			{#if listing && listing.entries.length > 0}
 				<ul class="py-1">
 					{#each listing.entries as entry}
-						<li class="flex items-center gap-2 pl-3 pr-3 hover:bg-gray-50 dark:hover:bg-gray-800 {selectedFile?.path ===
-						entry.path
-							? 'bg-gray-50 dark:bg-gray-800'
-							: ''}">
+						<li
+							class="flex items-center gap-2 pl-3 pr-3 hover:bg-gray-50 dark:hover:bg-gray-800 {selectedFile?.path ===
+							entry.path
+								? 'bg-gray-50 dark:bg-gray-800'
+								: ''}"
+						>
 							<button
 								class="min-w-0 flex-1 flex items-center gap-2 py-1.5 text-left"
 								on:click={() => openEntry(entry)}

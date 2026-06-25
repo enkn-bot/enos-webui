@@ -133,6 +133,7 @@
 	import { groundingLine } from '$lib/enos/grounding';
 	import { surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
 	import { workspaceBadgeFromFolder, deskCurrentLocation } from '$lib/enos/workspaceBadge';
+	import { maybeGenerateOpencodeChatTitle } from '$lib/enos/opencodeTitle';
 
 	export let chatIdProp = '';
 
@@ -430,28 +431,28 @@
 					imageGenerationEnabled = model.info.meta.defaultFeatureIds.includes('image_generation');
 				}
 
-					if (
-						model.info?.meta?.capabilities?.['code_interpreter'] &&
-						$config?.features?.enable_code_interpreter &&
-						($user?.role === 'admin' || $user?.permissions?.features?.code_interpreter)
-					) {
-						codeInterpreterEnabled = model.info.meta.defaultFeatureIds.includes('code_interpreter');
-					}
-				}
-
-				// Set Default Terminal — only if the referenced terminal actually exists
-				if (model?.info?.meta?.terminalId) {
-					const tid = model.info.meta.terminalId;
-					if (isTerminalAvailable(tid)) {
-						selectedTerminalId.set(tid);
-					}
-				}
-
-				if (canUseWebSearch) {
-					webSearchEnabled = true;
+				if (
+					model.info?.meta?.capabilities?.['code_interpreter'] &&
+					$config?.features?.enable_code_interpreter &&
+					($user?.role === 'admin' || $user?.permissions?.features?.code_interpreter)
+				) {
+					codeInterpreterEnabled = model.info.meta.defaultFeatureIds.includes('code_interpreter');
 				}
 			}
-		};
+
+			// Set Default Terminal — only if the referenced terminal actually exists
+			if (model?.info?.meta?.terminalId) {
+				const tid = model.info.meta.terminalId;
+				if (isTerminalAvailable(tid)) {
+					selectedTerminalId.set(tid);
+				}
+			}
+
+			if (canUseWebSearch) {
+				webSearchEnabled = true;
+			}
+		}
+	};
 
 	const showMessage = async (message, scroll = true) => {
 		const _chatId = JSON.parse(JSON.stringify($chatId));
@@ -1177,8 +1178,8 @@
 						}
 					}
 				}
-				}
-			});
+			}
+		});
 
 		artifactContents.set(contents);
 	};
@@ -1732,7 +1733,11 @@
 		}
 	};
 
-	const createLocalProjectActionMessage = async (userPrompt, assistantContent, { done = true } = {}) => {
+	const createLocalProjectActionMessage = async (
+		userPrompt,
+		assistantContent,
+		{ done = true } = {}
+	) => {
 		messageInput?.setText('');
 		const modelId = selectedModels.find((id) => id) ?? 'enos.mind';
 		const model = $models.filter((m) => m.id === modelId).at(0);
@@ -1790,7 +1795,11 @@
 	};
 
 	const projectFolderIdFromChat = (source = chat) =>
-		source?.folder_id ?? source?.folderId ?? source?.chat?.folder_id ?? source?.chat?.folderId ?? null;
+		source?.folder_id ??
+		source?.folderId ??
+		source?.chat?.folder_id ??
+		source?.chat?.folderId ??
+		null;
 
 	const knownProjectFolderById = (folderId) => {
 		if (!folderId) return null;
@@ -1960,12 +1969,7 @@
 		const projectName = String(folder?.name ?? '').trim();
 		const rootName = String(source?.rootName ?? '').trim();
 		const fallbackName = projectName || rootName || 'selected Desk project';
-		const boundPath = [
-			source?.rootDisplay,
-			source?.rootPath,
-			source?.displayPath,
-			source?.path
-		]
+		const boundPath = [source?.rootDisplay, source?.rootPath, source?.displayPath, source?.path]
 			.map((value) => String(value ?? '').trim())
 			.find((value) => value.length > 0);
 
@@ -2004,12 +2008,12 @@
 
 	const deskAccessModePromptLine = (mode: EnosDesktopAccessMode) => {
 		if (mode === 'read-only') {
-			return 'Access mode: read-only - you may read files across the user\'s machine (for example ~/Desktop), but secrets are blocked and edits are disabled.';
+			return "Access mode: read-only - you may read files across the user's machine (for example ~/Desktop), but secrets are blocked and edits are disabled.";
 		}
 		if (mode === 'full') {
 			return 'Access mode: full - you may read and edit anywhere on this Mac without prompts; only do exactly what the user asked.';
 		}
-		return 'Access mode: auto - you may read files across the user\'s machine (for example ~/Desktop), but secrets are blocked; edits are limited to this project.';
+		return "Access mode: auto - you may read files across the user's machine (for example ~/Desktop), but secrets are blocked; edits are limited to this project.";
 	};
 
 	const activeProjectPathForFolder = (folderId) =>
@@ -2045,11 +2049,21 @@
 		);
 	};
 
+	const notifyFolderChatsChanged = (folderId: string) => {
+		window.dispatchEvent(new CustomEvent('enos:folder-chats-changed', { detail: { folderId } }));
+	};
+
+	const refreshCurrentChatList = async () => {
+		await chats.set(await getChatList(localStorage.token, $currentChatPage));
+	};
+
 	// B — cloud desk chat runs on OpenCode (opencode serve in the cloud workspace, via
 	// the authed /api/ws/oc proxy). This is the WEB path (no Electron bridge): a cloud
 	// workspace is selected → real agentic file/code work, reusing the desk renderers.
 	const handleCloudOpencodeChat = async (userPrompt, wsId) => {
-		const responseMessageId = await createLocalProjectActionMessage(userPrompt, '', { done: false });
+		const responseMessageId = await createLocalProjectActionMessage(userPrompt, '', {
+			done: false
+		});
 		const statusHistory: any[] = [];
 		let liveContent = '';
 		let liveReasoning = '';
@@ -2102,15 +2116,35 @@
 			const done = history.messages[responseMessageId];
 			if (done) {
 				const durationS = reasoningStartMs ? (Date.now() - reasoningStartMs) / 1000 : 0;
-				done.content = composeDeskMessageContent(r.reasoning, r.content || '(No response from OpenCode.)', {
-					done: true,
-					durationS
-				});
+				done.content = composeDeskMessageContent(
+					r.reasoning,
+					r.content || '(No response from OpenCode.)',
+					{
+						done: true,
+						durationS
+					}
+				);
 				done.statusHistory = statusHistory.map((s) => ({ ...s, done: true }));
 				done.done = true;
 				history.messages[responseMessageId] = done;
 				history = history;
 				await saveChatHandler($chatId, history);
+				const titleModelId = done.model ?? selectedModels.find((id) => id) ?? 'enos.mind';
+				void maybeGenerateOpencodeChatTitle({
+					token: localStorage.token,
+					chatId: $chatId,
+					folderId: $selectedFolder?.id ?? null,
+					currentTitle: $chatTitle,
+					modelId: titleModelId,
+					userPrompt,
+					assistantContent: r.content,
+					disabled: $temporaryChatEnabled,
+					generateTitle,
+					updateChatById,
+					setTitle: (title) => chatTitle.set(title),
+					refresh: refreshCurrentChatList,
+					notifyFolderChatsChanged
+				});
 			}
 			dispatchProjectFilesChanged(wsId, null);
 		} catch (e) {
@@ -2129,7 +2163,9 @@
 	// This mirrors the cloud OpenCode renderer path while keeping runDeskAgentLoop
 	// as the fallback for older desktop builds.
 	const handleLocalOpencodeChat = async (userPrompt, folderId, opencode) => {
-		const responseMessageId = await createLocalProjectActionMessage(userPrompt, '', { done: false });
+		const responseMessageId = await createLocalProjectActionMessage(userPrompt, '', {
+			done: false
+		});
 		const statusHistory: any[] = [];
 		let liveContent = '';
 		let liveReasoning = '';
@@ -2181,15 +2217,35 @@
 			const done = history.messages[responseMessageId];
 			if (done) {
 				const durationS = reasoningStartMs ? (Date.now() - reasoningStartMs) / 1000 : 0;
-				done.content = composeDeskMessageContent(r.reasoning, r.content || '(No response from OpenCode.)', {
-					done: true,
-					durationS
-				});
+				done.content = composeDeskMessageContent(
+					r.reasoning,
+					r.content || '(No response from OpenCode.)',
+					{
+						done: true,
+						durationS
+					}
+				);
 				done.statusHistory = statusHistory.map((s) => ({ ...s, done: true }));
 				done.done = true;
 				history.messages[responseMessageId] = done;
 				history = history;
 				await saveChatHandler($chatId, history);
+				const titleModelId = done.model ?? selectedModels.find((id) => id) ?? 'enos.mind';
+				void maybeGenerateOpencodeChatTitle({
+					token: localStorage.token,
+					chatId: $chatId,
+					folderId,
+					currentTitle: $chatTitle,
+					modelId: titleModelId,
+					userPrompt,
+					assistantContent: r.content,
+					disabled: $temporaryChatEnabled,
+					generateTitle,
+					updateChatById,
+					setTitle: (title) => chatTitle.set(title),
+					refresh: refreshCurrentChatList,
+					notifyFolderChatsChanged
+				});
 			}
 			dispatchProjectFilesChanged(folderId, null);
 		} catch (e) {
@@ -2232,7 +2288,8 @@
 			if (bridge.opencode && canUseEnosLocalOpencode(desktopCapabilities)) {
 				return await handleLocalOpencodeChat(userPrompt, folderId, bridge.opencode);
 			}
-			const projectFolder = activeProjectFolder() ?? deskActiveFolder ?? knownProjectFolderById(folderId);
+			const projectFolder =
+				activeProjectFolder() ?? deskActiveFolder ?? knownProjectFolderById(folderId);
 			const projectLabel = describeDeskProjectForPrompt(projectFolder);
 			const deskAccessMode = await loadDeskAccessModeForPrompt(bridge);
 
@@ -2328,7 +2385,8 @@
 					lastReasoningDurationS = reasoningStartMs ? (Date.now() - reasoningStartMs) / 1000 : 0;
 					return result;
 				}
-				if (!bridge.agentComplete) throw new Error('Desk agent endpoint not available — update ENOS Desk.');
+				if (!bridge.agentComplete)
+					throw new Error('Desk agent endpoint not available — update ENOS Desk.');
 				return bridge.agentComplete(msgs, tools);
 			};
 
@@ -2419,41 +2477,29 @@
 				history = history;
 				await saveChatHandler($chatId, history);
 
-				try {
-					if (!$temporaryChatEnabled && (($chatTitle ?? '') === '' || $chatTitle === 'New Chat')) {
-						const titleModelId = done.model ?? selectedModels.find((id) => id) ?? 'enos.mind';
-						const title = await generateTitle(localStorage.token, titleModelId, [
-							{ role: 'user', content: userPrompt },
-							{ role: 'assistant', content: outcome.content }
-						]);
-
-						if (title) {
-							await updateChatById(localStorage.token, $chatId, { title });
-							chatTitle.set(title);
-							await chats.set(await getChatList(localStorage.token, $currentChatPage));
-							// The sidebar renders this chat under its project folder via
-							// RecursiveFolder's own getChatsByFolderId list, which the top-level
-							// `chats` refresh above does not touch — so without this the new title
-							// only appears after navigating away and back. Nudge the folder to
-							// reload its items so the rename shows immediately.
-							window.dispatchEvent(
-								new CustomEvent('enos:folder-chats-changed', { detail: { folderId } })
-							);
-						}
-					}
-				} catch (error) {
-					console.error('[enos desk title]', error);
-				}
+				const titleModelId = done.model ?? selectedModels.find((id) => id) ?? 'enos.mind';
+				void maybeGenerateOpencodeChatTitle({
+					token: localStorage.token,
+					chatId: $chatId,
+					folderId,
+					currentTitle: $chatTitle,
+					modelId: titleModelId,
+					userPrompt,
+					assistantContent: outcome.content,
+					disabled: $temporaryChatEnabled,
+					generateTitle,
+					updateChatById,
+					setTitle: (title) => chatTitle.set(title),
+					refresh: refreshCurrentChatList,
+					notifyFolderChatsChanged
+				});
 			}
 			return true;
 		} catch (error) {
 			console.error('[enos desk agent]', error);
 			toast.error($i18n.t('Project file action failed'));
 			const detail = error instanceof Error ? error.message : String(error);
-			await createLocalProjectActionMessage(
-				userPrompt,
-				`Project file action failed.\n\n${detail}`
-			);
+			await createLocalProjectActionMessage(userPrompt, `Project file action failed.\n\n${detail}`);
 			return true;
 		}
 	};
@@ -3148,7 +3194,9 @@
 		const projectActionPrompt = String(
 			regenerationPrompt ?? userMessage?.merged?.content ?? userMessage?.content ?? ''
 		);
-		const activeProjectFilePath = activeProjectId ? activeProjectPathForFolder(activeProjectId) : '.';
+		const activeProjectFilePath = activeProjectId
+			? activeProjectPathForFolder(activeProjectId)
+			: '.';
 		const projectBridge = getEnosDesktopBridge();
 		const hasDesktopBridge = hasProjectListBridge(projectBridge);
 		const projectActionContext = await buildProjectActionContext({
@@ -3881,26 +3929,26 @@
 								timestamp: Date.now()
 							}
 						}}
-							{history}
-							title={$chatTitle}
-							bind:selectedModels
-							showModelSelector={false}
-							shareEnabled={!!history.currentId}
-							{initNewChat}
-							scrollToTop={!isNearTop ? scrollToTop : null}
-							{archiveChatHandler}
-							{deleteChatHandler}
-							{moveChatHandler}
-							onRenameChat={renameChatHandler}
-							deskWorkspace={deskWorkspaceBadge}
-							deskWorkspaceFolderId={deskActiveFolder?.id ?? null}
-							deskWorkspaceFolder={deskActiveFolder}
-							onSaveTempChat={async () => {
-								try {
-									if (!history?.currentId || !Object.keys(history.messages).length) {
-										toast.error($i18n.t('No conversation to save'));
-										return;
-									}
+						{history}
+						title={$chatTitle}
+						bind:selectedModels
+						showModelSelector={false}
+						shareEnabled={!!history.currentId}
+						{initNewChat}
+						scrollToTop={!isNearTop ? scrollToTop : null}
+						{archiveChatHandler}
+						{deleteChatHandler}
+						{moveChatHandler}
+						onRenameChat={renameChatHandler}
+						deskWorkspace={deskWorkspaceBadge}
+						deskWorkspaceFolderId={deskActiveFolder?.id ?? null}
+						deskWorkspaceFolder={deskActiveFolder}
+						onSaveTempChat={async () => {
+							try {
+								if (!history?.currentId || !Object.keys(history.messages).length) {
+									toast.error($i18n.t('No conversation to save'));
+									return;
+								}
 								const messages = createMessagesList(history, history.currentId);
 								const title =
 									messages.find((m) => m.role === 'user')?.content ?? $i18n.t('New Chat');
@@ -4122,17 +4170,17 @@
 					{showMessage}
 					{eventTarget}
 					{codeInterpreterEnabled}
-					/>
-				</PaneGroup>
+				/>
+			</PaneGroup>
+		</div>
+	{:else if loading}
+		<div class=" flex items-center justify-center h-full w-full">
+			<div class="m-auto">
+				<EnosOrb tone="all" className="size-8" />
 			</div>
-		{:else if loading}
-			<div class=" flex items-center justify-center h-full w-full">
-				<div class="m-auto">
-					<EnosOrb tone="all" className="size-8" />
-				</div>
-			</div>
-		{/if}
-	</div>
+		</div>
+	{/if}
+</div>
 
 <style>
 	::-webkit-scrollbar {

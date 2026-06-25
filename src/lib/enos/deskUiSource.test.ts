@@ -45,10 +45,10 @@ describe('ENOS Desk UI source guardrails', () => {
 		const chatControls = read('src/lib/components/chat/ChatControls.svelte');
 
 		expect(chatControls).toContain('let savedTab: ControlTab | null = null;');
-		expect(chatControls).not.toContain("let savedTab: 'controls' | 'files' | 'overview' = 'controls';");
-		expect(chatControls).toContain(
-			"$: defaultControlTab = isDeskSurface ? 'files' : 'controls';"
+		expect(chatControls).not.toContain(
+			"let savedTab: 'controls' | 'files' | 'overview' = 'controls';"
 		);
+		expect(chatControls).toContain("$: defaultControlTab = isDeskSurface ? 'files' : 'controls';");
 		expect(chatControls).toContain(
 			'$: canApplyInitialTab = savedTab !== null || !isDeskSurface || showFilesTab;'
 		);
@@ -106,16 +106,20 @@ describe('ENOS Desk UI source guardrails', () => {
 
 		expect(chatControls).toContain('pendingTrayOpen');
 		expect(chatControls).toContain('export const openTray = async');
-		expect(chatControls).toMatch(/const tab = resolveTrayTab\(requestedTab\);[\s\S]*showControls\.set\(true\);[\s\S]*openPane\(\);/);
-		expect(chatControls).toMatch(/if \(visibleControlTabs\.length === 0\) \{[\s\S]*showControls\.set\(false\);[\s\S]*\}/);
+		expect(chatControls).toMatch(
+			/const tab = resolveTrayTab\(requestedTab\);[\s\S]*showControls\.set\(true\);[\s\S]*openPane\(\);/
+		);
+		expect(chatControls).toMatch(
+			/if \(visibleControlTabs\.length === 0\) \{[\s\S]*showControls\.set\(false\);[\s\S]*\}/
+		);
 		// A selected terminal sets the default tab but must NOT force the pane open
 		// (a default-enabled cloud terminal was popping the right sidebar on load).
 		// The pinned `{ activeTab = 'files'; }` body inherently excludes any auto-open.
-		expect(chatControls).toMatch(/if \(\$selectedTerminalId && showFilesTab\) \{\s*activeTab = 'files';\s*\}/);
-
-		expect(recursiveFolder).toContain(
-			"requestTrayOpenForSurface(isDeskSurface);"
+		expect(chatControls).toMatch(
+			/if \(\$selectedTerminalId && showFilesTab\) \{\s*activeTab = 'files';\s*\}/
 		);
+
+		expect(recursiveFolder).toContain('requestTrayOpenForSurface(isDeskSurface);');
 		expect(recursiveFolder).toMatch(
 			/clickTimer = setTimeout\(async \(\) => \{[\s\S]*open = !open;[\s\S]*isExpandedUpdateDebounceHandler\(\);[\s\S]*await selectProjectFolderHandler\(\{ openFiles: true \}\);/
 		);
@@ -194,6 +198,22 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(terminalBranch).toBeLessThan(localBranch);
 	});
 
+	test('cloud runtime Files tab uses the Cloud Files presentation', () => {
+		const chatControls = read('src/lib/components/chat/ChatControls.svelte');
+		const fileNav = read('src/lib/components/chat/FileNav.svelte');
+		const localFileNav = read('src/lib/components/chat/LocalFileNav.svelte');
+
+		expect(chatControls).toContain('cloudWorkspace={isDeskSurface}');
+		expect(chatControls).toContain('cloudWorkspaceName={selectedTerminalName}');
+		expect(fileNav).toContain('CLOUD_FILES_DEFAULT_PATH');
+		expect(fileNav).toContain('export let cloudWorkspace = false;');
+		expect(fileNav).toContain('Cloud Files');
+		expect(fileNav).toContain('formatCloudFilesStatus(cloudWorkspaceName)');
+		expect(fileNav).toContain('resolveCloudFilesInitialPath');
+		expect(localFileNav).toContain('Working on this device');
+		expect(localFileNav).not.toContain('Project context ready');
+	});
+
 	test('persisted ENOS web sources render real labels instead of raw tool ids', () => {
 		const contentRenderer = read('src/lib/components/chat/Messages/ContentRenderer.svelte');
 		const citations = read('src/lib/components/chat/Messages/Citations.svelte');
@@ -209,7 +229,9 @@ describe('ENOS Desk UI source guardrails', () => {
 
 	test('Desk status narration uses compact ENOS presentation without changing Chat history', () => {
 		const responseMessage = read('src/lib/components/chat/Messages/ResponseMessage.svelte');
-		const statusHistory = read('src/lib/components/chat/Messages/ResponseMessage/StatusHistory.svelte');
+		const statusHistory = read(
+			'src/lib/components/chat/Messages/ResponseMessage/StatusHistory.svelte'
+		);
 		const statusItem = read(
 			'src/lib/components/chat/Messages/ResponseMessage/StatusHistory/StatusItem.svelte'
 		);
@@ -222,6 +244,17 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(statusItem).toContain("import { formatDeskStatusLabel } from '$lib/enos/deskStatus';");
 		expect(statusItem).toContain('{formatDeskStatusLabel(status)}');
 		expect(statusItem).toContain('WebSearchResults');
+	});
+
+	test('OpenCode Desk paths share background title generation', () => {
+		const chat = read('src/lib/components/chat/Chat.svelte');
+
+		expect(chat).toContain(
+			"import { maybeGenerateOpencodeChatTitle } from '$lib/enos/opencodeTitle';"
+		);
+		expect(chat.match(/void maybeGenerateOpencodeChatTitle/g)?.length).toBeGreaterThanOrEqual(2);
+		expect(chat).toContain('notifyFolderChatsChanged');
+		expect(chat).not.toContain("console.error('[enos desk title]'");
 	});
 
 	test('desk agent carries ENOS identity (three minds, no underlying-model leak) — B4', () => {
