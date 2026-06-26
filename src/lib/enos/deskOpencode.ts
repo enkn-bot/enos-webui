@@ -205,7 +205,11 @@ const runOpencodeTransportTurn = async (
 		model: { providerID: string; modelID: string };
 		signal?: AbortSignal;
 	},
-	cb: DeskOpencodeCallbacks
+	cb: DeskOpencodeCallbacks,
+	// Event normalizer for the active local engine. OpenCode by default; the Pi RPC
+	// engine (ENOS_DESK_ENGINE=pi, reported via get-capabilities deskEngine) passes
+	// normalizePiEvent. The transport (channels) is identical; only the shapes differ.
+	normalize: (event: any) => DeskStreamEvent | null = normalizeOpencodeEvent
 ): Promise<{ content: string; reasoning: string }> => {
 	const state = new DeskStreamState();
 
@@ -248,7 +252,7 @@ const runOpencodeTransportTurn = async (
 					return;
 				}
 				if (!('event' in raw)) return;
-				const ev = normalizeOpencodeEvent(raw.event);
+				const ev = normalize(raw.event);
 				if (!ev) return;
 				const result = applyDeskStreamEvent(ev, state, cb);
 				if (result === 'dirty') {
@@ -280,10 +284,13 @@ export const runOpencodeDeskTurn = async (
 		signal?: AbortSignal;
 		fetchImpl?: typeof fetch;
 		transport?: DeskOpencodeTransport;
+		// Local engine event normalizer (Pi RPC vs OpenCode); selected by the caller from
+		// the desktop bridge's get-capabilities `deskEngine`. Defaults to OpenCode.
+		normalize?: (event: any) => DeskStreamEvent | null;
 	},
 	cb: DeskOpencodeCallbacks
 ): Promise<{ content: string; reasoning: string }> => {
-	if (opts.transport) return runOpencodeTransportTurn(opts.transport, opts, cb);
+	if (opts.transport) return runOpencodeTransportTurn(opts.transport, opts, cb, opts.normalize);
 	if (!opts.base) throw new Error('ENOS Cloud base URL required');
 
 	const f = opts.fetchImpl ?? fetch;

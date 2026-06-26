@@ -19,6 +19,9 @@ export type EnosDesktopCapabilities = {
 	localProjectCloudUpload?: boolean;
 	githubOAuth?: boolean;
 	opencodeServe?: boolean;
+	// Active local Desk-B coding engine. 'pi' (Pi RPC) or 'opencode' (default/legacy).
+	// Selects the event normalizer in the desk turn runner; channels are identical.
+	deskEngine?: 'pi' | 'opencode';
 };
 
 export type EnosDesktopWorkspace = {

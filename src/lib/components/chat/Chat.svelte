@@ -128,7 +128,7 @@
 	import { buildProjectActionContext } from '$lib/enos/projectActions';
 	import { runDeskAgentLoop } from '$lib/enos/deskAgentLoop';
 	import { composeDeskMessageContent } from '$lib/enos/deskReasoning';
-	import { bridgeTransport, runOpencodeDeskTurn } from '$lib/enos/deskOpencode';
+	import { bridgeTransport, runOpencodeDeskTurn, normalizePiEvent } from '$lib/enos/deskOpencode';
 	import { DESK_FILE_TOOLS, describeDeskTool, executeDeskFileTool } from '$lib/enos/deskFileTools';
 	import { deskSurfaceGroundingLine, groundingLine } from '$lib/enos/grounding';
 	import {
@@ -2325,7 +2325,9 @@
 					message: userPrompt,
 					agent: 'build',
 					model: { providerID: 'local', modelID: 'opencode' },
-					transport: bridgeTransport(opencode, folderId)
+					transport: bridgeTransport(opencode, folderId),
+						normalize:
+							desktopCapabilities?.deskEngine === 'pi' ? normalizePiEvent : undefined
 				},
 				{
 					onUpdate: ({ content, reasoning }) => {
