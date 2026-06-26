@@ -103,6 +103,7 @@
 
 	const BREAKPOINT = 768;
 	const DEFAULT_PINNED_ITEMS = ['notes', 'workspace'];
+	const DESK_HOME_PROJECT_NAME = 'ENOS';
 
 	let scrollTop = 0;
 
@@ -127,6 +128,8 @@
 
 	let folders = {};
 	let folderRegistry = {};
+	let ensuringDeskHomeProject = false;
+	let deskHomeProjectAttempted = false;
 	// Ids of folders that belong to the desk surface (tagged desk, locally bound,
 	// or legacy bridge workspace). Captured from the UNFILTERED folder list so the
 	// chat surface filter can also recognize desk folders. Drives filterChatsBySurface.
@@ -244,6 +247,16 @@
 			legacyDeskItemIds: legacyDeskProjectIds
 		});
 		_folders.set(folderList.sort((a, b) => b.updated_at - a.updated_at));
+
+		if (
+			isDeskSurface &&
+			folderList.length === 0 &&
+			!$selectedFolder?.id &&
+			!ensuringDeskHomeProject &&
+			!deskHomeProjectAttempted
+		) {
+			void ensureDeskHomeProject();
+		}
 
 		folders = {};
 
@@ -531,6 +544,36 @@
 			return true;
 		}
 		return false;
+	};
+
+	const ensureDeskHomeProject = async () => {
+		if (!isDeskSurface || ensuringDeskHomeProject || deskHomeProjectAttempted || $selectedFolder?.id) {
+			return false;
+		}
+
+		ensuringDeskHomeProject = true;
+		deskHomeProjectAttempted = true;
+
+		try {
+			let localWorkspace = null;
+			if (hasDesktopBridge) {
+				const bridge = getEnosDesktopBridge();
+				if (!bridge?.createCleanWorkspace) return false;
+				localWorkspace = await bridge.createCleanWorkspace(DESK_HOME_PROJECT_NAME);
+				if (!localWorkspace) return false;
+			}
+
+			return await createFolder({
+				name: DESK_HOME_PROJECT_NAME,
+				meta: {},
+				data: {},
+				parent_id: null,
+				localWorkspace,
+				projectEnvironment: hasDesktopBridge ? 'local' : 'cloud'
+			});
+		} finally {
+			ensuringDeskHomeProject = false;
+		}
 	};
 
 	const handleDeskLocalFolderPick = async () => {

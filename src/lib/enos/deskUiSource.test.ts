@@ -261,6 +261,9 @@ describe('ENOS Desk UI source guardrails', () => {
 		const localBranch = chatControls.indexOf("activeTab === 'files' && showProjectFileNav");
 
 		expect(chatControls).toContain('showActiveTerminalFileNav');
+		expect(chatControls).toMatch(
+			/showActiveTerminalFileNav =[\s\S]*showTerminalFileNav[\s\S]*Boolean\(\$selectedTerminalId\)[\s\S]*!isDeskSurface \|\| Boolean\(selectedCloudProjectRoot\)/
+		);
 		expect(terminalBranch).toBeGreaterThan(-1);
 		expect(localBranch).toBeGreaterThan(-1);
 		expect(terminalBranch).toBeLessThan(localBranch);
@@ -408,6 +411,22 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(modal).toMatch(/\{#if showLegacyFolderOptions\}[\s\S]*System Prompt/);
 		expect(modal).toMatch(/\{#if showLegacyFolderOptions\}[\s\S]*Project Knowledge/);
 		expect(modal).not.toContain("placeholder={$i18n.t('Enter folder name')}");
+	});
+
+	test('Desk first run creates and selects an ENOS home project before Files opens', () => {
+		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
+
+		expect(sidebar).toContain("const DESK_HOME_PROJECT_NAME = 'ENOS';");
+		expect(sidebar).toContain('let ensuringDeskHomeProject = false;');
+		expect(sidebar).toContain('let deskHomeProjectAttempted = false;');
+		expect(sidebar).toContain('ensureDeskHomeProject');
+		expect(sidebar).toMatch(
+			/folderList\.length === 0[\s\S]*ensureDeskHomeProject\(\)/
+		);
+		expect(sidebar).toContain('bridge.createCleanWorkspace(DESK_HOME_PROJECT_NAME)');
+		expect(sidebar).toContain("projectEnvironment: hasDesktopBridge ? 'local' : 'cloud'");
+		expect(sidebar).toContain('name: DESK_HOME_PROJECT_NAME');
+		expect(sidebar).toContain('await createFolder({');
 	});
 
 	test('web Desk project create asks only for the project name', () => {

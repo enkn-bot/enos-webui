@@ -115,21 +115,26 @@
 			canUseDirectTerminal);
 	$: showTerminalFileNav =
 		hasSelectedTerminalAccess || (isDeskSurface && hasConfiguredTerminal && canUseDirectTerminal);
-	$: showActiveTerminalFileNav = showTerminalFileNav && Boolean($selectedTerminalId);
+	$: selectedCloudProjectRoot = resolveCloudProjectRoot(
+		$selectedFolder?.data?.project_context_source
+	);
+	$: showActiveTerminalFileNav =
+		showTerminalFileNav &&
+		Boolean($selectedTerminalId) &&
+		(!isDeskSurface || Boolean(selectedCloudProjectRoot));
+	$: showGenericTerminalFileNav = !isDeskSurface && showTerminalFileNav;
 	$: selectedTerminalName =
 		($terminalServers ?? []).find((t) => t.id && t.id === $selectedTerminalId)?.name ??
 		($settings?.terminalServers ?? []).find((server) => server?.url === $selectedTerminalId)
 			?.name ??
 		null;
-	$: selectedCloudProjectRoot = resolveCloudProjectRoot(
-		$selectedFolder?.data?.project_context_source
-	);
 	$: showLocalFileNav = isDeskSurface && canUseEnosLocalProjectFiles(desktopCapabilities);
 	$: showProjectFileNav = showLocalFileNav && Boolean($showLocalFileFolderId);
 	$: showDeskProjectFilesEmpty = showLocalFileNav && !$showLocalFileFolderId;
 	$: showFilesTab =
 		showLocalFileNav ||
-		showTerminalFileNav ||
+		showActiveTerminalFileNav ||
+		showGenericTerminalFileNav ||
 		(codeInterpreterEnabled && $config?.code?.interpreter_engine !== 'jupyter');
 	$: showOverviewTab = isDeskSurface || hasMessages;
 	$: defaultControlTab = isDeskSurface ? 'files' : 'controls';
@@ -586,7 +591,7 @@
 										{$i18n.t('Select a project to browse its files.')}
 									</div>
 								</div>
-							{:else if activeTab === 'files' && showTerminalFileNav}
+							{:else if activeTab === 'files' && showGenericTerminalFileNav}
 								<FileNav onAttach={handleTerminalAttach} {chatId} />
 							{:else if activeTab === 'files' && codeInterpreterEnabled}
 								<PyodideFileNav />
@@ -728,7 +733,7 @@
 											{$i18n.t('Select a project to browse its files.')}
 										</div>
 									</div>
-								{:else if activeTab === 'files' && showTerminalFileNav}
+								{:else if activeTab === 'files' && showGenericTerminalFileNav}
 									<FileNav onAttach={handleTerminalAttach} overlay={dragged} {chatId} />
 								{:else if activeTab === 'files' && codeInterpreterEnabled}
 									<PyodideFileNav overlay={dragged} />
