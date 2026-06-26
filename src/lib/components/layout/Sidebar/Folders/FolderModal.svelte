@@ -325,7 +325,7 @@
 								<div class="text-sm font-semibold">{$i18n.t('Create a new project')}</div>
 								<div class="mt-1 text-sm leading-5 text-gray-500 dark:text-gray-400">
 									{projectEnvironment === 'local'
-										? $i18n.t('ENOS will create a fresh folder in Documents/ENOS.')
+										? $i18n.t('ENOS will create a fresh app-managed folder on this device.')
 										: $i18n.t('ENOS will create a fresh folder in your cloud workspace.')}
 								</div>
 							</div>

@@ -396,8 +396,10 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(modal).toContain("{$i18n.t('Cancel')}");
 		expect(modal).toContain('createCleanWorkspace');
 		expect(modal).toContain("placeholder={$i18n.t('Untitled project')}");
+		expect(modal).toContain('app-managed folder on this device');
 		expect(modal).not.toContain("{$i18n.t('Start clean')}");
 		expect(modal).not.toContain('Create clean local project');
+		expect(modal).not.toContain('Documents/ENOS');
 		expect(modal).not.toContain("Choose a local folder or start clean.");
 		expect(modal).toMatch(/\{#if showLegacyFolderOptions\}[\s\S]*Folder Background Image/);
 		expect(modal).toMatch(/\{#if showLegacyFolderOptions\}[\s\S]*System Prompt/);
