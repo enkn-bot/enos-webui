@@ -1674,7 +1674,11 @@
 										</button>
 									</InputMenu>
 
-									{#if isDeskSurface && bridge}
+									<!-- Access mode (read-only/auto/full) is a LOCAL-only control: it governs the
+									     real filesystem + the local coding agent. On a CLOUD workspace the container IS
+									     the sandbox, so the mode is meaningless — hide the selector rather than light a
+									     dead affordance (see docs/DESK_PERMISSION_MODES.md "Local vs Cloud"). -->
+									{#if isDeskSurface && bridge && !$selectedTerminalId}
 										<Dropdown
 											bind:show={showProjectAccessModeMenu}
 											side="bottom"
