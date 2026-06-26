@@ -814,9 +814,14 @@
 	onMount(() => {
 		loading = true;
 		console.log('mounted');
-		deskLocalBridgePresent = Boolean(getEnosDesktopBridge());
+		refreshDeskLocalBridgePresent();
 		window.addEventListener('message', onMessageHandler);
 		$socket?.on('events', chatEventHandler);
+
+		const handleDesktopBridgeActive = () => {
+			refreshDeskLocalBridgePresent();
+		};
+		window.addEventListener('enos:desktop-bridge-active', handleDesktopBridgeActive);
 
 		const handleProjectDeleted = async (event: Event) => {
 			if (!isDeskSurface()) return;
@@ -967,6 +972,7 @@
 				selectedFolderSubscribe();
 				foldersSubscribe();
 				window.removeEventListener('message', onMessageHandler);
+				window.removeEventListener('enos:desktop-bridge-active', handleDesktopBridgeActive);
 				window.removeEventListener('enos:project-deleted', handleProjectDeleted);
 				$socket?.off('events', chatEventHandler);
 				audioQueueInstance?.destroy();
@@ -1861,9 +1867,13 @@
 	let deskChatFolder: any = null;
 	let deskActiveFolder: any = null;
 	let deskWorkspaceBadge = workspaceBadgeFromFolder(null);
-	// Desktop bridge presence (stable per session) gates whether Local work can run here.
-	// Browser Desk is cloud-only.
+	// Desktop bridge presence gates whether Local work can run here. It can arrive
+	// after mount in Desk, so Local switch events refresh this value.
 	let deskLocalBridgePresent = false;
+	const refreshDeskLocalBridgePresent = () => {
+		deskLocalBridgePresent = Boolean(getEnosDesktopBridge());
+		return deskLocalBridgePresent;
+	};
 	let repairedDeskLooseChatIds = new Set<string>();
 	const isDeskSurface = () => isDeskHostname();
 	const currentSurface = () => surfaceFromIsDesk(isDeskSurface());

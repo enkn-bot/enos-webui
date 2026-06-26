@@ -175,6 +175,8 @@
 		bind:show={showFolderModal}
 		edit={true}
 		folderId={folder.id}
+		initialFolder={folder}
+		projectEditMode={isDeskSurface()}
 		onSubmit={updateHandler}
 	/>
 

@@ -28,6 +28,8 @@
 	export let folderId = null;
 	export let parentId = null;
 	export let edit = false;
+	export let initialFolder = null;
+	export let projectEditMode = false;
 	export let showLocalFolderAction = false;
 	export let onLocalFolderPick: Function = async () => {};
 
@@ -49,6 +51,7 @@
 
 	$: canUseLocalProject = showLocalFolderAction && Boolean(getEnosDesktopBridge());
 	$: submitLabel = edit ? $i18n.t('Save') : $i18n.t('Create project');
+	$: showLegacyFolderOptions = edit && !projectEditMode;
 
 	const defaultProjectEnvironment = (): ProjectEnvironment => (canUseLocalProject ? 'local' : 'cloud');
 
@@ -64,6 +67,20 @@
 		localWorkspace = null;
 		projectEnvironment = defaultProjectEnvironment();
 		projectStartMode = 'clean';
+	};
+
+	const applyInitialFolder = (value) => {
+		if (!value) return;
+
+		folder = value;
+		name = value.name ?? '';
+		meta = value.meta || {
+			background_image_url: null
+		};
+		data = value.data || {
+			system_prompt: '',
+			files: []
+		};
 	};
 
 	const setProjectEnvironment = (environment: ProjectEnvironment) => {
@@ -144,19 +161,13 @@
 
 	const init = async () => {
 		if (folderId) {
-			folder = await getFolderById(localStorage.token, folderId).catch((error) => {
+			applyInitialFolder(initialFolder);
+
+			const fetchedFolder = await getFolderById(localStorage.token, folderId).catch((error) => {
 				toast.error(`${error}`);
 				return null;
 			});
-
-			name = folder.name;
-			meta = folder.meta || {
-				background_image_url: null
-			};
-			data = folder.data || {
-				system_prompt: '',
-				files: []
-			};
+			applyInitialFolder(fetchedFolder);
 		} else {
 			resetCreateState();
 		}
@@ -353,7 +364,7 @@
 			</div>
 		{/if}
 
-		{#if edit}
+		{#if showLegacyFolderOptions}
 					<input
 						id="folder-background-image-input"
 						type="file"

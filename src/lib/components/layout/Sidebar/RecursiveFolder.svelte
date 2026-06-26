@@ -542,7 +542,14 @@
 	</div>
 </DeleteConfirmDialog>
 
-<FolderModal bind:show={showFolderModal} edit={true} {folderId} onSubmit={updateHandler} />
+<FolderModal
+	bind:show={showFolderModal}
+	edit={true}
+	{folderId}
+	initialFolder={folders[folderId]}
+	projectEditMode={isDeskSurface}
+	onSubmit={updateHandler}
+/>
 
 <FolderModal
 	bind:show={showCreateSubFolderModal}

@@ -104,6 +104,10 @@
 		}
 	};
 
+	const notifyDesktopBridgeActive = () => {
+		window.dispatchEvent(new CustomEvent('enos:desktop-bridge-active'));
+	};
+
 	let copyingLocalProjectToCloud = false;
 	let showEnvironmentSwitchConfirm = false;
 	let pendingSwitchTarget: 'local' | 'cloud' | null = null;
@@ -198,6 +202,7 @@
 		await runWithEnvironmentConfirmation('local', async () => {
 			if (activeFolderId) {
 				show = false;
+				notifyDesktopBridgeActive();
 				await deactivateCloudWorkspace();
 				const updated = await bindLocalWorkspaceToFolder(
 					localStorage.token,

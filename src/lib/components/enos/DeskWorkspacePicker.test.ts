@@ -69,9 +69,15 @@ describe('Desk workspace picker source contract', () => {
 
 	test('selecting Local deactivates the cloud workspace (mutually exclusive)', () => {
 		const picker = read('src/lib/components/enos/DeskWorkspacePicker.svelte');
+		const chat = read('src/lib/components/chat/Chat.svelte');
+
+		expect(picker).toContain('notifyDesktopBridgeActive');
+		expect(picker).toMatch(/selectLocal[\s\S]*notifyDesktopBridgeActive\(\)[\s\S]*await deactivateCloudWorkspace\(\)/);
 		expect(picker).toContain('deactivateCloudWorkspace');
 		expect(picker).toMatch(/selectLocal[\s\S]*await deactivateCloudWorkspace\(\)/);
 		expect(picker).toMatch(/deactivateCloudWorkspace[\s\S]*selectedTerminalId\.set\(null\)/);
+		expect(chat).toContain('handleDesktopBridgeActive');
+		expect(chat).toContain("window.addEventListener('enos:desktop-bridge-active'");
 	});
 
 	test('project menu does not expose GitHub account or clone plumbing', () => {

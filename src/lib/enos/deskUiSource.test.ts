@@ -399,9 +399,9 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(modal).not.toContain("{$i18n.t('Start clean')}");
 		expect(modal).not.toContain('Create clean local project');
 		expect(modal).not.toContain("Choose a local folder or start clean.");
-		expect(modal).toMatch(/\{#if edit\}[\s\S]*Folder Background Image/);
-		expect(modal).toMatch(/\{#if edit\}[\s\S]*System Prompt/);
-		expect(modal).toMatch(/\{#if edit\}[\s\S]*Project Knowledge/);
+		expect(modal).toMatch(/\{#if showLegacyFolderOptions\}[\s\S]*Folder Background Image/);
+		expect(modal).toMatch(/\{#if showLegacyFolderOptions\}[\s\S]*System Prompt/);
+		expect(modal).toMatch(/\{#if showLegacyFolderOptions\}[\s\S]*Project Knowledge/);
 		expect(modal).not.toContain("placeholder={$i18n.t('Enter folder name')}");
 	});
 
@@ -419,6 +419,24 @@ describe('ENOS Desk UI source guardrails', () => {
 
 		expect(menu).toContain("projectMode ? 'New Session' : 'Create Project'");
 		expect(menu).not.toContain('New Project Chat');
+	});
+
+	test('Desk project edit opens with current project name and hides legacy folder options', () => {
+		const modal = read('src/lib/components/layout/Sidebar/Folders/FolderModal.svelte');
+		const folderTitle = read('src/lib/components/chat/Placeholder/FolderTitle.svelte');
+		const recursiveFolder = read('src/lib/components/layout/Sidebar/RecursiveFolder.svelte');
+
+		expect(modal).toContain('export let initialFolder = null;');
+		expect(modal).toContain('export let projectEditMode = false;');
+		expect(modal).toContain('applyInitialFolder(initialFolder)');
+		expect(modal).toContain('showLegacyFolderOptions = edit && !projectEditMode');
+		expect(modal).toMatch(/\{#if showLegacyFolderOptions\}[\s\S]*Folder Background Image/);
+		expect(modal).toMatch(/\{#if showLegacyFolderOptions\}[\s\S]*System Prompt/);
+		expect(modal).toMatch(/\{#if showLegacyFolderOptions\}[\s\S]*Project Knowledge/);
+		expect(folderTitle).toContain('initialFolder={folder}');
+		expect(folderTitle).toContain('projectEditMode={isDeskSurface()}');
+		expect(recursiveFolder).toContain('initialFolder={folders[folderId]}');
+		expect(recursiveFolder).toContain('projectEditMode={isDeskSurface}');
 	});
 
 	test('cloud project creation creates a cloud workspace folder and points Files at it', () => {
