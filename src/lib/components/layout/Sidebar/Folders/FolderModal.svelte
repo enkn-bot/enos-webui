@@ -21,6 +21,7 @@
 
 	type ProjectEnvironment = 'local' | 'cloud';
 	type ProjectStartMode = 'folder' | 'clean';
+	type CloudWorkspaceOption = { id: string; name: string };
 
 	export let show = false;
 	export let onSubmit: Function = (e) => {};
@@ -32,6 +33,9 @@
 	export let projectEditMode = false;
 	export let showLocalFolderAction = false;
 	export let cloudOnlyProjectMode = false;
+	export let cloudWorkspaceOptions: CloudWorkspaceOption[] = [];
+	export let selectedCloudWorkspaceId: string | null = null;
+	export let onCloudWorkspaceSelect: Function = async () => {};
 	export let onLocalFolderPick: Function = async () => {};
 
 	let folder = null;
@@ -54,6 +58,14 @@
 	$: submitLabel = edit ? $i18n.t('Save') : $i18n.t('Create project');
 	$: showLegacyFolderOptions = edit && !projectEditMode;
 	$: showProjectSetupOptions = !edit && !cloudOnlyProjectMode;
+	$: selectedCloudWorkspaceLabel =
+		cloudWorkspaceOptions.find((option) => option.id === selectedCloudWorkspaceId)?.name ??
+		$i18n.t('Default');
+
+	const selectCloudWorkspace = async (id: string) => {
+		selectedCloudWorkspaceId = id;
+		await onCloudWorkspaceSelect(id);
+	};
 
 	const defaultProjectEnvironment = (): ProjectEnvironment =>
 		cloudOnlyProjectMode ? 'cloud' : canUseLocalProject ? 'local' : 'cloud';
@@ -248,6 +260,41 @@
 				autocomplete="off"
 			/>
 		</div>
+
+		{#if cloudOnlyProjectMode}
+			<div class="mt-5">
+				<label
+					for="cloud-workspace"
+					class="mb-2 block text-sm font-medium text-gray-600 dark:text-gray-300"
+				>
+					{$i18n.t('Cloud space')}
+				</label>
+				{#if cloudWorkspaceOptions.length > 1}
+					<select
+						id="cloud-workspace"
+						class="w-full rounded-2xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-hidden transition focus:border-gray-400 dark:border-gray-800 dark:focus:border-gray-600"
+						value={selectedCloudWorkspaceId ?? ''}
+						on:change={(event) => selectCloudWorkspace(event.currentTarget.value)}
+					>
+						{#each cloudWorkspaceOptions as option (option.id)}
+							<option value={option.id}>{option.name}</option>
+						{/each}
+					</select>
+				{:else}
+					<div class="flex items-center gap-3 rounded-2xl border border-gray-200 px-4 py-3 text-sm dark:border-gray-800">
+						<div class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100">
+							<Cloud className="size-5" strokeWidth="2" />
+						</div>
+						<div class="min-w-0">
+							<div class="truncate font-medium">{selectedCloudWorkspaceLabel}</div>
+							<div class="truncate text-xs text-gray-500 dark:text-gray-400">
+								{$i18n.t('Cloud environment')}
+							</div>
+						</div>
+					</div>
+				{/if}
+			</div>
+		{/if}
 
 		{#if showProjectSetupOptions}
 			<div class="mt-6">

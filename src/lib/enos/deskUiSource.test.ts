@@ -434,9 +434,13 @@ describe('ENOS Desk UI source guardrails', () => {
 		const modal = read('src/lib/components/layout/Sidebar/Folders/FolderModal.svelte');
 
 		expect(sidebar).toContain('cloudOnlyProjectMode={isDeskSurface && !hasDesktopBridge}');
+		expect(sidebar).toContain('webDeskCloudWorkspaceOptions');
 		expect(modal).toContain('cloudOnlyProjectMode');
 		expect(modal).toContain("cloudOnlyProjectMode ? 'cloud' : defaultProjectEnvironment()");
 		expect(modal).toMatch(/if \(cloudOnlyProjectMode\) \{[\s\S]*projectEnvironment = 'cloud'/);
+		expect(modal).toContain('Cloud space');
+		expect(modal).toContain('cloudWorkspaceOptions.length > 1');
+		expect(modal).toContain('onCloudWorkspaceSelect');
 		expect(modal).toMatch(/\{#if showProjectSetupOptions\}[\s\S]*How do you want to start\?/);
 		expect(modal).not.toContain('Open in the desktop app to create local projects.');
 	});
@@ -478,16 +482,24 @@ describe('ENOS Desk UI source guardrails', () => {
 	test('cloud project creation creates a cloud workspace folder and points Files at it', () => {
 		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
 		const picker = read('src/lib/components/enos/DeskWorkspacePicker.svelte');
+		const chatControls = read('src/lib/components/chat/ChatControls.svelte');
 
 		expect(sidebar).toContain('projectEnvironment');
 		expect(sidebar).toContain('createCloudProjectRoot');
 		expect(sidebar).toContain('createCloudWorkspace(localStorage.token)');
+		expect(sidebar).toContain('waitForCloudWorkspaceTerminal');
+		expect(sidebar).toContain('mergeCloudWorkspaceTerminalEntries');
 		expect(sidebar).toContain('createDirectory(');
 		expect(sidebar).toContain('project_context_source: {');
 		expect(sidebar).toContain("kind: 'cloud'");
 		expect(sidebar).toContain('showFileNavDir.set(cloudPath)');
 		expect(sidebar).toContain('selectedTerminalId.set(ws.id)');
+		expect(sidebar).not.toContain('terminalServers.set(servers)');
+		expect(picker).not.toContain('terminalServers.set(servers)');
+		expect(chatControls).not.toContain('terminalServers.set(servers)');
 		expect(picker).toContain("import { resolveCloudProjectRoot } from '$lib/enos/cloudFiles';");
+		expect(picker).toContain('mergeCloudWorkspaceTerminalEntries');
+		expect(chatControls).toContain('mergeCloudWorkspaceTerminalEntries');
 		expect(picker).toContain('const cloudSource = cloudProjectContextSource(archive, imported);');
 		expect(picker).toContain(
 			"showFileNavDir.set(resolveCloudProjectRoot(cloudSource) ?? '/home/user/')"

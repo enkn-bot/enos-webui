@@ -100,6 +100,11 @@
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
 	import { deskSurfaceLabel } from '$lib/enos/deskSessionLabels';
 	import UserAvatar from '$lib/components/enos/UserAvatar.svelte';
+	import {
+		isSystemCloudWorkspaceTerminal,
+		mergeCloudWorkspaceTerminalEntries,
+		selectCloudWorkspaceTerminal
+	} from '$lib/enos/cloudWorkspaceTerminal';
 
 	const BREAKPOINT = 768;
 	const DEFAULT_PINNED_ITEMS = ['notes', 'workspace'];
@@ -145,6 +150,17 @@
 	$: sidebarChats = filterChatsBySurface($chats ?? [], currentSurface, deskFolderIds);
 	$: sidebarPinnedChats = filterChatsBySurface($pinnedChats ?? [], currentSurface, deskFolderIds);
 	$: hasDesktopBridge = browser && Boolean(getEnosDesktopBridge());
+	const cloudWorkspaceOptionLabel = (terminal) => {
+		const name = String(terminal?.name ?? '').trim();
+		if (!name || name === terminal?.id || name.startsWith('ws-')) return $i18n.t('Default');
+		return name;
+	};
+	$: webDeskCloudWorkspaceOptions = ($terminalServers ?? [])
+		.filter(isSystemCloudWorkspaceTerminal)
+		.map((terminal) => ({
+			id: String(terminal.id),
+			name: cloudWorkspaceOptionLabel(terminal)
+		}));
 	$: newChatLabel = $i18n.t(deskSurfaceLabel('new', currentSurface));
 	// Desk is project-first: the full standalone Chats section stays chat-surface-only.
 	$: showDeskChats = !isDeskSurface;
@@ -404,24 +420,42 @@
 		return rootName;
 	};
 
+	const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+	const waitForCloudWorkspaceTerminal = async (workspaceId = null) => {
+		for (let attempt = 0; attempt < 6; attempt += 1) {
+			const servers = await getTerminalServers(localStorage.token);
+			terminalServers.update((existing) =>
+				mergeCloudWorkspaceTerminalEntries(existing, servers, localStorage.token)
+			);
+			const terminal = selectCloudWorkspaceTerminal({
+				terminals: servers,
+				workspaceId,
+				selectedId: $selectedTerminalId,
+				token: localStorage.token
+			});
+			if (terminal?.url && terminal?.key) return terminal;
+			if (attempt < 5) await wait(500);
+		}
+		return null;
+	};
+
 	const createCloudProjectRoot = async (projectName) => {
 		const baseRootName = safeCloudProjectRootName(projectName);
 		const usedRootNames = existingCloudProjectRootNames();
 		const ws = await createCloudWorkspace(localStorage.token);
-		const servers = await getTerminalServers(localStorage.token);
-		terminalServers.set(servers);
 
 		if (ws?.id) selectedTerminalId.set(ws.id);
 
-		const terminal = servers.find((server) => server.id === ws?.id) ?? servers[0];
-		if (!terminal?.url || !(terminal as any)?.key) {
+		const terminal = await waitForCloudWorkspaceTerminal(ws?.id ?? null);
+		if (!terminal?.url || !terminal?.key) {
 			throw new Error($i18n.t('Cloud workspace is not ready yet.'));
 		}
 
 		for (let attempt = 0; attempt < 20; attempt += 1) {
 			const rootName = nextCloudProjectRootName(baseRootName, usedRootNames);
 			const cloudPath = `/home/user/${rootName}/`;
-			const created = await createDirectory(terminal.url, (terminal as any).key, cloudPath);
+			const created = await createDirectory(terminal.url, terminal.key, cloudPath);
 			if (created) {
 				showFileNavDir.set(cloudPath);
 				return { cloudPath, rootName, ws };
@@ -1119,6 +1153,9 @@
 	bind:show={showCreateFolderModal}
 	showLocalFolderAction={isDeskSurface && hasDesktopBridge}
 	cloudOnlyProjectMode={isDeskSurface && !hasDesktopBridge}
+	cloudWorkspaceOptions={webDeskCloudWorkspaceOptions}
+	selectedCloudWorkspaceId={$selectedTerminalId}
+	onCloudWorkspaceSelect={(id) => selectedTerminalId.set(id)}
 	onLocalFolderPick={handleDeskLocalFolderPick}
 	onSubmit={async (folder) => {
 		const created = await createFolder(folder);

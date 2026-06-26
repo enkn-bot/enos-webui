@@ -22,6 +22,7 @@
 	import { bindLocalWorkspaceToFolder } from '$lib/enos/bindLocalWorkspace';
 	import { cloudProjectContextSource } from '$lib/enos/cloudUpload';
 	import { resolveCloudProjectRoot } from '$lib/enos/cloudFiles';
+	import { mergeCloudWorkspaceTerminalEntries } from '$lib/enos/cloudWorkspaceTerminal';
 	import {
 		workspaceBadgeFromFolder,
 		deskCurrentLocation,
@@ -159,7 +160,9 @@
 			const servers = await getTerminalServers(localStorage.token);
 			const cloudSource = cloudProjectContextSource(archive, imported);
 
-			terminalServers.set(servers);
+			terminalServers.update((existing) =>
+				mergeCloudWorkspaceTerminalEntries(existing, servers, localStorage.token)
+			);
 			if (ws?.id) selectedTerminalId.set(ws.id);
 			showFileNavDir.set(resolveCloudProjectRoot(cloudSource) ?? '/home/user/');
 			showControls.set(true);
@@ -319,7 +322,10 @@
 		creatingCloud = true;
 		try {
 			const ws = await createCloudWorkspace(localStorage.token);
-			terminalServers.set(await getTerminalServers(localStorage.token));
+			const servers = await getTerminalServers(localStorage.token);
+			terminalServers.update((existing) =>
+				mergeCloudWorkspaceTerminalEntries(existing, servers, localStorage.token)
+			);
 			if (ws?.id) {
 				selectedTerminalId.set(ws.id);
 				show = false;

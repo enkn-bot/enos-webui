@@ -57,6 +57,7 @@
 	} from '$lib/enos/desktopBridge';
 	import { cloudProjectContextSource } from '$lib/enos/cloudUpload';
 	import { resolveCloudProjectRoot } from '$lib/enos/cloudFiles';
+	import { mergeCloudWorkspaceTerminalEntries } from '$lib/enos/cloudWorkspaceTerminal';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
 
 	const i18n = getContext('i18n');
@@ -274,7 +275,9 @@
 		const imported = await uploadLocalProjectToCloud(localStorage.token, archive);
 
 		const servers = await getTerminalServers(localStorage.token);
-		terminalServers.set(servers);
+		terminalServers.update((existing) =>
+			mergeCloudWorkspaceTerminalEntries(existing, servers, localStorage.token)
+		);
 		if (ws?.id) selectedTerminalId.set(ws.id);
 
 		activeTab = 'files';
