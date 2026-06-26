@@ -34,7 +34,7 @@ describe('Desk workspace picker source contract', () => {
 		// S5: provision an ENOS-managed cloud workspace via the control-plane API.
 		// One cloud workspace per user → the create action only shows when none exists,
 		// gated on systemTerminals.length === 0 (no confusing "New" beside an existing one).
-		expect(picker).toContain('Set up cloud workspace');
+		expect(picker).toContain('Add cloud space');
 		expect(picker).toMatch(/\{#if systemTerminals\.length === 0\}/);
 		expect(picker).toContain('createCloudWorkspace');
 		expect(picker).toContain('on:click={createCloud}');
@@ -51,6 +51,14 @@ describe('Desk workspace picker source contract', () => {
 		// Environment rows are concise: no terminal/source sublabels.
 		expect(picker).not.toContain('Cloud terminal');
 		expect(picker).not.toContain('directLabel');
+	});
+
+	test('web Desk hides the unavailable Local row', () => {
+		const picker = read('src/lib/components/enos/DeskWorkspacePicker.svelte');
+
+		expect(picker).toContain('webDeskCloudLocked = !hasDesktopBridge');
+		expect(picker).toMatch(/\{#if !webDeskCloudLocked\}[\s\S]*\$i18n\.t\('Local'\)[\s\S]*\{\/if\}/);
+		expect(picker).not.toContain('disabled={!hasDesktopBridge}');
 	});
 
 	test('Local row keeps binary active-location check without project-source detail', () => {

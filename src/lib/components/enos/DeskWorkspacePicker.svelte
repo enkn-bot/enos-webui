@@ -318,24 +318,23 @@
 				</span>
 			</div>
 
-			<button
-				type="button"
-				disabled={!hasDesktopBridge}
-				class="flex w-full justify-between gap-2 items-center px-3 py-2 text-sm rounded-xl {hasDesktopBridge
-					? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50'
-					: 'cursor-not-allowed opacity-45'}"
-				on:click={selectLocal}
-			>
-				<div class="flex flex-1 gap-2 items-center truncate">
-					<Folder className="size-4 shrink-0" strokeWidth="2" />
-					<span class="truncate">{$i18n.t('Local')}</span>
-				</div>
-				{#if isLocalActive}
-					<div class="shrink-0 text-emerald-600 dark:text-emerald-400">
-						<Check className="size-4" strokeWidth="2" />
+			{#if !webDeskCloudLocked}
+				<button
+					type="button"
+					class="flex w-full justify-between gap-2 items-center px-3 py-2 text-sm rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50"
+					on:click={selectLocal}
+				>
+					<div class="flex flex-1 gap-2 items-center truncate">
+						<Folder className="size-4 shrink-0" strokeWidth="2" />
+						<span class="truncate">{$i18n.t('Local')}</span>
 					</div>
-				{/if}
-			</button>
+					{#if isLocalActive}
+						<div class="shrink-0 text-emerald-600 dark:text-emerald-400">
+							<Check className="size-4" strokeWidth="2" />
+						</div>
+					{/if}
+				</button>
+			{/if}
 
 			{#if systemTerminals.length === 0}
 				<button
@@ -351,7 +350,7 @@
 						<span class="truncate"
 							>{creatingCloud
 								? $i18n.t('Creating cloud workspace...')
-								: $i18n.t('Set up cloud workspace')}</span
+								: $i18n.t('Add cloud space')}</span
 						>
 					</div>
 				</button>
