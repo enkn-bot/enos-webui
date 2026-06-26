@@ -332,3 +332,33 @@ export const runOpencodeDeskTurn = async (
 	}
 	return { content: state.content(), reasoning: state.reasoning() };
 };
+
+// Map ONE raw Pi (`--mode rpc`) event to a desk stream event (or null to ignore). Pure.
+// Cumulative text/reasoning come from assistantMessageEvent.partial.content (replace
+// semantics, matching DeskStreamState). Captured from real --mode rpc output 2026-06-26.
+export const normalizePiEvent = (event: any): DeskStreamEvent | null => {
+	const t = event?.type;
+	if (t === 'agent_end') return { kind: 'done' };
+	if (t === 'response' && event?.success === false) {
+		return { kind: 'error', message: String(event?.error ?? 'Engine error') };
+	}
+	if (t === 'tool_execution_start') {
+		return { kind: 'tool_start', callId: event.toolCallId, tool: event.toolName, input: event.args };
+	}
+	if (t === 'tool_execution_end') {
+		return { kind: 'tool_end', callId: event.toolCallId, tool: event.toolName, ok: !event.isError };
+	}
+	if (t === 'message_update') {
+		const ae = event.assistantMessageEvent;
+		if (!ae) return null;
+		const idx = ae.contentIndex ?? 0;
+		const part = ae.partial?.content?.[idx];
+		if (ae.type === 'text_delta') {
+			return { kind: 'content', partId: `text-${idx}`, text: part?.text ?? ae.delta ?? '' };
+		}
+		if (ae.type === 'thinking_delta') {
+			return { kind: 'reasoning', partId: `think-${idx}`, text: part?.thinking ?? ae.delta ?? '' };
+		}
+	}
+	return null;
+};
