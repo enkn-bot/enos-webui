@@ -13,6 +13,18 @@ type DeskHomeProject = {
 export const isDuplicateDeskHomeProjectName = (name: string | null | undefined): boolean =>
 	/^ENOS\s+\d+$/i.test(String(name ?? '').trim());
 
+export const isFolderAlreadyExistsError = (error: unknown): boolean => {
+	const message =
+		typeof error === 'string'
+			? error
+			: error instanceof Error
+				? error.message
+				: typeof (error as { detail?: unknown })?.detail === 'string'
+					? String((error as { detail: string }).detail)
+					: String(error ?? '');
+	return /folder already exists/i.test(message);
+};
+
 const isCloudRunnable = (folder: DeskHomeProject): boolean => {
 	const kind = folder?.data?.project_context_source?.kind;
 	return kind === 'cloud' || kind === 'github';

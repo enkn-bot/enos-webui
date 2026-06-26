@@ -419,8 +419,8 @@ describe('ENOS Desk UI source guardrails', () => {
 		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
 
 		expect(sidebar).toContain("const DESK_HOME_PROJECT_NAME = 'ENOS';");
-		expect(sidebar).toContain(
-			"import { isDuplicateDeskHomeProjectName, selectDeskHomeProject } from '$lib/enos/deskHomeProject';"
+		expect(sidebar).toMatch(
+			/import \{[\s\S]*isDuplicateDeskHomeProjectName,[\s\S]*isFolderAlreadyExistsError,[\s\S]*selectDeskHomeProject[\s\S]*\} from '\$lib\/enos\/deskHomeProject';/
 		);
 		expect(sidebar).toContain('let ensuringDeskHomeProject = false;');
 		expect(sidebar).toContain('let deskHomeProjectAttempted = false;');
@@ -437,6 +437,22 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(sidebar).toContain('name: DESK_HOME_PROJECT_NAME');
 		expect(sidebar).toContain('dedupeName: false');
 		expect(sidebar).toContain('await createFolder({');
+	});
+
+	test('Desk home duplicate create adopts the existing project instead of showing a folder-exists toast', () => {
+		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
+
+		expect(sidebar).toContain('recoverDuplicateDeskHomeProject');
+		expect(sidebar).toMatch(
+			/isFolderAlreadyExistsError\(error\)[\s\S]*getFolders\(localStorage\.token\)[\s\S]*selectDeskHomeProject/
+		);
+		expect(sidebar).toMatch(
+			/selectInitialDeskProject\(\[existingHomeProject\], \{ force: true \}\)/
+		);
+		expect(sidebar).toContain('__enosRecoveredDuplicateHomeProject');
+		expect(sidebar).toMatch(
+			/if \(res\?\.__enosRecoveredDuplicateHomeProject\)[\s\S]*removeOptimisticFolder\(tempId\)[\s\S]*return true;/
+		);
 	});
 
 	test('web Desk project create asks only for the project name', () => {

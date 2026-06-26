@@ -99,7 +99,11 @@
 	} from '$lib/enos/surfaceScope';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
 	import { deskSurfaceLabel } from '$lib/enos/deskSessionLabels';
-	import { isDuplicateDeskHomeProjectName, selectDeskHomeProject } from '$lib/enos/deskHomeProject';
+	import {
+		isDuplicateDeskHomeProjectName,
+		isFolderAlreadyExistsError,
+		selectDeskHomeProject
+	} from '$lib/enos/deskHomeProject';
 	import UserAvatar from '$lib/components/enos/UserAvatar.svelte';
 	import {
 		isSystemCloudWorkspaceTerminal,
@@ -577,6 +581,41 @@
 			}
 		};
 
+		const removeOptimisticFolder = (id) => {
+			const { [id]: _removed, ...remaining } = folders;
+			folders = remaining;
+			if ($selectedFolder?.id === id) selectedFolder.set(null);
+		};
+
+		const recoverDuplicateDeskHomeProject = async (error) => {
+			if (
+				!isDeskSurface ||
+				parent_id !== null ||
+				String(name ?? '').trim() !== DESK_HOME_PROJECT_NAME ||
+				!isFolderAlreadyExistsError(error)
+			) {
+				return false;
+			}
+
+			const freshFolders = await getFolders(localStorage.token).catch(() => []);
+			allKnownFolders = freshFolders;
+			const legacyDeskProjectIds = await discoverLegacyDeskProjectIds(freshFolders);
+			const folderList = filterProjectsForDeskRuntime(freshFolders, {
+				surface: currentSurface,
+				hasDesktopBridge,
+				legacyDeskItemIds: legacyDeskProjectIds
+			});
+			const existingHomeProject = selectDeskHomeProject(folderList);
+			if (
+				existingHomeProject?.id &&
+				String(existingHomeProject?.name ?? '').trim() === DESK_HOME_PROJECT_NAME
+			) {
+				await selectInitialDeskProject([existingHomeProject], { force: true });
+				return true;
+			}
+			return false;
+		};
+
 		const res = await createNewFolder(
 			localStorage.token,
 			withSurfaceMeta(
@@ -588,16 +627,13 @@
 				},
 				currentSurface
 			)
-		).catch((error) => {
+		).catch(async (error) => {
+			if (await recoverDuplicateDeskHomeProject(error)) {
+				return { __enosRecoveredDuplicateHomeProject: true };
+			}
 			toast.error(`${error}`);
 			return null;
 		});
-
-		const removeOptimisticFolder = (id) => {
-			const { [id]: _removed, ...remaining } = folders;
-			folders = remaining;
-			if ($selectedFolder?.id === id) selectedFolder.set(null);
-		};
 
 		const rollbackCloudProjectRoot = async (root) => {
 			// Do not delete cloud paths here. Terminal mkdir can succeed for paths with
@@ -606,6 +642,11 @@
 		};
 
 		if (res) {
+			if (res?.__enosRecoveredDuplicateHomeProject) {
+				removeOptimisticFolder(tempId);
+				await initFolders();
+				return true;
+			}
 			if (localWorkspace && isDeskSurface && hasDesktopBridge) {
 				const bridge = getEnosDesktopBridge();
 				await bridge.bindWorkspaceToFolder(res.id);

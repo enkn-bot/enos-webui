@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'vitest';
 
-import { isDuplicateDeskHomeProjectName, selectDeskHomeProject } from './deskHomeProject';
+import {
+	isDuplicateDeskHomeProjectName,
+	isFolderAlreadyExistsError,
+	selectDeskHomeProject
+} from './deskHomeProject';
 
 describe('Desk home project selection', () => {
 	const folders = [
@@ -38,5 +42,12 @@ describe('Desk home project selection', () => {
 		expect(isDuplicateDeskHomeProjectName('ENOS 2')).toBe(true);
 		expect(isDuplicateDeskHomeProjectName('ENOS')).toBe(false);
 		expect(isDuplicateDeskHomeProjectName('Client ENOS 2')).toBe(false);
+	});
+
+	test('recognizes backend duplicate folder create errors', () => {
+		expect(isFolderAlreadyExistsError('[ERROR: Folder already exists]')).toBe(true);
+		expect(isFolderAlreadyExistsError(new Error('Folder already exists'))).toBe(true);
+		expect(isFolderAlreadyExistsError({ detail: '[ERROR: Folder already exists]' })).toBe(true);
+		expect(isFolderAlreadyExistsError('Could not create folder')).toBe(false);
 	});
 });
