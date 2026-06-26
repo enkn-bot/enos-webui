@@ -2217,6 +2217,14 @@
 			history.messages[responseMessageId] = m;
 			history = history;
 		};
+		// Selected ENOS mind for this Desk turn → the Pi relay maps it to (model,
+		// thinking) and relaunches the rpc proc on change. Model ids are
+		// 'enos.subconscious|mind|deepmind'; strip the prefix. Unknown/empty falls
+		// back server-side to 'mind'.
+		const deskMind = (selectedModels?.[0] || atSelectedModel?.id || 'enos.mind').replace(
+			/^enos\./,
+			''
+		);
 		try {
 			const r = await runOpencodeDeskTurn(
 				{
@@ -2226,7 +2234,8 @@
 					headers: { Authorization: `Bearer ${localStorage.token}` },
 					message: userPrompt,
 					agent: 'build',
-					model: { providerID: 'openrouter', modelID: 'moonshotai/kimi-k2.7-code' }
+					mind: deskMind,
+					model: { providerID: 'openrouter', modelID: 'enos' }
 				},
 				{
 					onUpdate: ({ content, reasoning }) => {

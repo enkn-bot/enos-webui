@@ -315,6 +315,10 @@ export const runOpencodeDeskTurn = async (
 		message: string;
 		agent: string; // 'build' | 'plan'
 		model: { providerID: string; modelID: string };
+		// The selected ENOS mind for this turn (Pi engine): 'subconscious' | 'mind' | 'deepmind'.
+		// The Pi /oc2 relay maps it → (model, thinking) and relaunches the rpc proc on change.
+		// Defaults server-side to 'mind' when omitted.
+		mind?: string;
 		signal?: AbortSignal;
 		fetchImpl?: typeof fetch;
 		engine?: 'pi' | 'opencode';
@@ -335,8 +339,11 @@ export const runOpencodeDeskTurn = async (
 	if (opts.engine === 'pi') {
 		if (opts.signal?.aborted) throw new Error('ENOS session was aborted');
 
+		// The selected mind rides the event stream (?mind=, which relaunches the rpc
+		// proc on change) AND the prompt body (so the turn runs on the chosen mind).
+		const mindQuery = opts.mind ? `?mind=${encodeURIComponent(opts.mind)}` : '';
 		const state = new DeskStreamState();
-		const evRes = await f(`${opts.base}/event`, { headers: h, signal: opts.signal });
+		const evRes = await f(`${opts.base}/event${mindQuery}`, { headers: h, signal: opts.signal });
 		const abort = async () => {
 			try {
 				await f(`${opts.base}/abort`, { method: 'POST', headers: h });
@@ -353,7 +360,7 @@ export const runOpencodeDeskTurn = async (
 			void f(`${opts.base}/prompt`, {
 				method: 'POST',
 				headers: h,
-				body: JSON.stringify({ message: opts.message })
+				body: JSON.stringify({ message: opts.message, ...(opts.mind ? { mind: opts.mind } : {}) })
 			});
 			return await consumeDeskSseEvents(evRes, state, cb, normalizer);
 		} finally {

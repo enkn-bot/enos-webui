@@ -171,6 +171,36 @@ describe('runOpencodeDeskTurn (driver, faked serve)', () => {
 		expect(calls.find((c) => c.includes('/session/'))).toBeUndefined();
 	});
 
+		test('forwards the selected mind on the Pi event stream and prompt body', async () => {
+		const calls: string[] = [];
+		let promptBody: any = null;
+		const fetchImpl = (async (url: string, init?: any) => {
+			calls.push(`${init?.method ?? 'GET'} ${url}`);
+			if (url.includes('/event')) return { body: sse([piTextDelta, piAgentEnd]) } as any;
+			if (url.endsWith('/prompt')) {
+				promptBody = JSON.parse(init.body);
+				return { json: async () => ({ ok: true }) } as any;
+			}
+			return { json: async () => ({}) } as any;
+		}) as any;
+
+		await runOpencodeDeskTurn(
+			{
+				base: '/api/oc2/ws-1',
+				engine: 'pi',
+				message: 'fix',
+				agent: 'build',
+				mind: 'deepmind',
+				model: { providerID: 'enos', modelID: 'enos' },
+				fetchImpl,
+				normalize: normalizePiEvent
+			},
+			{ onUpdate: () => {}, onTool: () => {} }
+		);
+		expect(calls).toContain('GET /api/oc2/ws-1/event?mind=deepmind');
+		expect(promptBody).toEqual({ message: 'fix', mind: 'deepmind' });
+	});
+
 		test('drives a turn over the desktop bridge transport with cumulative replace semantics', async () => {
 		const events: ((ev: any) => void)[] = [];
 		const calls: string[] = [];
