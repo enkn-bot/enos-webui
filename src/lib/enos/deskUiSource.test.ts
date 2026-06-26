@@ -40,7 +40,9 @@ describe('ENOS Desk UI source guardrails', () => {
 		// Folders are still surface-scoped, then web Desk hides local-only projects.
 		expect(sidebar).toMatch(/const folderList = filterProjectsForDeskRuntime/);
 		expect(recursiveFolder).toContain('deskSessionTitle');
-		expect(recursiveFolder).toContain('displayTitle={deskSessionTitle(chat.title, currentSurface)}');
+		expect(recursiveFolder).toContain(
+			'displayTitle={deskSessionTitle(chat.title, currentSurface)}'
+		);
 	});
 
 	test('chat list summaries carry surface fields needed by the Desk sidebar', () => {
@@ -274,7 +276,9 @@ describe('ENOS Desk UI source guardrails', () => {
 		const fileNav = read('src/lib/components/chat/FileNav.svelte');
 		const localFileNav = read('src/lib/components/chat/LocalFileNav.svelte');
 
-		expect(chatControls).toContain("import { resolveCloudProjectRoot } from '$lib/enos/cloudFiles';");
+		expect(chatControls).toContain(
+			"import { resolveCloudProjectRoot } from '$lib/enos/cloudFiles';"
+		);
 		expect(chatControls).toContain('selectedCloudProjectRoot');
 		expect(chatControls).toContain('cloudWorkspace={isDeskSurface}');
 		expect(chatControls).toContain('cloudWorkspaceName={selectedTerminalName}');
@@ -408,7 +412,7 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(modal).not.toContain("{$i18n.t('Start clean')}");
 		expect(modal).not.toContain('Create clean local project');
 		expect(modal).not.toContain('Documents/ENOS');
-		expect(modal).not.toContain("Choose a local folder or start clean.");
+		expect(modal).not.toContain('Choose a local folder or start clean.');
 		expect(modal).toMatch(/\{#if showLegacyFolderOptions\}[\s\S]*Folder Background Image/);
 		expect(modal).toMatch(/\{#if showLegacyFolderOptions\}[\s\S]*System Prompt/);
 		expect(modal).toMatch(/\{#if showLegacyFolderOptions\}[\s\S]*Project Knowledge/);
@@ -429,9 +433,7 @@ describe('ENOS Desk UI source guardrails', () => {
 			/if \(\s*isDeskSurface &&\s*folderList\.length > 0[\s\S]*selectedDuplicateHome[\s\S]*selectInitialDeskProject\(folderList, \{ force: true \}\)/
 		);
 		expect(sidebar).toContain('ensureDeskHomeProject');
-		expect(sidebar).toMatch(
-			/folderList\.length === 0[\s\S]*ensureDeskHomeProject\(\)/
-		);
+		expect(sidebar).toMatch(/folderList\.length === 0[\s\S]*ensureDeskHomeProject\(\)/);
 		expect(sidebar).toContain('bridge.createCleanWorkspace(DESK_HOME_PROJECT_NAME)');
 		expect(sidebar).toContain("projectEnvironment: hasDesktopBridge ? 'local' : 'cloud'");
 		expect(sidebar).toContain('name: DESK_HOME_PROJECT_NAME');
@@ -449,10 +451,30 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(sidebar).toMatch(
 			/selectInitialDeskProject\(\[existingHomeProject\], \{ force: true \}\)/
 		);
+		expect(sidebar).toContain('findDeskHomeProjectByName(freshFolders)');
+		expect(sidebar).toContain('canAdoptDeskHomeProjectToCloud(canonicalHomeProject)');
+		expect(sidebar).toContain('updateFolderById(');
+		expect(sidebar).toContain('applyDeskProjectFileRuntime');
 		expect(sidebar).toContain('__enosRecoveredDuplicateHomeProject');
 		expect(sidebar).toMatch(
 			/if \(res\?\.__enosRecoveredDuplicateHomeProject\)[\s\S]*removeOptimisticFolder\(tempId\)[\s\S]*return true;/
 		);
+	});
+
+	test('Desk project file activation is source-kind gated through the runtime helper', () => {
+		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
+		const chat = read('src/lib/components/chat/Chat.svelte');
+		const recursiveFolder = read('src/lib/components/layout/Sidebar/RecursiveFolder.svelte');
+		const chatItem = read('src/lib/components/layout/Sidebar/ChatItem.svelte');
+
+		for (const src of [sidebar, chat, recursiveFolder, chatItem]) {
+			expect(src).toContain('applyDeskProjectFileRuntime');
+			expect(src).toContain('resolveDeskProjectFileRuntime');
+		}
+
+		expect(chat).not.toContain('showLocalFileFolderId.set(folder.id);');
+		expect(recursiveFolder).not.toContain('showLocalFileFolderId.set(folderId);');
+		expect(chatItem).not.toContain('showLocalFileFolderId.set(projectFolder.id);');
 	});
 
 	test('web Desk project create asks only for the project name', () => {
@@ -545,9 +567,7 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(sidebar).toContain('nextProjectFolderName(name, parent_id, allKnownFolders)');
 		expect(sidebar).toContain('nextCloudProjectRootName');
 		expect(sidebar).toContain('existingCloudProjectRootNames');
-		expect(sidebar).toMatch(
-			/for \(const folder of allKnownFolders\)[\s\S]*project_context_source/
-		);
+		expect(sidebar).toMatch(/for \(const folder of allKnownFolders\)[\s\S]*project_context_source/);
 		expect(sidebar).toContain('Could not create a unique cloud project folder.');
 		expect(sidebar).toContain('rollbackCloudProjectRoot');
 		expect(sidebar).toContain('removeOptimisticFolder(tempId)');
@@ -608,7 +628,9 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(chatControls).toContain('createCloudWorkspace(localStorage.token)');
 		expect(chatControls).toContain('uploadLocalProjectToCloud(localStorage.token, archive)');
 		expect(chatControls).toContain('selectedTerminalId.set(ws.id)');
-		expect(chatControls).toContain('const cloudSource = cloudProjectContextSource(archive, imported);');
+		expect(chatControls).toContain(
+			'const cloudSource = cloudProjectContextSource(archive, imported);'
+		);
 		expect(chatControls).toContain(
 			"showFileNavDir.set(resolveCloudProjectRoot(cloudSource) ?? '/home/user/')"
 		);

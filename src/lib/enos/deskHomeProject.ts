@@ -5,6 +5,7 @@ type DeskHomeProject = {
 	data?: {
 		project_context_source?: {
 			kind?: unknown;
+			[key: string]: unknown;
 		} | null;
 	} | null;
 	[key: string]: unknown;
@@ -12,6 +13,9 @@ type DeskHomeProject = {
 
 export const isDuplicateDeskHomeProjectName = (name: string | null | undefined): boolean =>
 	/^ENOS\s+\d+$/i.test(String(name ?? '').trim());
+
+const isDeskHomeProjectName = (name: unknown): boolean =>
+	String(name ?? '').trim() === DESK_HOME_PROJECT_NAME;
 
 export const isFolderAlreadyExistsError = (error: unknown): boolean => {
 	const message =
@@ -30,12 +34,27 @@ const isCloudRunnable = (folder: DeskHomeProject): boolean => {
 	return kind === 'cloud' || kind === 'github';
 };
 
+export const findDeskHomeProjectByName = <T extends DeskHomeProject>(
+	folders: T[] | null | undefined
+): T | null => {
+	const list = Array.isArray(folders) ? folders : [];
+	return list.find((folder) => isDeskHomeProjectName(folder?.name)) ?? null;
+};
+
+export const canAdoptDeskHomeProjectToCloud = (
+	folder: DeskHomeProject | null | undefined
+): boolean => {
+	if (!folder || !isDeskHomeProjectName(folder?.name)) return false;
+	const kind = folder?.data?.project_context_source?.kind;
+	return kind == null || kind === '' || kind === 'cloud' || kind === 'github';
+};
+
 export const selectDeskHomeProject = <T extends DeskHomeProject>(
 	folders: T[] | null | undefined
 ): T | null => {
 	const list = Array.isArray(folders) ? folders : [];
 	return (
-		list.find((folder) => String(folder?.name ?? '').trim() === DESK_HOME_PROJECT_NAME) ??
+		findDeskHomeProjectByName(list) ??
 		list.find((folder) => isCloudRunnable(folder)) ??
 		list[0] ??
 		null

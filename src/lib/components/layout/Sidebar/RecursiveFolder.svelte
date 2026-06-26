@@ -17,6 +17,9 @@
 		mobile,
 		requestTrayOpenForSurface,
 		selectedFolder,
+		selectedTerminalId,
+		showFileNavDir,
+		showFileNavPath,
 		showLocalFileFolderId,
 		showSidebar
 	} from '$lib/stores';
@@ -39,6 +42,11 @@
 	import { surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
 	import { deskSessionTitle } from '$lib/enos/deskSessionLabels';
+	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
+	import {
+		applyDeskProjectFileRuntime,
+		resolveDeskProjectFileRuntime
+	} from '$lib/enos/deskProjectRuntime';
 
 	import ChevronDown from '../../icons/ChevronDown.svelte';
 	import ChevronRight from '../../icons/ChevronRight.svelte';
@@ -397,31 +405,36 @@
 		}, 500);
 	};
 
-		const selectProjectFolderHandler = async ({ openFiles = false } = {}) => {
-			const folder = await getFolderById(localStorage.token, folderId).catch((error) => {
-				toast.error(`${error}`);
-				return null;
-			});
+	const selectProjectFolderHandler = async ({ openFiles = false } = {}) => {
+		const folder = await getFolderById(localStorage.token, folderId).catch((error) => {
+			toast.error(`${error}`);
+			return null;
+		});
 
-			if (folder) {
-				await selectedFolder.set(folder);
-			}
+		if (folder) {
+			await selectedFolder.set(folder);
+		}
 
-			if (isDeskSurface) {
-				showLocalFileFolderId.set(folderId);
-			}
+		if (isDeskSurface) {
+			applyDeskProjectFileRuntime(
+				resolveDeskProjectFileRuntime(folder, {
+					hasDesktopBridge: browser && Boolean(getEnosDesktopBridge())
+				}),
+				{ showLocalFileFolderId, showFileNavDir, showFileNavPath, selectedTerminalId }
+			);
+		}
 
-			if (openFiles) {
-				requestTrayOpenForSurface(isDeskSurface);
-			}
-		};
+		if (openFiles) {
+			requestTrayOpenForSurface(isDeskSurface);
+		}
+	};
 
 	const startProjectChatHandler = async (e = null) => {
 		e?.stopPropagation?.();
 		e?.preventDefault?.();
 
 		await selectProjectFolderHandler();
-							await goto('/');
+		await goto('/');
 
 		if ($mobile) {
 			showSidebar.set(!$showSidebar);
@@ -432,10 +445,12 @@
 	export const setFolderItems = async () => {
 		await tick();
 		if (open) {
-			const folderChats = await getChatListByFolderId(localStorage.token, folderId).catch((error) => {
-				toast.error(`${error}`);
-				return [];
-			});
+			const folderChats = await getChatListByFolderId(localStorage.token, folderId).catch(
+				(error) => {
+					toast.error(`${error}`);
+					return [];
+				}
+			);
 			// A folder only renders on its own surface, so its untagged chats belong to
 			// that surface. Keep chats tagged for THIS surface plus untagged (legacy)
 			// ones (inherited); exclude only chats explicitly tagged for the other
@@ -599,19 +614,19 @@
 						clickTimer = null;
 					}
 					renameHandler();
-					}}
-					on:click={async (e) => {
-						e.stopPropagation();
-						if (clickTimer) {
-							clearTimeout(clickTimer);
-							clickTimer = null;
+				}}
+				on:click={async (e) => {
+					e.stopPropagation();
+					if (clickTimer) {
+						clearTimeout(clickTimer);
+						clickTimer = null;
 					}
 
-						clickTimer = setTimeout(async () => {
-							open = !open;
-							isExpandedUpdateDebounceHandler();
+					clickTimer = setTimeout(async () => {
+						open = !open;
+						isExpandedUpdateDebounceHandler();
 
-							await selectProjectFolderHandler({ openFiles: true });
+						await selectProjectFolderHandler({ openFiles: true });
 
 						await goto('/');
 

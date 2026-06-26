@@ -141,6 +141,10 @@
 		deskCurrentLocation,
 		systemCloudWorkspaceId
 	} from '$lib/enos/workspaceBadge';
+	import {
+		applyDeskProjectFileRuntime,
+		resolveDeskProjectFileRuntime
+	} from '$lib/enos/deskProjectRuntime';
 	import { maybeGenerateOpencodeChatTitle } from '$lib/enos/opencodeTitle';
 	import { normalizeChatTitleEventData } from '$lib/enos/chatTitleEvents';
 
@@ -1874,6 +1878,12 @@
 		deskLocalBridgePresent = Boolean(getEnosDesktopBridge());
 		return deskLocalBridgePresent;
 	};
+	const activateDeskProjectFiles = (folder: any) => {
+		applyDeskProjectFileRuntime(
+			resolveDeskProjectFileRuntime(folder, { hasDesktopBridge: deskLocalBridgePresent }),
+			{ showLocalFileFolderId, showFileNavDir, showFileNavPath, selectedTerminalId }
+		);
+	};
 	let repairedDeskLooseChatIds = new Set<string>();
 	const isDeskSurface = () => isDeskHostname();
 	const currentSurface = () => surfaceFromIsDesk(isDeskSurface());
@@ -2013,9 +2023,7 @@
 				return null;
 			}
 			rememberDeskProjectFolder($selectedFolder);
-			if ($showLocalFileFolderId !== $selectedFolder.id) {
-				showLocalFileFolderId.set($selectedFolder.id);
-			}
+			activateDeskProjectFiles($selectedFolder);
 			return $selectedFolder;
 		}
 
@@ -2032,7 +2040,7 @@
 
 		if (folder?.id && !(await redirectUnavailableDeskProject(folder))) {
 			await selectedFolder.set(folder);
-			showLocalFileFolderId.set(folder.id);
+			activateDeskProjectFiles(folder);
 			rememberDeskProjectFolder(folder);
 			return folder;
 		}
@@ -2042,7 +2050,7 @@
 		if (!folder?.id) return null;
 
 		await selectedFolder.set(folder);
-		showLocalFileFolderId.set(folder.id);
+		activateDeskProjectFiles(folder);
 		rememberDeskProjectFolder(folder);
 		return folder;
 	};
@@ -2055,9 +2063,7 @@
 			if (await redirectUnavailableDeskProject($selectedFolder)) {
 				return null;
 			}
-			if ($showLocalFileFolderId !== folderId) {
-				showLocalFileFolderId.set(folderId);
-			}
+			activateDeskProjectFiles($selectedFolder);
 			return $selectedFolder;
 		}
 
@@ -2074,7 +2080,7 @@
 				return null;
 			}
 			await selectedFolder.set(folder);
-			showLocalFileFolderId.set(folder.id);
+			activateDeskProjectFiles(folder);
 			rememberDeskProjectFolder(folder);
 			return folder;
 		}

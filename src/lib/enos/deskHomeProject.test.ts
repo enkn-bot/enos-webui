@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'vitest';
 
 import {
+	canAdoptDeskHomeProjectToCloud,
+	findDeskHomeProjectByName,
 	isDuplicateDeskHomeProjectName,
 	isFolderAlreadyExistsError,
 	selectDeskHomeProject
@@ -42,6 +44,30 @@ describe('Desk home project selection', () => {
 		expect(isDuplicateDeskHomeProjectName('ENOS 2')).toBe(true);
 		expect(isDuplicateDeskHomeProjectName('ENOS')).toBe(false);
 		expect(isDuplicateDeskHomeProjectName('Client ENOS 2')).toBe(false);
+	});
+
+	test('finds the canonical home project by exact name even when it is not cloud-runnable', () => {
+		const staleHome = { id: 'enos-stale', name: 'ENOS', data: {} };
+
+		expect(findDeskHomeProjectByName([folders[0], staleHome, folders[2]])?.id).toBe('enos-stale');
+		expect(findDeskHomeProjectByName([{ id: 'enos-2', name: 'ENOS 2' }])).toBeNull();
+	});
+
+	test('allows web Desk to adopt stale/blank canonical ENOS but not a local-bound project', () => {
+		expect(canAdoptDeskHomeProjectToCloud({ name: 'ENOS', data: {} })).toBe(true);
+		expect(
+			canAdoptDeskHomeProjectToCloud({
+				name: 'ENOS',
+				data: { project_context_source: { kind: 'cloud', cloudPath: '/home/user/ENOS/' } }
+			})
+		).toBe(true);
+		expect(
+			canAdoptDeskHomeProjectToCloud({
+				name: 'ENOS',
+				data: { project_context_source: { kind: 'local', rootName: 'ENOS' } }
+			})
+		).toBe(false);
+		expect(canAdoptDeskHomeProjectToCloud({ name: 'ENOS 2', data: {} })).toBe(false);
 	});
 
 	test('recognizes backend duplicate folder create errors', () => {

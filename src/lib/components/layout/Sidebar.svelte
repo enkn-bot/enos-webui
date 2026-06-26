@@ -100,6 +100,8 @@
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
 	import { deskSurfaceLabel } from '$lib/enos/deskSessionLabels';
 	import {
+		canAdoptDeskHomeProjectToCloud,
+		findDeskHomeProjectByName,
 		isDuplicateDeskHomeProjectName,
 		isFolderAlreadyExistsError,
 		selectDeskHomeProject
@@ -110,6 +112,10 @@
 		mergeCloudWorkspaceTerminalEntries,
 		selectCloudWorkspaceTerminal
 	} from '$lib/enos/cloudWorkspaceTerminal';
+	import {
+		applyDeskProjectFileRuntime,
+		resolveDeskProjectFileRuntime
+	} from '$lib/enos/deskProjectRuntime';
 	import { nextProjectFolderName } from '$lib/enos/projectFolderNames';
 
 	const BREAKPOINT = 768;
@@ -337,13 +343,12 @@
 		if (!folder?.id || ($selectedFolder?.id && !force)) return false;
 
 		await selectedFolder.set(folder);
-		const source = folder?.data?.project_context_source ?? {};
-		if ((source?.kind === 'cloud' || source?.kind === 'github') && source?.cloudPath) {
-			showFileNavDir.set(source.cloudPath);
-		} else if (source?.kind === 'local') {
-			showLocalFileFolderId.set(folder.id);
-			showFileNavPath.set('.');
-		}
+		applyDeskProjectFileRuntime(resolveDeskProjectFileRuntime(folder, { hasDesktopBridge }), {
+			showLocalFileFolderId,
+			showFileNavDir,
+			showFileNavPath,
+			selectedTerminalId
+		});
 		return true;
 	};
 
@@ -550,7 +555,9 @@
 		let cloudProjectRoot = null;
 		if (projectEnvironment === 'cloud' && isDeskSurface && !localWorkspace) {
 			try {
-				cloudProjectRoot = await createCloudProjectRoot(name, { preferExistingRoot: preferExistingCloudRoot });
+				cloudProjectRoot = await createCloudProjectRoot(name, {
+					preferExistingRoot: preferExistingCloudRoot
+				});
 				nextData = {
 					...(data ?? {}),
 					project_context_source: {
@@ -613,6 +620,40 @@
 				await selectInitialDeskProject([existingHomeProject], { force: true });
 				return true;
 			}
+			const canonicalHomeProject = findDeskHomeProjectByName(freshFolders);
+			if (
+				canonicalHomeProject?.id &&
+				cloudProjectRoot &&
+				canAdoptDeskHomeProjectToCloud(canonicalHomeProject)
+			) {
+				const adoptedProject = await updateFolderById(
+					localStorage.token,
+					canonicalHomeProject.id,
+					withSurfaceMeta(
+						{
+							name: String(canonicalHomeProject?.name ?? '').trim() || DESK_HOME_PROJECT_NAME,
+							meta: canonicalHomeProject?.meta ?? {},
+							data: {
+								...(canonicalHomeProject?.data ?? {}),
+								...(nextData ?? {})
+							},
+							parent_id: canonicalHomeProject?.parent_id ?? null
+						},
+						currentSurface
+					)
+				).catch((updateError) => {
+					console.warn('[desk home duplicate recovery]', updateError);
+					return null;
+				});
+				if (adoptedProject?.id) {
+					await selectedFolder.set(adoptedProject);
+					applyDeskProjectFileRuntime(
+						resolveDeskProjectFileRuntime(adoptedProject, { hasDesktopBridge }),
+						{ showLocalFileFolderId, showFileNavDir, showFileNavPath, selectedTerminalId }
+					);
+					return true;
+				}
+			}
 			return false;
 		};
 
@@ -666,10 +707,10 @@
 					}
 				};
 				await selectedFolder.set(optimisticFolder);
-				showLocalFileFolderId.set(res.id);
-				// Prep file-pane content but don't force the pane open on create —
-				// keep the desk right pane closed by default (user opens via toggle).
-				showFileNavPath.set('.');
+				applyDeskProjectFileRuntime(
+					resolveDeskProjectFileRuntime(optimisticFolder, { hasDesktopBridge }),
+					{ showLocalFileFolderId, showFileNavDir, showFileNavPath, selectedTerminalId }
+				);
 				await saveProjectDigestForFolder(res.id, optimisticFolder);
 			} else if (cloudProjectRoot) {
 				const cloudFolder = {
@@ -677,7 +718,10 @@
 					data: nextData
 				};
 				await selectedFolder.set(cloudFolder);
-				showFileNavDir.set(cloudProjectRoot.cloudPath);
+				applyDeskProjectFileRuntime(
+					resolveDeskProjectFileRuntime(cloudFolder, { hasDesktopBridge }),
+					{ showLocalFileFolderId, showFileNavDir, showFileNavPath, selectedTerminalId }
+				);
 				toast.success($i18n.t('Working in ENOS Cloud'));
 			}
 			// newFolderId = res.id;
@@ -691,7 +735,12 @@
 	};
 
 	const ensureDeskHomeProject = async () => {
-		if (!isDeskSurface || ensuringDeskHomeProject || deskHomeProjectAttempted || $selectedFolder?.id) {
+		if (
+			!isDeskSurface ||
+			ensuringDeskHomeProject ||
+			deskHomeProjectAttempted ||
+			$selectedFolder?.id
+		) {
 			return false;
 		}
 
@@ -1175,7 +1224,8 @@
 	};
 
 	const resetDeletedProjectView = async (folderId) => {
-		const wasActiveProject = $selectedFolder?.id === folderId || $showLocalFileFolderId === folderId;
+		const wasActiveProject =
+			$selectedFolder?.id === folderId || $showLocalFileFolderId === folderId;
 		if (!wasActiveProject) return;
 
 		window.dispatchEvent(new CustomEvent('enos:project-deleted', { detail: { folderId } }));
@@ -1201,9 +1251,12 @@
 		}
 
 		await selectedFolder.set(folder);
-		if (hasDesktopBridge) {
-			showLocalFileFolderId.set(folder.id);
-		}
+		applyDeskProjectFileRuntime(resolveDeskProjectFileRuntime(folder, { hasDesktopBridge }), {
+			showLocalFileFolderId,
+			showFileNavDir,
+			showFileNavPath,
+			selectedTerminalId
+		});
 
 		await applyTemporaryChatPolicy();
 		await goto('/');
@@ -1867,27 +1920,27 @@
 									await initFolders();
 								}
 							}
+						}}
+					>
+						<Folders
+							bind:folderRegistry
+							{folders}
+							{shiftKey}
+							onDelete={async (folderId) => {
+								await resetDeletedProjectView(folderId);
+								await initFolders();
+								initChatList();
 							}}
-						>
-							<Folders
-								bind:folderRegistry
-								{folders}
-								{shiftKey}
-								onDelete={async (folderId) => {
-									await resetDeletedProjectView(folderId);
-									await initFolders();
-									initChatList();
-								}}
-								on:update={() => {
-									initChatList();
-								}}
-								on:import={(e) => {
-									const { folderId, items } = e.detail;
-									importChatHandler(items, false, folderId);
-								}}
-								on:change={async () => {
-									initChatList();
-								}}
+							on:update={() => {
+								initChatList();
+							}}
+							on:import={(e) => {
+								const { folderId, items } = e.detail;
+								importChatHandler(items, false, folderId);
+							}}
+							on:change={async () => {
+								initChatList();
+							}}
 						/>
 					</Folder>
 				{/if}

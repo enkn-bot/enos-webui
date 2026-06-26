@@ -37,6 +37,9 @@
 		currentChatPage,
 		tags,
 		selectedFolder,
+		selectedTerminalId,
+		showFileNavDir,
+		showFileNavPath,
 		showLocalFileFolderId,
 		activeChatIds,
 		requestTrayOpenForSurface
@@ -45,6 +48,11 @@
 	import ChatMenu from './ChatMenu.svelte';
 	import DeleteConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
 	import ShareChatModal from '$lib/components/chat/ShareChatModal.svelte';
+	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
+	import {
+		applyDeskProjectFileRuntime,
+		resolveDeskProjectFileRuntime
+	} from '$lib/enos/deskProjectRuntime';
 	import GarbageBin from '$lib/components/icons/GarbageBin.svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import ArchiveBox from '$lib/components/icons/ArchiveBox.svelte';
@@ -69,8 +77,8 @@
 
 	export let selected = false;
 	export let shiftKey = false;
-		export let projectFolder = null;
-		export let openFilesOnSelect = false;
+	export let projectFolder = null;
+	export let openFilesOnSelect = false;
 
 	export let onDragEnd = () => {};
 
@@ -296,35 +304,40 @@
 				confirmEdit = false;
 				chatTitle = '';
 			}
-			}
-		};
+		}
+	};
 
-		$: isDeskSurface = browser && isDeskHostname();
+	$: isDeskSurface = browser && isDeskHostname();
 
-		const requestTrayOpenOnSelect = () => {
-			if (isDeskSurface && !openFilesOnSelect) return;
+	const requestTrayOpenOnSelect = () => {
+		if (isDeskSurface && !openFilesOnSelect) return;
 
-			requestTrayOpenForSurface(isDeskSurface);
-		};
+		requestTrayOpenForSurface(isDeskSurface);
+	};
 
-		const selectProjectContext = () => {
-			if (projectFolder?.id) {
-				selectedFolder.set(projectFolder);
-				if (isDeskSurface) {
-					showLocalFileFolderId.set(projectFolder.id);
-				}
-				requestTrayOpenOnSelect();
-				return;
-			}
-
-			selectedFolder.set(null);
+	const selectProjectContext = () => {
+		if (projectFolder?.id) {
+			selectedFolder.set(projectFolder);
 			if (isDeskSurface) {
-				showLocalFileFolderId.set(null);
+				applyDeskProjectFileRuntime(
+					resolveDeskProjectFileRuntime(projectFolder, {
+						hasDesktopBridge: browser && Boolean(getEnosDesktopBridge())
+					}),
+					{ showLocalFileFolderId, showFileNavDir, showFileNavPath, selectedTerminalId }
+				);
 			}
 			requestTrayOpenOnSelect();
-		};
+			return;
+		}
 
-		onMount(() => {
+		selectedFolder.set(null);
+		if (isDeskSurface) {
+			showLocalFileFolderId.set(null);
+		}
+		requestTrayOpenOnSelect();
+	};
+
+	onMount(() => {
 		const el = itemElement;
 		if (!el) return;
 
@@ -653,55 +666,55 @@
 					</button>
 				</Tooltip>
 			</div>
-			{:else}
-				<div class="flex self-center z-10 items-end">
-					<ChatMenu
-						chatId={id}
-						cloneChatHandler={() => {
-							cloneChatHandler(id);
-						}}
-						shareHandler={() => {
-							showShareChatModal = true;
-						}}
-						{moveChatHandler}
-						archiveChatHandler={() => {
-							archiveChatHandler(id);
-						}}
-						{renameHandler}
-						deleteHandler={() => {
-							showDeleteConfirm = true;
-						}}
-						onClose={() => {
-							dispatch('unselect');
-						}}
-						onPinChange={async () => {
-							dispatch('change');
+		{:else}
+			<div class="flex self-center z-10 items-end">
+				<ChatMenu
+					chatId={id}
+					cloneChatHandler={() => {
+						cloneChatHandler(id);
+					}}
+					shareHandler={() => {
+						showShareChatModal = true;
+					}}
+					{moveChatHandler}
+					archiveChatHandler={() => {
+						archiveChatHandler(id);
+					}}
+					{renameHandler}
+					deleteHandler={() => {
+						showDeleteConfirm = true;
+					}}
+					onClose={() => {
+						dispatch('unselect');
+					}}
+					onPinChange={async () => {
+						dispatch('change');
+					}}
+				>
+					<button
+						aria-label="Chat Menu"
+						class=" self-center dark:hover:text-white transition m-0"
+						on:click={() => {
+							dispatch('select');
 						}}
 					>
-						<button
-							aria-label="Chat Menu"
-							class=" self-center dark:hover:text-white transition m-0"
-							on:click={() => {
-								dispatch('select');
-							}}
-						>
-							<EllipsisHorizontal className="w-4 h-4" strokeWidth="2" />
-						</button>
-					</ChatMenu>
+						<EllipsisHorizontal className="w-4 h-4" strokeWidth="2" />
+					</button>
+				</ChatMenu>
 
-					{#if id === $chatId}
-						<!-- Shortcut support using "delete-chat-button" id -->
-						<button
-							id="delete-chat-button"
-							class="hidden"
-							on:click={() => {
-								showDeleteConfirm = true;
-							}}
-						>
-							<EllipsisHorizontal className="w-4 h-4" strokeWidth="2" />
-						</button>
-					{/if}
-				</div>
-			{/if}
+				{#if id === $chatId}
+					<!-- Shortcut support using "delete-chat-button" id -->
+					<button
+						id="delete-chat-button"
+						class="hidden"
+						on:click={() => {
+							showDeleteConfirm = true;
+						}}
+					>
+						<EllipsisHorizontal className="w-4 h-4" strokeWidth="2" />
+					</button>
+				{/if}
+			</div>
+		{/if}
 	</div>
 </div>
