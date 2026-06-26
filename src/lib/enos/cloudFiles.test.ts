@@ -24,6 +24,9 @@ describe('ENOS cloud files presentation', () => {
 		expect(resolveCloudFilesInitialPath('/home/user/.local/', '/home/user/Test 22/')).toBe(
 			'/home/user/Test 22/'
 		);
+		expect(resolveCloudFilesInitialPath('/home/user/ENOS 2/', '/home/user/ENOS/')).toBe(
+			'/home/user/ENOS/'
+		);
 		expect(resolveCloudFilesInitialPath('/home/user/Test 22/src/', '/home/user/Test 22/')).toBe(
 			'/home/user/Test 22/src/'
 		);
@@ -41,7 +44,10 @@ describe('ENOS cloud files presentation', () => {
 	});
 
 	test('formats a calm cloud workspace status line', () => {
-		expect(formatCloudFilesStatus('ENOS Workspace')).toBe('Working in cloud · ENOS Workspace');
-		expect(formatCloudFilesStatus('')).toBe('Working in cloud');
+		expect(formatCloudFilesStatus('Cloud Workspace')).toBe('Working in ENOS Cloud · ENOS Cloud');
+		expect(formatCloudFilesStatus('ENOS Workspace')).toBe(
+			'Working in ENOS Cloud · ENOS Workspace'
+		);
+		expect(formatCloudFilesStatus('')).toBe('Working in ENOS Cloud');
 	});
 });

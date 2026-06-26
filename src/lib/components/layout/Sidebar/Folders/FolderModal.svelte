@@ -58,9 +58,13 @@
 	$: submitLabel = edit ? $i18n.t('Save') : $i18n.t('Create project');
 	$: showLegacyFolderOptions = edit && !projectEditMode;
 	$: showProjectSetupOptions = !edit && !cloudOnlyProjectMode;
+	$: selectedCloudWorkspaceName = cloudWorkspaceOptions.find(
+		(option) => option.id === selectedCloudWorkspaceId
+	)?.name;
 	$: selectedCloudWorkspaceLabel =
-		cloudWorkspaceOptions.find((option) => option.id === selectedCloudWorkspaceId)?.name ??
-		$i18n.t('Default');
+		!selectedCloudWorkspaceName || selectedCloudWorkspaceName === 'Cloud Workspace'
+			? $i18n.t('ENOS Cloud')
+			: selectedCloudWorkspaceName;
 
 	const selectCloudWorkspace = async (id: string) => {
 		selectedCloudWorkspaceId = id;
@@ -267,7 +271,7 @@
 					for="cloud-workspace"
 					class="mb-2 block text-sm font-medium text-gray-600 dark:text-gray-300"
 				>
-					{$i18n.t('Cloud space')}
+					{$i18n.t('ENOS Cloud space')}
 				</label>
 				{#if cloudWorkspaceOptions.length > 1}
 					<select
@@ -288,7 +292,7 @@
 						<div class="min-w-0">
 							<div class="truncate font-medium">{selectedCloudWorkspaceLabel}</div>
 							<div class="truncate text-xs text-gray-500 dark:text-gray-400">
-								{$i18n.t('Cloud environment')}
+								{$i18n.t('ENOS Cloud environment')}
 							</div>
 						</div>
 					</div>
@@ -347,7 +351,7 @@
 								<Cloud className="size-5" strokeWidth="2" />
 							</div>
 							<div class="min-w-0">
-								<div class="text-sm font-semibold">{$i18n.t('Cloud project')}</div>
+								<div class="text-sm font-semibold">{$i18n.t('ENOS Cloud project')}</div>
 								<div class="mt-1 text-sm leading-5 text-gray-500 dark:text-gray-400">
 									{$i18n.t('Synced to your ENOS workspace. Access across devices.')}
 								</div>
@@ -387,7 +391,7 @@
 								<div class="mt-1 text-sm leading-5 text-gray-500 dark:text-gray-400">
 									{projectEnvironment === 'local'
 										? $i18n.t('ENOS will create a fresh app-managed folder on this device.')
-										: $i18n.t('ENOS will create a fresh folder in your cloud workspace.')}
+										: $i18n.t('ENOS will create a fresh folder in ENOS Cloud.')}
 								</div>
 							</div>
 						</div>

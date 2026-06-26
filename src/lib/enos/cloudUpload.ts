@@ -37,7 +37,7 @@ export const cloudProjectContextSource = (
 	imported: CloudImportResult
 ) => ({
 	kind: 'cloud',
-	rootName: archive.rootName?.trim() || 'Cloud project',
+	rootName: archive.rootName?.trim() || 'ENOS Cloud project',
 	cloudPath: imported.dest || '/home/user',
 	importedBytes: imported.imported_bytes ?? archive.bytes
 });

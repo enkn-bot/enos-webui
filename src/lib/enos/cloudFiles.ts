@@ -55,5 +55,6 @@ export const resolveCloudFilesInitialPath = (
 
 export const formatCloudFilesStatus = (workspaceName: string | null | undefined) => {
 	const name = workspaceName?.trim();
-	return name ? `Working in cloud · ${name}` : 'Working in cloud';
+	const label = name === 'Cloud Workspace' ? 'ENOS Cloud' : name;
+	return label ? `Working in ENOS Cloud · ${label}` : 'Working in ENOS Cloud';
 };

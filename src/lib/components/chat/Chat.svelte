@@ -2246,7 +2246,7 @@
 				const durationS = reasoningStartMs ? (Date.now() - reasoningStartMs) / 1000 : 0;
 				done.content = composeDeskMessageContent(
 					r.reasoning,
-					r.content || '(No response from OpenCode.)',
+					r.content || '(No response from ENOS Cloud.)',
 					{
 						done: true,
 						durationS
@@ -2278,7 +2278,7 @@
 		} catch (e) {
 			const m = history.messages[responseMessageId];
 			if (m) {
-				m.content = `OpenCode error: ${e instanceof Error ? e.message : String(e)}`;
+				m.content = `ENOS Cloud error: ${e instanceof Error ? e.message : String(e)}`;
 				m.done = true;
 				history.messages[responseMessageId] = m;
 				history = history;
@@ -2347,7 +2347,7 @@
 				const durationS = reasoningStartMs ? (Date.now() - reasoningStartMs) / 1000 : 0;
 				done.content = composeDeskMessageContent(
 					r.reasoning,
-					r.content || '(No response from OpenCode.)',
+					r.content || '(No response from ENOS Cloud.)',
 					{
 						done: true,
 						durationS
@@ -2379,7 +2379,7 @@
 		} catch (e) {
 			const m = history.messages[responseMessageId];
 			if (m) {
-				m.content = `OpenCode error: ${e instanceof Error ? e.message : String(e)}`;
+				m.content = `ENOS Cloud error: ${e instanceof Error ? e.message : String(e)}`;
 				m.done = true;
 				history.messages[responseMessageId] = m;
 				history = history;

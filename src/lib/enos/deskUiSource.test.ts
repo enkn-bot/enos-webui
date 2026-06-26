@@ -269,7 +269,7 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(terminalBranch).toBeLessThan(localBranch);
 	});
 
-	test('cloud runtime Files tab uses the Cloud Files presentation', () => {
+	test('cloud runtime Files tab uses project-scoped ENOS Cloud files presentation', () => {
 		const chatControls = read('src/lib/components/chat/ChatControls.svelte');
 		const fileNav = read('src/lib/components/chat/FileNav.svelte');
 		const localFileNav = read('src/lib/components/chat/LocalFileNav.svelte');
@@ -283,9 +283,11 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(fileNav).toContain('export let cloudWorkspace = false;');
 		expect(fileNav).toContain('export let cloudProjectRoot: string | null = null;');
 		expect(fileNav).toContain('previousCloudProjectRoot');
-		expect(fileNav).toContain('Cloud Files');
+		expect(fileNav).toContain('Project Files');
 		expect(fileNav).toContain('formatCloudFilesStatus(cloudWorkspaceName)');
 		expect(fileNav).toContain('resolveCloudFilesInitialPath');
+		expect(fileNav).toContain('const resolveProjectPath');
+		expect(fileNav).toContain('path = resolveProjectPath(path);');
 		expect(localFileNav).toContain('Working on your device');
 		expect(localFileNav).not.toContain('Project context ready');
 	});
@@ -299,7 +301,7 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(picker).toContain('ensureWebDeskCloudSelected');
 		expect(picker).toContain("{$i18n.t('Environment')}");
 		expect(picker).toContain("{$i18n.t('Local')}");
-		expect(picker).toContain("{$i18n.t('Cloud')}");
+		expect(picker).toContain("{$i18n.t('ENOS Cloud')}");
 		expect(picker).not.toContain("{$i18n.t('Project')}");
 		expect(picker).not.toContain('Loose Desk chats live in Unfiled');
 		expect(picker).not.toContain("{$i18n.t('GitHub source')}");
@@ -322,7 +324,7 @@ describe('ENOS Desk UI source guardrails', () => {
 			'Local files stay on this device until you copy the project to cloud.'
 		);
 		expect(picker).toContain('Work locally?');
-		expect(picker).toContain('Cloud files stay in cloud until cloud-to-local copy is added.');
+		expect(picker).toContain('ENOS Cloud files stay in ENOS Cloud until local copy is added.');
 		expect(picker).not.toContain('$selectedTerminalId === terminal.id ? null : terminal.id');
 
 		expect(chat).toContain('ensureWebDeskCloudDefault');
@@ -360,9 +362,9 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(menu).toContain('workspaceBadgeFromFolder(activeFolder)');
 		expect(menu).toContain('projectStatusLabel');
 		expect(menu).toContain('Working on your device');
-		expect(menu).toContain('Working in cloud');
+		expect(menu).toContain('Working in ENOS Cloud');
 		expect(menu).toContain('No workspace connected yet');
-		expect(menu).toContain('Choose Local or Cloud to connect files.');
+		expect(menu).toContain('Choose Local or ENOS Cloud to connect files.');
 		expect(menu).not.toContain("{$i18n.t('Source')}");
 		expect(menu).not.toContain('getGithubStatus');
 		expect(menu).not.toContain('connectGithubAccount');
@@ -394,7 +396,7 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(modal).toContain("{$i18n.t('Where should this project live?')}");
 		expect(modal).toContain("{$i18n.t('How do you want to start?')}");
 		expect(modal).toContain("{$i18n.t('Local project')}");
-		expect(modal).toContain("{$i18n.t('Cloud project')}");
+		expect(modal).toContain("{$i18n.t('ENOS Cloud project')}");
 		expect(modal).toContain("{$i18n.t('Create a new project')}");
 		expect(modal).toContain("$i18n.t('Use an existing folder')");
 		expect(modal).toContain("projectStartMode = 'clean'");
@@ -417,11 +419,14 @@ describe('ENOS Desk UI source guardrails', () => {
 		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
 
 		expect(sidebar).toContain("const DESK_HOME_PROJECT_NAME = 'ENOS';");
+		expect(sidebar).toContain(
+			"import { isDuplicateDeskHomeProjectName, selectDeskHomeProject } from '$lib/enos/deskHomeProject';"
+		);
 		expect(sidebar).toContain('let ensuringDeskHomeProject = false;');
 		expect(sidebar).toContain('let deskHomeProjectAttempted = false;');
-		expect(sidebar).toContain('selectInitialDeskProject(folderList)');
+		expect(sidebar).toContain('selectInitialDeskProject(folderList, { force: true })');
 		expect(sidebar).toMatch(
-			/if \(\s*isDeskSurface &&\s*folderList\.length > 0 &&\s*!\$selectedFolder\?\.id[\s\S]*selectInitialDeskProject\(folderList\)/
+			/if \(\s*isDeskSurface &&\s*folderList\.length > 0[\s\S]*selectedDuplicateHome[\s\S]*selectInitialDeskProject\(folderList, \{ force: true \}\)/
 		);
 		expect(sidebar).toContain('ensureDeskHomeProject');
 		expect(sidebar).toMatch(
@@ -430,6 +435,7 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(sidebar).toContain('bridge.createCleanWorkspace(DESK_HOME_PROJECT_NAME)');
 		expect(sidebar).toContain("projectEnvironment: hasDesktopBridge ? 'local' : 'cloud'");
 		expect(sidebar).toContain('name: DESK_HOME_PROJECT_NAME');
+		expect(sidebar).toContain('dedupeName: false');
 		expect(sidebar).toContain('await createFolder({');
 	});
 
@@ -442,7 +448,7 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(modal).toContain('cloudOnlyProjectMode');
 		expect(modal).toContain("cloudOnlyProjectMode ? 'cloud' : defaultProjectEnvironment()");
 		expect(modal).toMatch(/if \(cloudOnlyProjectMode\) \{[\s\S]*projectEnvironment = 'cloud'/);
-		expect(modal).toContain('Cloud space');
+		expect(modal).toContain('ENOS Cloud space');
 		expect(modal).toContain('cloudWorkspaceOptions.length > 1');
 		expect(modal).toContain('onCloudWorkspaceSelect');
 		expect(modal).toMatch(/\{#if showProjectSetupOptions\}[\s\S]*How do you want to start\?/);
@@ -494,9 +500,13 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(sidebar).toContain('waitForCloudWorkspaceTerminal');
 		expect(sidebar).toContain('mergeCloudWorkspaceTerminalEntries');
 		expect(sidebar).toContain('createDirectory(');
+		expect(sidebar).toContain('listFiles(');
 		expect(sidebar).toContain('project_context_source: {');
 		expect(sidebar).toContain("kind: 'cloud'");
 		expect(sidebar).toContain('showFileNavDir.set(cloudPath)');
+		expect(sidebar).toMatch(
+			/preferExistingRoot[\s\S]*const created = await createDirectory[\s\S]*const retriedEntries = await listFiles[\s\S]*showFileNavDir\.set\(cloudPath\);[\s\S]*return \{ cloudPath, rootName: baseRootName, ws \};/
+		);
 		expect(sidebar).toContain('selectedTerminalId.set(ws.id)');
 		expect(sidebar).not.toContain('terminalServers.set(servers)');
 		expect(picker).not.toContain('terminalServers.set(servers)');
@@ -530,6 +540,18 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(sidebar).toContain('if (created) showCreateFolderModal = false;');
 		expect(modal).toContain('const submitted = await onSubmit');
 		expect(modal).toContain('if (submitted === false) return;');
+	});
+
+	test('Desk cloud session errors use ENOS Cloud language without OpenCode leakage', () => {
+		const chat = read('src/lib/components/chat/Chat.svelte');
+		const opencode = read('src/lib/enos/deskOpencode.ts');
+
+		expect(chat).toContain('ENOS Cloud error:');
+		expect(chat).not.toContain('OpenCode error:');
+		expect(chat).not.toContain('(No response from OpenCode.)');
+		expect(opencode).toContain('ENOS Cloud error');
+		expect(opencode).toContain('ENOS Cloud could not create a session');
+		expect(opencode).not.toContain('opencode: could not create session');
 	});
 
 	test('deleting the active desk project resets the visible chat pane to the welcome state', () => {

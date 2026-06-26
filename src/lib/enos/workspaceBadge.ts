@@ -28,7 +28,7 @@ export const workspaceKindLabel = (kind: WorkspaceKind | null | undefined): stri
 		case 'github':
 			return 'Repo';
 		case 'cloud':
-			return 'Cloud';
+			return 'ENOS Cloud';
 		default:
 			return 'Workspace';
 	}

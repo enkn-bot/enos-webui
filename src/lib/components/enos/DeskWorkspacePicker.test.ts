@@ -30,12 +30,12 @@ describe('Desk workspace picker source contract', () => {
 		const picker = read('src/lib/components/enos/DeskWorkspacePicker.svelte');
 
 		expect(picker).toContain('showDeskFolderPicker.set(true)');
-		expect(picker).toContain('Cloud');
+		expect(picker).toContain('ENOS Cloud');
 		expect(picker).toContain('cloudEnvironmentLabel');
-		expect(picker).toContain('Default');
-		expect(picker).toContain('Add cloud environment...');
+		expect(picker).toContain('ENOS Cloud');
+		expect(picker).toContain('Add ENOS Cloud environment...');
 		expect(picker).toContain('showCreateCloudEnvironmentModal');
-		expect(picker).toContain('New cloud environment');
+		expect(picker).toContain('New ENOS Cloud environment');
 		expect(picker).toContain('Network access');
 		expect(picker).toContain('Environment variables');
 		expect(picker).toContain('Setup script');

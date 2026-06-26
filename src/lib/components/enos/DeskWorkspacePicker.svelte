@@ -127,7 +127,9 @@
 
 	const cloudEnvironmentLabel = (terminal: (typeof systemTerminals)[0] | null) => {
 		const name = String(terminal?.name ?? '').trim();
-		if (!name || name === terminal?.id || name.startsWith('ws-')) return $i18n.t('Default');
+		if (!name || name === terminal?.id || name.startsWith('ws-') || name === 'Cloud Workspace') {
+			return $i18n.t('ENOS Cloud');
+		}
 		return name;
 	};
 
@@ -203,8 +205,8 @@
 
 	const environmentSwitchMessage = () =>
 		pendingSwitchTarget === 'cloud'
-			? 'ENOS will upload this local folder to your private cloud workspace and continue there. Files stay on this device too.'
-			: 'Choose or bind a folder on this device. Cloud files stay in cloud until cloud-to-local copy is added.';
+			? 'ENOS will upload this local folder to ENOS Cloud and continue there. Files stay on this device too.'
+			: 'Choose or bind a folder on this device. ENOS Cloud files stay in ENOS Cloud until local copy is added.';
 
 	const clearPendingSwitch = () => {
 		pendingSwitchTarget = null;
@@ -274,7 +276,7 @@
 		}
 
 		show = false;
-		if (nextId) toast.info($i18n.t('Working in cloud'));
+		if (nextId) toast.info($i18n.t('Working in ENOS Cloud'));
 	};
 
 	const selectSystem = async (terminal: (typeof systemTerminals)[0]) => {
@@ -329,12 +331,12 @@
 			if (ws?.id) {
 				selectedTerminalId.set(ws.id);
 				show = false;
-				toast.info($i18n.t('Working in cloud'));
+				toast.info($i18n.t('Working in ENOS Cloud'));
 			}
 			return Boolean(ws?.id);
 		} catch (e) {
-			console.warn('cloud workspace create failed', e);
-			toast.error($i18n.t('Failed to create cloud environment.'));
+			console.warn('ENOS Cloud environment create failed', e);
+			toast.error($i18n.t('Failed to create ENOS Cloud environment.'));
 			return false;
 		} finally {
 			creatingCloud = false;
@@ -384,7 +386,7 @@
 			{#if systemTerminals.length > 0}
 				<button
 					type="button"
-					aria-label={$i18n.t('Cloud')}
+					aria-label={$i18n.t('ENOS Cloud')}
 					class="flex w-full justify-between gap-2 items-center px-3 py-2 text-sm cursor-pointer rounded-xl {$selectedTerminalId ===
 					firstSystemTerminal?.id
 						? 'bg-gray-50 dark:bg-gray-800/50'
@@ -415,8 +417,8 @@
 					<Plus className="size-4 shrink-0" strokeWidth="2" />
 					<span class="truncate"
 						>{creatingCloud
-							? $i18n.t('Creating cloud environment...')
-							: $i18n.t('Add cloud environment...')}</span
+							? $i18n.t('Creating ENOS Cloud environment...')
+							: $i18n.t('Add ENOS Cloud environment...')}</span
 					>
 				</div>
 			</button>
@@ -436,7 +438,7 @@
 		}}
 	>
 		<div class="flex items-start justify-between gap-4">
-			<div class="text-xl font-semibold tracking-normal">{$i18n.t('New cloud environment')}</div>
+			<div class="text-xl font-semibold tracking-normal">{$i18n.t('New ENOS Cloud environment')}</div>
 			<button
 				type="button"
 				class="rounded-full p-1 text-gray-700 transition hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-850"

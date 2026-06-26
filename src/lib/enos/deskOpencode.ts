@@ -59,7 +59,7 @@ export const normalizeOpencodeEvent = (event: any): DeskStreamEvent | null => {
 	const type = event?.type;
 	if (type === 'session.idle') return { kind: 'done' };
 	if (type === 'session.error') {
-		return { kind: 'error', message: String(event?.properties?.error?.message ?? 'OpenCode error') };
+		return { kind: 'error', message: String(event?.properties?.error?.message ?? 'ENOS Cloud error') };
 	}
 	// The /event stream carries parts for BOTH the user message and the assistant
 	// message. message.updated tells us a message's role; flag user messages so their
@@ -216,7 +216,7 @@ const runOpencodeTransportTurn = async (
 		model: opts.model
 	});
 	const streamId = promptResult.streamId;
-	if (!streamId) throw new Error('opencode: could not start bridge stream');
+	if (!streamId) throw new Error('ENOS could not start a session');
 
 	return await new Promise((resolve, reject) => {
 		let settled = false;
@@ -227,10 +227,10 @@ const runOpencodeTransportTurn = async (
 			dispose?.();
 			fn();
 		};
-		const abort = () => finish(() => reject(new Error('opencode: bridge stream aborted')));
+		const abort = () => finish(() => reject(new Error('ENOS session was aborted')));
 
 		if (opts.signal?.aborted) {
-			reject(new Error('opencode: bridge stream aborted'));
+			reject(new Error('ENOS session was aborted'));
 			return;
 		}
 		opts.signal?.addEventListener('abort', abort, { once: true });
@@ -239,7 +239,7 @@ const runOpencodeTransportTurn = async (
 			if (raw.streamId !== streamId) return;
 			try {
 				if ('error' in raw) {
-					finish(() => reject(new Error(errorMessage(raw.error, 'OpenCode error'))));
+					finish(() => reject(new Error(errorMessage(raw.error, 'ENOS Cloud error'))));
 					return;
 				}
 				if ('done' in raw && raw.done) {
@@ -284,18 +284,18 @@ export const runOpencodeDeskTurn = async (
 	cb: DeskOpencodeCallbacks
 ): Promise<{ content: string; reasoning: string }> => {
 	if (opts.transport) return runOpencodeTransportTurn(opts.transport, opts, cb);
-	if (!opts.base) throw new Error('opencode: base URL required');
+	if (!opts.base) throw new Error('ENOS Cloud base URL required');
 
 	const f = opts.fetchImpl ?? fetch;
 	const h = { 'Content-Type': 'application/json', ...(opts.headers ?? {}) };
 
 	const sess = await (await f(`${opts.base}/session`, { method: 'POST', headers: h, body: '{}' })).json();
 	const sid = sess?.id ?? sess?.sessionID;
-	if (!sid) throw new Error('opencode: could not create session');
+	if (!sid) throw new Error('ENOS Cloud could not create a session');
 
 	const state = new DeskStreamState();
 	const evRes = await f(`${opts.base}/event`, { headers: h, signal: opts.signal });
-	if (!evRes.body) throw new Error('opencode: no event stream');
+	if (!evRes.body) throw new Error('ENOS Cloud event stream unavailable');
 
 	// fire the prompt (don't await its completion; the turn completes via session.idle)
 	void f(`${opts.base}/session/${sid}/message`, {

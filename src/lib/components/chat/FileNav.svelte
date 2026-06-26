@@ -329,6 +329,17 @@
 		if (cloudWorkspace) return resolveCloudFilesInitialPath(cwd, cloudProjectRoot);
 		return cwd ? (cwd.endsWith('/') ? cwd : cwd + '/') : '/';
 	};
+	const resolveProjectPath = (path: string) => {
+		if (!cloudWorkspace) return path;
+		return resolveCloudFilesInitialPath(path, cloudProjectRoot);
+	};
+	const formatCloudDisplayPath = (path: string) => {
+		if (!cloudWorkspace || !cloudProjectRoot) return path;
+		const root = resolveCloudFilesInitialPath(null, cloudProjectRoot);
+		if (path === root) return './';
+		if (path.startsWith(root)) return `./${path.slice(root.length)}`;
+		return path;
+	};
 
 	$: if (mounted && cloudWorkspace && cloudProjectRoot !== previousCloudProjectRoot) {
 		previousCloudProjectRoot = cloudProjectRoot;
@@ -339,6 +350,26 @@
 	}
 
 	const buildBreadcrumbs = (path: string) => {
+		if (cloudWorkspace && cloudProjectRoot) {
+			const root = resolveCloudFilesInitialPath(null, cloudProjectRoot);
+			if (path.startsWith(root)) {
+				const rootLabel =
+					root
+						.replace(/\/+$/, '')
+						.split('/')
+						.filter(Boolean)
+						.at(-1) ?? 'Project';
+				const relativeParts = path.slice(root.length).split('/').filter(Boolean);
+				return relativeParts.reduce(
+					(acc, part) => {
+						const prev = acc[acc.length - 1];
+						acc.push({ label: part, path: `${prev.path}${part}/` });
+						return acc;
+					},
+					[{ label: rootLabel, path: root }]
+				);
+			}
+		}
 		const parts = path.split('/').filter(Boolean);
 		const isDrive = /^[A-Za-z]:$/.test(parts[0] ?? '');
 		const root = isDrive ? { label: parts[0], path: `${parts[0]}/` } : { label: '/', path: '/' };
@@ -381,6 +412,7 @@
 	const loadDir = async (path: string) => {
 		const terminal = selectedTerminal;
 		if (!terminal) return;
+		path = resolveProjectPath(path);
 
 		loading = true;
 		error = null;
@@ -823,8 +855,14 @@
 			filePath = normalizePath(filePath);
 
 			const lastSlash = filePath.lastIndexOf('/');
-			const dir = lastSlash > 0 ? filePath.substring(0, lastSlash + 1) : '/';
+			const requestedDir = lastSlash > 0 ? filePath.substring(0, lastSlash + 1) : '/';
+			const dir = cloudWorkspace ? resolveProjectPath(requestedDir) : requestedDir;
 			const fileName = filePath.substring(lastSlash + 1);
+
+			if (cloudWorkspace && dir !== requestedDir) {
+				await loadDir(dir);
+				return;
+			}
 
 			// Always reload directory to ensure entries are fresh
 			await loadDir(dir);
@@ -977,9 +1015,11 @@
 			{#if cloudWorkspace}
 				<div class="px-3 pb-2 shrink-0">
 					<div class="text-sm font-medium text-gray-700 dark:text-gray-200">
-						{$i18n.t('Cloud Files')}
+						{$i18n.t('Project Files')}
 					</div>
-					<div class="text-xs text-gray-400 dark:text-gray-500 truncate">{currentPath}</div>
+					<div class="text-xs text-gray-400 dark:text-gray-500 truncate">
+						{formatCloudDisplayPath(currentPath)}
+					</div>
 					<div class="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
 						{formatCloudFilesStatus(cloudWorkspaceName)}
 					</div>

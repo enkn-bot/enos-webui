@@ -74,7 +74,7 @@
 	import Tooltip from '../common/Tooltip.svelte';
 	import Folders from './Sidebar/Folders.svelte';
 	import { getChannels, createNewChannel } from '$lib/apis/channels';
-	import { getTerminalServers, createDirectory } from '$lib/apis/terminal';
+	import { getTerminalServers, createDirectory, listFiles } from '$lib/apis/terminal';
 	import { createCloudWorkspace } from '$lib/apis/workspace';
 	import ChannelModal from './Sidebar/ChannelModal.svelte';
 	import ChannelItem from './Sidebar/ChannelItem.svelte';
@@ -99,6 +99,7 @@
 	} from '$lib/enos/surfaceScope';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
 	import { deskSurfaceLabel } from '$lib/enos/deskSessionLabels';
+	import { isDuplicateDeskHomeProjectName, selectDeskHomeProject } from '$lib/enos/deskHomeProject';
 	import UserAvatar from '$lib/components/enos/UserAvatar.svelte';
 	import {
 		isSystemCloudWorkspaceTerminal,
@@ -154,7 +155,9 @@
 	$: hasDesktopBridge = browser && Boolean(getEnosDesktopBridge());
 	const cloudWorkspaceOptionLabel = (terminal) => {
 		const name = String(terminal?.name ?? '').trim();
-		if (!name || name === terminal?.id || name.startsWith('ws-')) return $i18n.t('Default');
+		if (!name || name === terminal?.id || name.startsWith('ws-') || name === 'Cloud Workspace') {
+			return $i18n.t('ENOS Cloud');
+		}
 		return name;
 	};
 	$: webDeskCloudWorkspaceOptions = ($terminalServers ?? [])
@@ -267,8 +270,18 @@
 		});
 		_folders.set(folderList.sort((a, b) => b.updated_at - a.updated_at));
 
-		if (isDeskSurface && folderList.length > 0 && !$selectedFolder?.id) {
-			void selectInitialDeskProject(folderList);
+		const selectedFolderInList = folderList.some(
+			(folder) => folder?.id && folder.id === $selectedFolder?.id
+		);
+		const selectedDuplicateHome =
+			isDuplicateDeskHomeProjectName($selectedFolder?.name) &&
+			selectDeskHomeProject(folderList)?.id !== $selectedFolder?.id;
+		if (
+			isDeskSurface &&
+			folderList.length > 0 &&
+			(!$selectedFolder?.id || !selectedFolderInList || selectedDuplicateHome)
+		) {
+			void selectInitialDeskProject(folderList, { force: true });
 		}
 
 		if (
@@ -315,10 +328,9 @@
 		}
 	};
 
-	const selectInitialDeskProject = async (folderList = []) => {
-		const folder =
-			folderList.find((item) => item?.name === DESK_HOME_PROJECT_NAME) ?? folderList[0] ?? null;
-		if (!folder?.id || $selectedFolder?.id) return false;
+	const selectInitialDeskProject = async (folderList = [], { force = false } = {}) => {
+		const folder = selectDeskHomeProject(folderList);
+		if (!folder?.id || ($selectedFolder?.id && !force)) return false;
 
 		await selectedFolder.set(folder);
 		const source = folder?.data?.project_context_source ?? {};
@@ -463,7 +475,7 @@
 		return null;
 	};
 
-	const createCloudProjectRoot = async (projectName) => {
+	const createCloudProjectRoot = async (projectName, { preferExistingRoot = false } = {}) => {
 		const baseRootName = safeCloudProjectRootName(projectName);
 		const usedRootNames = existingCloudProjectRootNames();
 		const ws = await createCloudWorkspace(localStorage.token);
@@ -472,7 +484,28 @@
 
 		const terminal = await waitForCloudWorkspaceTerminal(ws?.id ?? null);
 		if (!terminal?.url || !terminal?.key) {
-			throw new Error($i18n.t('Cloud workspace is not ready yet.'));
+			throw new Error($i18n.t('ENOS Cloud is not ready yet.'));
+		}
+
+		if (preferExistingRoot) {
+			const cloudPath = `/home/user/${baseRootName}/`;
+			const existingEntries = await listFiles(terminal.url, terminal.key, cloudPath);
+			if (existingEntries !== null) {
+				showFileNavDir.set(cloudPath);
+				return { cloudPath, rootName: baseRootName, ws };
+			}
+			const created = await createDirectory(terminal.url, terminal.key, cloudPath);
+			if (created) {
+				showFileNavDir.set(cloudPath);
+				return { cloudPath, rootName: baseRootName, ws };
+			}
+			const retriedEntries = await listFiles(terminal.url, terminal.key, cloudPath);
+			if (retriedEntries !== null) {
+				showFileNavDir.set(cloudPath);
+				return { cloudPath, rootName: baseRootName, ws };
+			}
+			showFileNavDir.set(cloudPath);
+			return { cloudPath, rootName: baseRootName, ws };
 		}
 
 		for (let attempt = 0; attempt < 20; attempt += 1) {
@@ -489,20 +522,31 @@
 		throw new Error($i18n.t('Could not create a unique cloud project folder.'));
 	};
 
-	const createFolder = async ({ name, meta, data, parent_id, localWorkspace, projectEnvironment }) => {
+	const createFolder = async ({
+		name,
+		meta,
+		data,
+		parent_id,
+		localWorkspace,
+		projectEnvironment,
+		dedupeName = true,
+		preferExistingCloudRoot = false
+	}) => {
 		name = name?.trim();
 		if (!name) {
 			toast.error($i18n.t('Folder name cannot be empty.'));
 			return false;
 		}
 
-		name = nextProjectFolderName(name, parent_id, allKnownFolders);
+		if (dedupeName) {
+			name = nextProjectFolderName(name, parent_id, allKnownFolders);
+		}
 
 		let nextData = data;
 		let cloudProjectRoot = null;
 		if (projectEnvironment === 'cloud' && isDeskSurface && !localWorkspace) {
 			try {
-				cloudProjectRoot = await createCloudProjectRoot(name);
+				cloudProjectRoot = await createCloudProjectRoot(name, { preferExistingRoot: preferExistingCloudRoot });
 				nextData = {
 					...(data ?? {}),
 					project_context_source: {
@@ -593,7 +637,7 @@
 				};
 				await selectedFolder.set(cloudFolder);
 				showFileNavDir.set(cloudProjectRoot.cloudPath);
-				toast.success($i18n.t('Working in cloud'));
+				toast.success($i18n.t('Working in ENOS Cloud'));
 			}
 			// newFolderId = res.id;
 			await initFolders();
@@ -614,6 +658,30 @@
 		deskHomeProjectAttempted = true;
 
 		try {
+			const existingHomeProject = selectDeskHomeProject(
+				filterProjectsForDeskRuntime(allKnownFolders, {
+					surface: currentSurface,
+					hasDesktopBridge,
+					legacyDeskItemIds: []
+				})
+			);
+			if (existingHomeProject?.id) {
+				return await selectInitialDeskProject([existingHomeProject], { force: true });
+			}
+
+			const freshFolders = await getFolders(localStorage.token).catch(() => []);
+			allKnownFolders = freshFolders;
+			const freshHomeProject = selectDeskHomeProject(
+				filterProjectsForDeskRuntime(freshFolders, {
+					surface: currentSurface,
+					hasDesktopBridge,
+					legacyDeskItemIds: []
+				})
+			);
+			if (freshHomeProject?.id) {
+				return await selectInitialDeskProject([freshHomeProject], { force: true });
+			}
+
 			let localWorkspace = null;
 			if (hasDesktopBridge) {
 				const bridge = getEnosDesktopBridge();
@@ -628,7 +696,9 @@
 				data: {},
 				parent_id: null,
 				localWorkspace,
-				projectEnvironment: hasDesktopBridge ? 'local' : 'cloud'
+				projectEnvironment: hasDesktopBridge ? 'local' : 'cloud',
+				dedupeName: false,
+				preferExistingCloudRoot: !hasDesktopBridge
 			});
 		} finally {
 			ensuringDeskHomeProject = false;

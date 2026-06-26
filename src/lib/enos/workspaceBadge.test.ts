@@ -66,7 +66,7 @@ describe('workspaceKindLabel', () => {
 	test('maps each kind to its environment label and falls back', () => {
 		expect(workspaceKindLabel('local')).toBe('Local');
 		expect(workspaceKindLabel('github')).toBe('Repo');
-		expect(workspaceKindLabel('cloud')).toBe('Cloud');
+		expect(workspaceKindLabel('cloud')).toBe('ENOS Cloud');
 		expect(workspaceKindLabel(null)).toBe('Workspace');
 		expect(workspaceKindLabel(undefined)).toBe('Workspace');
 	});
