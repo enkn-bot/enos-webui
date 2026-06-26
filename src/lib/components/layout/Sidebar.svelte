@@ -1625,6 +1625,7 @@
 						className="px-2 mt-0.5"
 						name={$i18n.t('Projects')}
 						chevron={false}
+						headerHover={false}
 						addIcon={NewFolderAlt}
 						onAdd={() => {
 							showCreateFolderModal = true;

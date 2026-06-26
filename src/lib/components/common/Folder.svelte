@@ -18,6 +18,7 @@
 
 	export let className = '';
 	export let buttonClassName = 'text-gray-600 dark:text-gray-400';
+	export let headerHover = true;
 
 	export let chevron = true;
 	export let onAddLabel: string = '';
@@ -152,7 +153,9 @@
 				<!-- svelte-ignore a11y-no-static-element-interactions -->
 				<div
 					id="sidebar-folder-button"
-					class=" w-full group rounded-xl relative flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-900 transition {buttonClassName}"
+					class="w-full group rounded-xl relative flex items-center justify-between {headerHover
+						? 'hover:bg-gray-100 dark:hover:bg-gray-900'
+						: ''} transition {buttonClassName}"
 				>
 					<button class="w-full py-1.5 pl-2 flex items-center gap-1.5 text-sm font-primary">
 						{#if chevron}

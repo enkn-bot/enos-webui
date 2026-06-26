@@ -382,24 +382,43 @@ describe('ENOS Desk UI source guardrails', () => {
 	test('new project modal is lean and workspace-first in create mode', () => {
 		const modal = read('src/lib/components/layout/Sidebar/Folders/FolderModal.svelte');
 
-		expect(modal).toContain("{$i18n.t('New Project')}");
+		expect(modal).toContain("{$i18n.t('New project')}");
 		expect(modal).toContain('projectEnvironment');
 		expect(modal).toContain('projectStartMode');
-		expect(modal).toContain("{$i18n.t('Local')}");
-		expect(modal).toContain("{$i18n.t('Cloud')}");
-		expect(modal).toContain('Choose local folder');
-		expect(modal).toContain("{$i18n.t('Start clean')}");
+		expect(modal).toContain("{$i18n.t('Where should this project live?')}");
+		expect(modal).toContain("{$i18n.t('How do you want to start?')}");
+		expect(modal).toContain("{$i18n.t('Local project')}");
+		expect(modal).toContain("{$i18n.t('Cloud project')}");
+		expect(modal).toContain("{$i18n.t('Create a new project')}");
+		expect(modal).toContain("$i18n.t('Use an existing folder')");
 		expect(modal).toContain("projectStartMode = 'clean'");
-		expect(modal).toContain('Create clean local project');
-		expect(modal).toContain("$i18n.t('Create local project')");
-		expect(modal).toContain("{$i18n.t('Create cloud project')}");
+		expect(modal).toContain("$i18n.t('Create project')");
+		expect(modal).toContain("{$i18n.t('Cancel')}");
 		expect(modal).toContain('createCleanWorkspace');
-		expect(modal).toContain("placeholder={$i18n.t('Project name')}");
+		expect(modal).toContain("placeholder={$i18n.t('Untitled project')}");
+		expect(modal).not.toContain("{$i18n.t('Start clean')}");
+		expect(modal).not.toContain('Create clean local project');
 		expect(modal).not.toContain("Choose a local folder or start clean.");
 		expect(modal).toMatch(/\{#if edit\}[\s\S]*Folder Background Image/);
 		expect(modal).toMatch(/\{#if edit\}[\s\S]*System Prompt/);
 		expect(modal).toMatch(/\{#if edit\}[\s\S]*Project Knowledge/);
 		expect(modal).not.toContain("placeholder={$i18n.t('Enter folder name')}");
+	});
+
+	test('Projects header does not show a hover-fill button background', () => {
+		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
+		const folder = read('src/lib/components/common/Folder.svelte');
+
+		expect(folder).toContain('export let headerHover = true;');
+		expect(folder).toMatch(/headerHover[\s\S]*hover:bg-gray-100 dark:hover:bg-gray-900/);
+		expect(sidebar).toMatch(/name=\{\$i18n\.t\('Projects'\)\}[\s\S]*headerHover=\{false\}/);
+	});
+
+	test('project menu uses session language on Desk', () => {
+		const menu = read('src/lib/components/layout/Sidebar/Folders/FolderMenu.svelte');
+
+		expect(menu).toContain("projectMode ? 'New Session' : 'Create Project'");
+		expect(menu).not.toContain('New Project Chat');
 	});
 
 	test('cloud project creation creates a cloud workspace folder and points Files at it', () => {

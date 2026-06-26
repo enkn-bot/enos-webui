@@ -59,7 +59,7 @@
 					<Folder />
 				{/if}
 				<div class="flex items-center">
-					{$i18n.t(projectMode ? 'New Project Chat' : 'Create Project')}
+					{$i18n.t(projectMode ? 'New Session' : 'Create Project')}
 				</div>
 			</button>
 
