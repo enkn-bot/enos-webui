@@ -1075,6 +1075,7 @@
 <FolderModal
 	bind:show={showCreateFolderModal}
 	showLocalFolderAction={isDeskSurface && hasDesktopBridge}
+	cloudOnlyProjectMode={isDeskSurface && !hasDesktopBridge}
 	onLocalFolderPick={handleDeskLocalFolderPick}
 	onSubmit={async (folder) => {
 		const created = await createFolder(folder);

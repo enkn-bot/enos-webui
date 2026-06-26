@@ -31,6 +31,7 @@
 	export let initialFolder = null;
 	export let projectEditMode = false;
 	export let showLocalFolderAction = false;
+	export let cloudOnlyProjectMode = false;
 	export let onLocalFolderPick: Function = async () => {};
 
 	let folder = null;
@@ -52,8 +53,10 @@
 	$: canUseLocalProject = showLocalFolderAction && Boolean(getEnosDesktopBridge());
 	$: submitLabel = edit ? $i18n.t('Save') : $i18n.t('Create project');
 	$: showLegacyFolderOptions = edit && !projectEditMode;
+	$: showProjectSetupOptions = !edit && !cloudOnlyProjectMode;
 
-	const defaultProjectEnvironment = (): ProjectEnvironment => (canUseLocalProject ? 'local' : 'cloud');
+	const defaultProjectEnvironment = (): ProjectEnvironment =>
+		cloudOnlyProjectMode ? 'cloud' : canUseLocalProject ? 'local' : 'cloud';
 
 	const resetCreateState = () => {
 		name = '';
@@ -65,7 +68,7 @@
 			files: []
 		};
 		localWorkspace = null;
-		projectEnvironment = defaultProjectEnvironment();
+		projectEnvironment = cloudOnlyProjectMode ? 'cloud' : defaultProjectEnvironment();
 		projectStartMode = 'clean';
 	};
 
@@ -99,6 +102,7 @@
 	};
 
 	const selectLocalFolder = async () => {
+		if (cloudOnlyProjectMode) return null;
 		projectEnvironment = 'local';
 		projectStartMode = 'folder';
 		const workspace = await onLocalFolderPick();
@@ -192,9 +196,19 @@
 	$: if (!show && !edit) {
 		resetCreateState();
 	}
+
+	$: if (cloudOnlyProjectMode) {
+		projectEnvironment = 'cloud';
+		projectStartMode = 'clean';
+		localWorkspace = null;
+	}
 </script>
 
-<Modal size="md" bind:show className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-[1.75rem]">
+<Modal
+	size={cloudOnlyProjectMode ? 'sm' : 'md'}
+	bind:show
+	className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-[1.75rem]"
+>
 	<form
 		class="px-6 py-5 dark:text-gray-200"
 		on:submit|preventDefault={() => {
@@ -235,7 +249,7 @@
 			/>
 		</div>
 
-		{#if !edit}
+		{#if showProjectSetupOptions}
 			<div class="mt-6">
 				<div class="mb-3 text-sm font-medium text-gray-900 dark:text-gray-100">
 					{$i18n.t('Where should this project live?')}
@@ -262,7 +276,7 @@
 								<div class="mt-1 text-sm leading-5 text-gray-500 dark:text-gray-400">
 									{canUseLocalProject
 										? $i18n.t('Stored on this device. Best for private work and offline use.')
-										: $i18n.t('Open in the desktop app to create local projects.')}
+										: $i18n.t('Local projects require the desktop app.')}
 								</div>
 							</div>
 						</div>

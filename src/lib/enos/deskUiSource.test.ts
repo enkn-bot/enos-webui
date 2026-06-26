@@ -385,6 +385,9 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(modal).toContain("{$i18n.t('New project')}");
 		expect(modal).toContain('projectEnvironment');
 		expect(modal).toContain('projectStartMode');
+		expect(modal).toContain('export let cloudOnlyProjectMode = false;');
+		expect(modal).toContain('showProjectSetupOptions = !edit && !cloudOnlyProjectMode');
+		expect(modal).toMatch(/\{#if showProjectSetupOptions\}[\s\S]*Where should this project live\?/);
 		expect(modal).toContain("{$i18n.t('Where should this project live?')}");
 		expect(modal).toContain("{$i18n.t('How do you want to start?')}");
 		expect(modal).toContain("{$i18n.t('Local project')}");
@@ -405,6 +408,18 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(modal).toMatch(/\{#if showLegacyFolderOptions\}[\s\S]*System Prompt/);
 		expect(modal).toMatch(/\{#if showLegacyFolderOptions\}[\s\S]*Project Knowledge/);
 		expect(modal).not.toContain("placeholder={$i18n.t('Enter folder name')}");
+	});
+
+	test('web Desk project create asks only for the project name', () => {
+		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
+		const modal = read('src/lib/components/layout/Sidebar/Folders/FolderModal.svelte');
+
+		expect(sidebar).toContain('cloudOnlyProjectMode={isDeskSurface && !hasDesktopBridge}');
+		expect(modal).toContain('cloudOnlyProjectMode');
+		expect(modal).toContain("cloudOnlyProjectMode ? 'cloud' : defaultProjectEnvironment()");
+		expect(modal).toMatch(/if \(cloudOnlyProjectMode\) \{[\s\S]*projectEnvironment = 'cloud'/);
+		expect(modal).toMatch(/\{#if showProjectSetupOptions\}[\s\S]*How do you want to start\?/);
+		expect(modal).not.toContain('Open in the desktop app to create local projects.');
 	});
 
 	test('Projects header does not show a hover-fill button background', () => {

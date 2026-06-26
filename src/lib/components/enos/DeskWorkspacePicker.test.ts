@@ -26,27 +26,29 @@ describe('Desk workspace picker source contract', () => {
 		expect(navbar).toContain('id="desk-workspace-status-button"');
 	});
 
-	test('picker offers only the local/cloud environment decision', () => {
+	test('picker offers local/cloud plus cloud environment management', () => {
 		const picker = read('src/lib/components/enos/DeskWorkspacePicker.svelte');
 
 		expect(picker).toContain('showDeskFolderPicker.set(true)');
 		expect(picker).toContain('Cloud');
-		// S5: provision an ENOS-managed cloud workspace via the control-plane API.
-		// One cloud workspace per user → the create action only shows when none exists,
-		// gated on systemTerminals.length === 0 (no confusing "New" beside an existing one).
-		expect(picker).toContain('Add cloud space');
-		expect(picker).toMatch(/\{#if systemTerminals\.length === 0\}/);
+		expect(picker).toContain('cloudEnvironmentLabel');
+		expect(picker).toContain('Default');
+		expect(picker).toContain('Add cloud environment...');
+		expect(picker).toContain('showCreateCloudEnvironmentModal');
+		expect(picker).toContain('New cloud environment');
+		expect(picker).toContain('Network access');
+		expect(picker).toContain('Environment variables');
+		expect(picker).toContain('Setup script');
+		expect(picker).toContain('createCloudEnvironment');
 		expect(picker).toContain('createCloudWorkspace');
-		expect(picker).toContain('on:click={createCloud}');
+		expect(picker).not.toContain('Add cloud space');
 		// GitHub is not an environment row.
 		expect(picker).not.toContain('Connect GitHub');
 		expect(picker).not.toContain('connectGithubAccount');
 		expect(picker).not.toContain('cloneRepoIntoWorkspace');
 		expect(picker).not.toContain('owner/repo');
 		expect(picker).not.toContain('listGithubRepos');
-		// Clean model: cloud = ENOS-managed ws-* only; the base "Add cloud
-		// environment…" external-terminal clutter is gone from the ENOS picker.
-		expect(picker).not.toContain('Add cloud environment');
+		// Clean model: cloud = ENOS-managed ws-* only; no external terminal clutter.
 		expect(picker).toContain("startsWith('ws-')");
 		// Environment rows are concise: no terminal/source sublabels.
 		expect(picker).not.toContain('Cloud terminal');

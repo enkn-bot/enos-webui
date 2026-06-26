@@ -30,9 +30,12 @@
 
 	import Dropdown from '$lib/components/common/Dropdown.svelte';
 	import ConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
+	import Modal from '$lib/components/common/Modal.svelte';
 	import Check from '$lib/components/icons/Check.svelte';
 	import Cloud from '$lib/components/icons/Cloud.svelte';
 	import Folder from '$lib/components/icons/Folder.svelte';
+	import Plus from '$lib/components/icons/Plus.svelte';
+	import XMark from '$lib/components/icons/XMark.svelte';
 
 	type I18nStore = Readable<{ t: (key: string, options?: Record<string, unknown>) => string }>;
 	type TerminalServerConfig = {
@@ -109,9 +112,36 @@
 	};
 
 	let copyingLocalProjectToCloud = false;
+	let creatingCloud = false;
 	let showEnvironmentSwitchConfirm = false;
+	let showCreateCloudEnvironmentModal = false;
 	let pendingSwitchTarget: 'local' | 'cloud' | null = null;
 	let pendingSwitchAction: (() => Promise<void> | void) | null = null;
+	let cloudEnvironmentName = 'Default';
+	let cloudEnvironmentNetworkAccess = 'trusted';
+	let cloudEnvironmentVariables = '';
+	let cloudEnvironmentSetupScript = '';
+
+	$: canCreateCloudEnvironment = cloudEnvironmentName.trim().length > 0 && !creatingCloud;
+
+	const cloudEnvironmentLabel = (terminal: (typeof systemTerminals)[0] | null) => {
+		const name = String(terminal?.name ?? '').trim();
+		if (!name || name === terminal?.id || name.startsWith('ws-')) return $i18n.t('Default');
+		return name;
+	};
+
+	const resetCloudEnvironmentForm = () => {
+		cloudEnvironmentName = systemTerminals.length === 0 ? 'Default' : '';
+		cloudEnvironmentNetworkAccess = 'trusted';
+		cloudEnvironmentVariables = '';
+		cloudEnvironmentSetupScript = '';
+	};
+
+	const openCreateCloudEnvironment = () => {
+		resetCloudEnvironmentForm();
+		show = false;
+		showCreateCloudEnvironmentModal = true;
+	};
 
 	const copyLocalProjectIntoCloudWorkspace = async () => {
 		if (!activeFolderId || copyingLocalProjectToCloud) return;
@@ -271,19 +301,19 @@
 		await activateSystemTerminal(nextId);
 	};
 
-	let creatingCloud = false;
 	const createCloud = async () => {
-		if (creatingCloud) return;
+		if (creatingCloud) return false;
 		if (currentLocation === 'local' && isLocalBound) {
 			await runWithEnvironmentConfirmation('cloud', async () => {
 				try {
 					await copyLocalProjectIntoCloudWorkspace();
 					show = false;
+					showCreateCloudEnvironmentModal = false;
 				} catch (e) {
 					toast.error(e instanceof Error ? e.message : $i18n.t('Failed to copy project to cloud'));
 				}
 			});
-			return;
+			return false;
 		}
 
 		creatingCloud = true;
@@ -295,11 +325,20 @@
 				show = false;
 				toast.info($i18n.t('Working in cloud'));
 			}
+			return Boolean(ws?.id);
 		} catch (e) {
 			console.warn('cloud workspace create failed', e);
+			toast.error($i18n.t('Failed to create cloud environment.'));
+			return false;
 		} finally {
 			creatingCloud = false;
 		}
+	};
+
+	const createCloudEnvironment = async () => {
+		if (!canCreateCloudEnvironment) return;
+		const created = await createCloud();
+		if (created) showCreateCloudEnvironmentModal = false;
 	};
 </script>
 
@@ -336,27 +375,10 @@
 				</button>
 			{/if}
 
-			{#if systemTerminals.length === 0}
+			{#if systemTerminals.length > 0}
 				<button
 					type="button"
-					disabled={creatingCloud}
-					class="flex w-full justify-between gap-2 items-center px-3 py-2 text-sm rounded-xl {creatingCloud
-						? 'cursor-wait opacity-50'
-						: 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50'}"
-					on:click={createCloud}
-				>
-					<div class="flex flex-1 gap-2 items-center truncate">
-						<Cloud className="size-4 shrink-0" strokeWidth="2" />
-						<span class="truncate"
-							>{creatingCloud
-								? $i18n.t('Creating cloud workspace...')
-								: $i18n.t('Add cloud space')}</span
-						>
-					</div>
-				</button>
-			{:else}
-				<button
-					type="button"
+					aria-label={$i18n.t('Cloud')}
 					class="flex w-full justify-between gap-2 items-center px-3 py-2 text-sm cursor-pointer rounded-xl {$selectedTerminalId ===
 					firstSystemTerminal?.id
 						? 'bg-gray-50 dark:bg-gray-800/50'
@@ -365,7 +387,7 @@
 				>
 					<div class="flex flex-1 gap-2 items-center truncate">
 						<Cloud className="size-4 shrink-0" strokeWidth="2" />
-						<span class="truncate">{$i18n.t('Cloud')}</span>
+						<span class="truncate">{cloudEnvironmentLabel(firstSystemTerminal)}</span>
 					</div>
 					{#if $selectedTerminalId === firstSystemTerminal?.id}
 						<div class="shrink-0 text-emerald-600 dark:text-emerald-400">
@@ -374,9 +396,139 @@
 					{/if}
 				</button>
 			{/if}
+
+			<button
+				type="button"
+				disabled={creatingCloud}
+				class="flex w-full justify-between gap-2 items-center px-3 py-2 text-sm rounded-xl text-gray-500 dark:text-gray-400 {creatingCloud
+					? 'cursor-wait opacity-50'
+					: 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50'}"
+				on:click={openCreateCloudEnvironment}
+			>
+				<div class="flex flex-1 gap-2 items-center truncate">
+					<Plus className="size-4 shrink-0" strokeWidth="2" />
+					<span class="truncate"
+						>{creatingCloud
+							? $i18n.t('Creating cloud environment...')
+							: $i18n.t('Add cloud environment...')}</span
+					>
+				</div>
+			</button>
 		</div>
 	</div>
 </Dropdown>
+
+<Modal
+	size="lg"
+	bind:show={showCreateCloudEnvironmentModal}
+	className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-[1.5rem]"
+>
+	<form
+		class="px-6 py-5 dark:text-gray-200"
+		on:submit|preventDefault={() => {
+			createCloudEnvironment();
+		}}
+	>
+		<div class="flex items-start justify-between gap-4">
+			<div class="text-xl font-semibold tracking-normal">{$i18n.t('New cloud environment')}</div>
+			<button
+				type="button"
+				class="rounded-full p-1 text-gray-700 transition hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-850"
+				aria-label={$i18n.t('Close')}
+				on:click={() => {
+					showCreateCloudEnvironmentModal = false;
+				}}
+			>
+				<XMark className="size-5" />
+			</button>
+		</div>
+
+		<div class="mt-6 space-y-5">
+			<div>
+				<label
+					for="cloud-environment-name"
+					class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+				>
+					{$i18n.t('Name')}
+				</label>
+				<input
+					id="cloud-environment-name"
+					class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-2.5 text-sm outline-hidden transition placeholder:text-gray-400 focus:border-gray-400 dark:border-gray-800 dark:placeholder:text-gray-600 dark:focus:border-gray-600"
+					type="text"
+					bind:value={cloudEnvironmentName}
+					placeholder={$i18n.t('Default')}
+					autocomplete="off"
+				/>
+			</div>
+
+			<div>
+				<label
+					for="cloud-environment-network-access"
+					class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+				>
+					{$i18n.t('Network access')}
+				</label>
+				<select
+					id="cloud-environment-network-access"
+					class="w-full rounded-xl border border-gray-200 bg-transparent px-4 py-2.5 text-sm outline-hidden transition focus:border-gray-400 dark:border-gray-800 dark:focus:border-gray-600"
+					bind:value={cloudEnvironmentNetworkAccess}
+				>
+					<option value="trusted">{$i18n.t('Trusted')}</option>
+					<option value="restricted">{$i18n.t('Restricted')}</option>
+				</select>
+			</div>
+
+			<div>
+				<label
+					for="cloud-environment-variables"
+					class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+				>
+					{$i18n.t('Environment variables')}
+				</label>
+				<textarea
+					id="cloud-environment-variables"
+					class="min-h-32 w-full resize-y rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-hidden transition placeholder:text-gray-400 focus:border-gray-400 dark:border-gray-800 dark:placeholder:text-gray-600 dark:focus:border-gray-600"
+					bind:value={cloudEnvironmentVariables}
+					placeholder={'NODE_ENV=production\nGIT_AUTHOR_NAME=Your Name'}
+				></textarea>
+			</div>
+
+			<div>
+				<label
+					for="cloud-environment-setup-script"
+					class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+				>
+					{$i18n.t('Setup script')}
+				</label>
+				<textarea
+					id="cloud-environment-setup-script"
+					class="min-h-32 w-full resize-y rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-hidden transition placeholder:text-gray-400 focus:border-gray-400 dark:border-gray-800 dark:placeholder:text-gray-600 dark:focus:border-gray-600"
+					bind:value={cloudEnvironmentSetupScript}
+					placeholder={'#!/bin/bash\nnpm install'}
+				></textarea>
+			</div>
+		</div>
+
+		<div class="mt-6 flex justify-end gap-2 border-t border-gray-100 pt-4 text-sm font-medium dark:border-gray-800">
+			<button
+				type="button"
+				class="rounded-full px-4 py-2 transition hover:bg-gray-100 dark:hover:bg-gray-850"
+				on:click={() => {
+					showCreateCloudEnvironmentModal = false;
+				}}
+			>
+				{$i18n.t('Cancel')}
+			</button>
+			<button
+				class="rounded-full bg-black px-5 py-2 text-sm font-medium text-white transition hover:bg-gray-950 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-white dark:text-black dark:hover:bg-gray-100"
+				type="submit"
+				disabled={!canCreateCloudEnvironment}
+			>
+				{$i18n.t('Create environment')}
+			</button>
+		</div>
+	</form>
+</Modal>
 
 <ConfirmDialog
 	bind:show={showEnvironmentSwitchConfirm}
