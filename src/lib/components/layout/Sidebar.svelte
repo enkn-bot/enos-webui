@@ -105,6 +105,7 @@
 		mergeCloudWorkspaceTerminalEntries,
 		selectCloudWorkspaceTerminal
 	} from '$lib/enos/cloudWorkspaceTerminal';
+	import { nextProjectFolderName } from '$lib/enos/projectFolderNames';
 
 	const BREAKPOINT = 768;
 	const DEFAULT_PINNED_ITEMS = ['notes', 'workspace'];
@@ -132,6 +133,7 @@
 	let showFolders = false;
 
 	let folders = {};
+	let allKnownFolders = [];
 	let folderRegistry = {};
 	let ensuringDeskHomeProject = false;
 	let deskHomeProjectAttempted = false;
@@ -244,6 +246,7 @@
 		const allFolders = await getFolders(localStorage.token).catch((error) => {
 			return [];
 		});
+		allKnownFolders = allFolders;
 		const legacyDeskProjectIds = await discoverLegacyDeskProjectIds(allFolders);
 		// Desk-folder ids from the FULL list (both surfaces need this for chat scoping):
 		// tagged desk, locally bound (project_context_source), or legacy bridge workspace.
@@ -395,7 +398,7 @@
 
 	const existingCloudProjectRootNames = () => {
 		const names = new Set();
-		for (const folder of Object.values(folders)) {
+		for (const folder of allKnownFolders) {
 			const source = folder?.data?.project_context_source ?? {};
 			if (source?.kind !== 'cloud' && source?.kind !== 'github') continue;
 			for (const value of [
@@ -473,19 +476,7 @@
 			return false;
 		}
 
-		// Check for duplicate names in the same parent
-		const siblings = Object.values(folders).filter((folder) => folder.parent_id === parent_id);
-		if (siblings.find((folder) => folder.name.toLowerCase() === name.toLowerCase())) {
-			// If a folder with the same name already exists, append a number to the name
-			let i = 1;
-			while (
-				siblings.find((folder) => folder.name.toLowerCase() === `${name} ${i}`.toLowerCase())
-			) {
-				i++;
-			}
-
-			name = `${name} ${i}`;
-		}
+		name = nextProjectFolderName(name, parent_id, allKnownFolders);
 
 		let nextData = data;
 		let cloudProjectRoot = null;
@@ -538,6 +529,18 @@
 			return null;
 		});
 
+		const removeOptimisticFolder = (id) => {
+			const { [id]: _removed, ...remaining } = folders;
+			folders = remaining;
+			if ($selectedFolder?.id === id) selectedFolder.set(null);
+		};
+
+		const rollbackCloudProjectRoot = async (root) => {
+			// Do not delete cloud paths here. Terminal mkdir can succeed for paths with
+			// existing content, while the OWUI folder DB write can still fail afterward.
+			return root;
+		};
+
 		if (res) {
 			if (localWorkspace && isDeskSurface && hasDesktopBridge) {
 				const bridge = getEnosDesktopBridge();
@@ -577,6 +580,8 @@
 			showFolders = true;
 			return true;
 		}
+		removeOptimisticFolder(tempId);
+		await rollbackCloudProjectRoot(cloudProjectRoot);
 		return false;
 	};
 

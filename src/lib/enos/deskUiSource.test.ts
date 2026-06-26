@@ -510,9 +510,17 @@ describe('ENOS Desk UI source guardrails', () => {
 		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
 		const modal = read('src/lib/components/layout/Sidebar/Folders/FolderModal.svelte');
 
+		expect(sidebar).toContain('let allKnownFolders = [];');
+		expect(sidebar).toContain('allKnownFolders = allFolders;');
+		expect(sidebar).toContain('nextProjectFolderName(name, parent_id, allKnownFolders)');
 		expect(sidebar).toContain('nextCloudProjectRootName');
 		expect(sidebar).toContain('existingCloudProjectRootNames');
+		expect(sidebar).toMatch(
+			/for \(const folder of allKnownFolders\)[\s\S]*project_context_source/
+		);
 		expect(sidebar).toContain('Could not create a unique cloud project folder.');
+		expect(sidebar).toContain('rollbackCloudProjectRoot');
+		expect(sidebar).toContain('removeOptimisticFolder(tempId)');
 		expect(sidebar).toContain('return false;');
 		expect(sidebar).toContain('const created = await createFolder(folder);');
 		expect(sidebar).toContain('if (created) showCreateFolderModal = false;');
