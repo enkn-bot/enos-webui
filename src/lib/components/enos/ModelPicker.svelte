@@ -3,8 +3,8 @@
 
   const MINDS = [
     { id: 'enos.subconscious', label: 'Subconscious', subtitle: 'Quick responses.' },
-    { id: 'enos.mind',         label: 'Mind',         subtitle: 'Everyday tasks.' },
-    { id: 'enos.deepmind',     label: 'DeepMind',     subtitle: 'Toughest problems.' },
+    { id: 'enos.mind',         label: 'Conscious',    subtitle: 'Everyday tasks.' },
+    { id: 'enos.deepmind',     label: 'Ego',          subtitle: 'Toughest problems.' },
   ] as const;
 
   export let value: string = 'enos.mind';
@@ -12,7 +12,7 @@
 
   let show = false;
 
-  $: currentLabel = MINDS.find(m => m.id === value)?.label ?? 'Mind';
+  $: currentLabel = MINDS.find(m => m.id === value)?.label ?? 'Conscious';
 
   function select(id: string) {
     onSelect(id);

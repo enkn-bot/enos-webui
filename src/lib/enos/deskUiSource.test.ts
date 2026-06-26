@@ -250,8 +250,8 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(gateIdx).toBeGreaterThan(-1);
 		expect(cloudIdx).toBeLessThan(gateIdx); // cloud handled before the bridge bail
 		expect(chat).toContain('runOpencodeDeskTurn');
-		expect(chat).toContain('/api/ws/oc/');
-		// Local (Electron) path still uses the kimi loop — no regression.
+		expect(chat).toContain('/api/ws/oc2/'); // Pi relay (OpenCode proxy /oc retired 2026-06-26)
+		// Local (Electron) path still uses the desk agent loop — no regression.
 		expect(chat).toContain('runDeskAgentLoop({');
 	});
 
@@ -719,7 +719,7 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(chat).toContain('IDENTITY: You are ENOS');
 		expect(chat).toContain('three minds');
 		expect(chat).toContain('Subconscious');
-		expect(chat).toContain('DeepMind');
+		expect(chat).toContain('Ego');
 		expect(chat).toMatch(/never claim to[\s\S]*Claude, GPT, Gemini/);
 	});
 

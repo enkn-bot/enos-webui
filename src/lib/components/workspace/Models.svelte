@@ -494,7 +494,7 @@
 					<div class="flex flex-col gap-1 text-left">
 						<div class="text-sm font-semibold text-gray-900 dark:text-gray-100">ENOS routing</div>
 						<div class="text-xs text-gray-500 dark:text-gray-400">
-							Subconscious, Mind, and DeepMind are product tiers. The rows under them are provider fallback chains, not extra user-facing models.
+							Subconscious, Conscious, and Ego are product tiers. The rows under them are provider fallback chains, not extra user-facing models.
 						</div>
 					</div>
 					<svg
@@ -527,7 +527,7 @@
 					</div>
 
 					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
-						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Mind text</div>
+						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Conscious text</div>
 						<div class="flex flex-col gap-1">
 							{#each chainItems(enosRouting.STANDARD_CHAIN) as model}
 								<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">{model}</div>
@@ -536,7 +536,7 @@
 					</div>
 
 					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
-						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Mind tools/RAG</div>
+						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Conscious tools/RAG</div>
 						<div class="flex flex-col gap-1">
 							{#each chainItems(enosRouting.TOOL_CHAIN) as model}
 								<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">{model}</div>
@@ -545,7 +545,7 @@
 					</div>
 
 					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
-						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">DeepMind text</div>
+						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Ego text</div>
 						<div class="flex flex-col gap-1">
 							{#each chainItems(enosRouting.PRO_CHAIN) as model}
 								<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">{model}</div>
@@ -554,7 +554,7 @@
 					</div>
 
 					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
-						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">DeepMind tools/RAG</div>
+						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Ego tools/RAG</div>
 						<div class="flex flex-col gap-1">
 							{#each chainItems(enosRouting.DEEP_TOOL_CHAIN) as model}
 								<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">{model}</div>
