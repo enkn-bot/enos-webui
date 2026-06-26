@@ -4,6 +4,7 @@ import {
 	DeskStreamState,
 	bridgeTransport,
 	normalizeOpencodeEvent,
+	normalizePiEvent,
 	parseSseChunk,
 	runOpencodeDeskTurn
 } from './deskOpencode';
@@ -72,6 +73,34 @@ describe('parseSseChunk', () => {
 });
 
 describe('runOpencodeDeskTurn (driver, faked serve)', () => {
+	const piTextDelta = {
+		type: 'message_update',
+		assistantMessageEvent: {
+			type: 'text_delta',
+			contentIndex: 0,
+			delta: 'Done.',
+			partial: { role: 'assistant', content: [{ type: 'text', text: 'Done.' }] }
+		}
+	};
+	const piThinkingDelta = {
+		type: 'message_update',
+		assistantMessageEvent: {
+			type: 'thinking_delta',
+			contentIndex: 0,
+			delta: 'The plan',
+			partial: { role: 'assistant', content: [{ type: 'thinking', thinking: 'The plan' }] }
+		}
+	};
+	const piToolStart = { type: 'tool_execution_start', toolCallId: 'c1', toolName: 'write', args: { path: 'r.js' } };
+	const piToolEnd = {
+		type: 'tool_execution_end',
+		toolCallId: 'c1',
+		toolName: 'write',
+		result: { content: [{ type: 'text', text: 'ok' }] },
+		isError: false
+	};
+	const piAgentEnd = { type: 'agent_end', messages: [] };
+
 	const sse = (objs: any[]) =>
 		new ReadableStream({
 			start(c) {
@@ -80,7 +109,7 @@ describe('runOpencodeDeskTurn (driver, faked serve)', () => {
 			}
 		});
 
-	test('creates session, streams content+reasoning+tools, resolves on session.idle', async () => {
+		test('creates session, streams content+reasoning+tools, resolves on session.idle', async () => {
 		const calls: string[] = [];
 		const events = [
 			{ type: 'message.part.updated', properties: { part: { id: 'r', type: 'reasoning', text: 'thinking' } } },
@@ -105,11 +134,44 @@ describe('runOpencodeDeskTurn (driver, faked serve)', () => {
 		expect(out.content).toBe('Fixed it.');
 		expect(out.reasoning).toBe('thinking');
 		expect(tools).toEqual(['tool_start:edit:undefined', 'tool_end:edit:true']);
-		expect(calls).toContain('POST /api/oc/ws-1/session');
-		expect(calls.some((c) => c.includes('/session/ses_1/message'))).toBe(true);
+			expect(calls).toContain('POST /api/oc/ws-1/session');
+			expect(calls.some((c) => c.includes('/session/ses_1/message'))).toBe(true);
 	});
 
-	test('drives a turn over the desktop bridge transport with cumulative replace semantics', async () => {
+		test('streams Pi cloud relay events, posts /prompt, and resolves on agent_end', async () => {
+		const calls: string[] = [];
+		const events = [piThinkingDelta, piToolStart, piToolEnd, piTextDelta, piAgentEnd];
+		const fetchImpl = (async (url: string, init?: any) => {
+			calls.push(`${init?.method ?? 'GET'} ${url}`);
+			if (url.endsWith('/event')) return { body: sse(events) } as any;
+			if (url.endsWith('/prompt')) return { json: async () => ({ ok: true }) } as any;
+			return { json: async () => ({}) } as any;
+		}) as any;
+
+		const tools: string[] = [];
+		let last = { content: '', reasoning: '' };
+		const out = await runOpencodeDeskTurn(
+			{
+				base: '/api/oc2/ws-1',
+				engine: 'pi',
+				message: 'fix',
+				agent: 'build',
+				model: { providerID: 'enos', modelID: 'm' },
+				fetchImpl,
+				normalize: normalizePiEvent
+			},
+			{ onUpdate: (s) => (last = s), onTool: (e) => tools.push(`${e.kind}:${e.tool}:${e.ok}`) }
+		);
+		expect(out.content).toBe('Done.');
+		expect(out.reasoning).toBe('The plan');
+		expect(last).toEqual(out);
+		expect(tools).toEqual(['tool_start:write:undefined', 'tool_end:write:true']);
+		expect(calls).toContain('GET /api/oc2/ws-1/event');
+		expect(calls).toContain('POST /api/oc2/ws-1/prompt');
+		expect(calls.find((c) => c.includes('/session/'))).toBeUndefined();
+	});
+
+		test('drives a turn over the desktop bridge transport with cumulative replace semantics', async () => {
 		const events: ((ev: any) => void)[] = [];
 		const calls: string[] = [];
 		const fakeOpencode = {

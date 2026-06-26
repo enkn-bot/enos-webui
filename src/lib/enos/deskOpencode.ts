@@ -186,6 +186,40 @@ const applyDeskStreamEvent = (
 	return 'done';
 };
 
+const consumeDeskSseEvents = async (
+	evRes: Response,
+	state: DeskStreamState,
+	cb: DeskOpencodeCallbacks,
+	normalize: (event: any) => DeskStreamEvent | null
+): Promise<{ content: string; reasoning: string }> => {
+	if (!evRes.body) throw new Error('ENOS Cloud event stream unavailable');
+
+	const reader = evRes.body.getReader();
+	const decoder = new TextDecoder();
+	let buffer = '';
+	for (;;) {
+		const { value, done } = await reader.read();
+		if (done) break;
+		const { events, buffer: nb } = parseSseChunk(buffer, decoder.decode(value, { stream: true }));
+		buffer = nb;
+		let dirty = false;
+		for (const raw of events) {
+			const ev = normalize(raw);
+			if (!ev) continue;
+			const result = applyDeskStreamEvent(ev, state, cb);
+			if (result === 'dirty') {
+				dirty = true;
+			} else if (result === 'done') {
+				cb.onUpdate({ content: state.content(), reasoning: state.reasoning() });
+				return { content: state.content(), reasoning: state.reasoning() };
+			}
+		}
+		if (dirty) cb.onUpdate({ content: state.content(), reasoning: state.reasoning() });
+	}
+
+	return { content: state.content(), reasoning: state.reasoning() };
+};
+
 export const bridgeTransport = (
 	opencode: EnosDesktopOpencodeBridge,
 	folderId: string
@@ -283,6 +317,7 @@ export const runOpencodeDeskTurn = async (
 		model: { providerID: string; modelID: string };
 		signal?: AbortSignal;
 		fetchImpl?: typeof fetch;
+		engine?: 'pi' | 'opencode';
 		transport?: DeskOpencodeTransport;
 		// Local engine event normalizer (Pi RPC vs OpenCode); selected by the caller from
 		// the desktop bridge's get-capabilities `deskEngine`. Defaults to OpenCode.
@@ -295,6 +330,36 @@ export const runOpencodeDeskTurn = async (
 
 	const f = opts.fetchImpl ?? fetch;
 	const h = { 'Content-Type': 'application/json', ...(opts.headers ?? {}) };
+	const normalizer = opts.normalize ?? (opts.engine === 'pi' ? normalizePiEvent : normalizeOpencodeEvent);
+
+	if (opts.engine === 'pi') {
+		if (opts.signal?.aborted) throw new Error('ENOS session was aborted');
+
+		const state = new DeskStreamState();
+		const evRes = await f(`${opts.base}/event`, { headers: h, signal: opts.signal });
+		const abort = async () => {
+			try {
+				await f(`${opts.base}/abort`, { method: 'POST', headers: h });
+			} catch {
+				/* best-effort */
+			}
+		};
+		const onAbort = () => {
+			void abort();
+		};
+		opts.signal?.addEventListener('abort', onAbort, { once: true });
+
+		try {
+			void f(`${opts.base}/prompt`, {
+				method: 'POST',
+				headers: h,
+				body: JSON.stringify({ message: opts.message })
+			});
+			return await consumeDeskSseEvents(evRes, state, cb, normalizer);
+		} finally {
+			opts.signal?.removeEventListener('abort', onAbort);
+		}
+	}
 
 	const sess = await (await f(`${opts.base}/session`, { method: 'POST', headers: h, body: '{}' })).json();
 	const sid = sess?.id ?? sess?.sessionID;
@@ -315,29 +380,7 @@ export const runOpencodeDeskTurn = async (
 		})
 	});
 
-	const reader = evRes.body.getReader();
-	const decoder = new TextDecoder();
-	let buffer = '';
-	for (;;) {
-		const { value, done } = await reader.read();
-		if (done) break;
-		const { events, buffer: nb } = parseSseChunk(buffer, decoder.decode(value, { stream: true }));
-		buffer = nb;
-		let dirty = false;
-		for (const raw of events) {
-			const ev = normalizeOpencodeEvent(raw);
-			if (!ev) continue;
-			const result = applyDeskStreamEvent(ev, state, cb);
-			if (result === 'dirty') {
-				dirty = true;
-			} else if (result === 'done') {
-				cb.onUpdate({ content: state.content(), reasoning: state.reasoning() });
-				return { content: state.content(), reasoning: state.reasoning() };
-			}
-		}
-		if (dirty) cb.onUpdate({ content: state.content(), reasoning: state.reasoning() });
-	}
-	return { content: state.content(), reasoning: state.reasoning() };
+	return await consumeDeskSseEvents(evRes, state, cb, normalizer);
 };
 
 // Map ONE raw Pi (`--mode rpc`) event to a desk stream event (or null to ignore). Pure.

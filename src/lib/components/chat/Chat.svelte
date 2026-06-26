@@ -2220,7 +2220,9 @@
 		try {
 			const r = await runOpencodeDeskTurn(
 				{
-					base: `${WEBUI_BASE_URL}/api/ws/oc/${wsId}`,
+					base: `${WEBUI_BASE_URL}/api/ws/oc2/${wsId}`,
+					engine: 'pi',
+					normalize: normalizePiEvent,
 					headers: { Authorization: `Bearer ${localStorage.token}` },
 					message: userPrompt,
 					agent: 'build',
