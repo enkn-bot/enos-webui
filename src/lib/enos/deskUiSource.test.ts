@@ -419,6 +419,10 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(sidebar).toContain("const DESK_HOME_PROJECT_NAME = 'ENOS';");
 		expect(sidebar).toContain('let ensuringDeskHomeProject = false;');
 		expect(sidebar).toContain('let deskHomeProjectAttempted = false;');
+		expect(sidebar).toContain('selectInitialDeskProject(folderList)');
+		expect(sidebar).toMatch(
+			/if \(\s*isDeskSurface &&\s*folderList\.length > 0 &&\s*!\$selectedFolder\?\.id[\s\S]*selectInitialDeskProject\(folderList\)/
+		);
 		expect(sidebar).toContain('ensureDeskHomeProject');
 		expect(sidebar).toMatch(
 			/folderList\.length === 0[\s\S]*ensureDeskHomeProject\(\)/

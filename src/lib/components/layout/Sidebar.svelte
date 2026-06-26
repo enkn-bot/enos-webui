@@ -267,6 +267,10 @@
 		});
 		_folders.set(folderList.sort((a, b) => b.updated_at - a.updated_at));
 
+		if (isDeskSurface && folderList.length > 0 && !$selectedFolder?.id) {
+			void selectInitialDeskProject(folderList);
+		}
+
 		if (
 			isDeskSurface &&
 			folderList.length === 0 &&
@@ -309,6 +313,22 @@
 				});
 			}
 		}
+	};
+
+	const selectInitialDeskProject = async (folderList = []) => {
+		const folder =
+			folderList.find((item) => item?.name === DESK_HOME_PROJECT_NAME) ?? folderList[0] ?? null;
+		if (!folder?.id || $selectedFolder?.id) return false;
+
+		await selectedFolder.set(folder);
+		const source = folder?.data?.project_context_source ?? {};
+		if ((source?.kind === 'cloud' || source?.kind === 'github') && source?.cloudPath) {
+			showFileNavDir.set(source.cloudPath);
+		} else if (source?.kind === 'local') {
+			showLocalFileFolderId.set(folder.id);
+			showFileNavPath.set('.');
+		}
+		return true;
 	};
 
 	const discoverLegacyDeskProjectIds = async (allFolders = []) => {
