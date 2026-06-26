@@ -177,6 +177,41 @@ describe('filterProjectsForDeskRuntime', () => {
 		).toEqual(['chat']);
 	});
 
+	test('Desk adopts legacy project-source folders instead of recreating them', () => {
+		const legacyProjects = [
+			{
+				id: 'legacy-cloud',
+				name: 'ENOS',
+				data: { project_context_source: { kind: 'cloud', rootName: 'ENOS' } }
+			},
+			{
+				id: 'legacy-local',
+				name: 'Local ENOS',
+				data: { project_context_source: { kind: 'local', rootName: 'ENOS' } }
+			},
+			{ id: 'plain-legacy', name: 'Old Chat Folder' }
+		];
+
+		expect(
+			filterProjectsForDeskRuntime(legacyProjects, {
+				surface: 'desk',
+				hasDesktopBridge: true
+			}).map((project) => project.id)
+		).toEqual(['legacy-cloud', 'legacy-local']);
+		expect(
+			filterProjectsForDeskRuntime(legacyProjects, {
+				surface: 'desk',
+				hasDesktopBridge: false
+			}).map((project) => project.id)
+		).toEqual(['legacy-cloud']);
+		expect(
+			filterProjectsForDeskRuntime(legacyProjects, {
+				surface: 'chat',
+				hasDesktopBridge: false
+			}).map((project) => project.id)
+		).toEqual(['plain-legacy']);
+	});
+
 	test('direct web Desk access treats local and legacy projects as unavailable', () => {
 		expect(
 			isProjectAvailableInDeskRuntime(projects[0], {

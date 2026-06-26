@@ -24,6 +24,9 @@ const itemSurface = (item: SurfaceScopedItem): EnosSurface | undefined => {
 	return undefined;
 };
 
+const hasProjectSource = (item: SurfaceScopedItem): boolean =>
+	Boolean(item?.data?.project_context_source);
+
 export const surfaceFromIsDesk = (isDeskSurface: boolean): EnosSurface =>
 	isDeskSurface ? 'desk' : 'chat';
 
@@ -71,9 +74,20 @@ export const filterProjectsForDeskRuntime = <T extends SurfaceScopedItem>(
 		legacyDeskItemIds?: Iterable<string>;
 	}
 ): T[] => {
-	const list = filterBySurface(items, args.surface, {
-		legacyDeskItemIds: args.legacyDeskItemIds
-	});
+	const raw = Array.isArray(items) ? items : [];
+	const legacyDeskItemIds = new Set(args.legacyDeskItemIds ?? []);
+	const list =
+		args.surface === 'desk'
+			? raw.filter((item) => {
+					const surfaceTag = itemSurface(item);
+					return (
+						surfaceTag === 'desk' ||
+						hasProjectSource(item) ||
+						(!surfaceTag && legacyDeskItemIds.has(String(item.id ?? '')))
+					);
+				})
+			: raw.filter((item) => itemSurface(item) !== 'desk' && !hasProjectSource(item));
+
 	if (args.surface !== 'desk' || args.hasDesktopBridge) {
 		return list;
 	}
