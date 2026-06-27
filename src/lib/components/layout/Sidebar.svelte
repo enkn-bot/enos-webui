@@ -98,6 +98,11 @@
 		withSurfaceMeta
 	} from '$lib/enos/surfaceScope';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
+	import {
+		DESK_CHATS_GROUP_NAME,
+		looseDeskChats,
+		showDeskChatsGroup
+	} from '$lib/enos/deskLooseChats';
 	import { isProjectVisibleOnSurface } from '$lib/enos/deskFolderVisibility';
 	import { workspaceBadgeFromFolder, systemCloudWorkspaceId } from '$lib/enos/workspaceBadge';
 	import { deskSurfaceLabel } from '$lib/enos/deskSessionLabels';
@@ -198,6 +203,11 @@
 	$: newChatLabel = $i18n.t(deskSurfaceLabel('new', currentSurface));
 	// Desk is project-first: the full standalone Chats section stays chat-surface-only.
 	$: showDeskChats = !isDeskSurface;
+	// Native loose "Chats" bucket (Desk only, §9/C3): project-less chats that landed
+	// here instead of spawning a noise project. Conditionally visible (only when it
+	// holds loose chats); renders plain (no files panel / badge / workspace chrome).
+	$: deskLooseChatList = isDeskSurface ? looseDeskChats(sidebarChats) : [];
+	$: showDeskChatsBucket = isDeskSurface && showDeskChatsGroup(sidebarChats);
 	$: if ($showDeskFolderPicker) {
 		showCreateFolderModal = true;
 		showDeskFolderPicker.set(false);
@@ -1903,6 +1913,50 @@
 								initChatList();
 							}}
 						/>
+					</Folder>
+				{/if}
+
+				{#if showDeskChatsBucket}
+					<Folder
+						id="desk-chats"
+						className="px-2 mt-0.5"
+						name={$i18n.t(DESK_CHATS_GROUP_NAME)}
+						chevron={false}
+						dragAndDrop={false}
+						addIcon={PencilSquare}
+						onAdd={() => {
+							startNewChatHandler();
+						}}
+						onAddLabel={newChatLabel}
+					>
+						<div class="pt-1.5">
+							{#each deskLooseChatList as chat, idx (`desk-loose-${chat?.id ?? idx}`)}
+								<ChatItem
+									className=""
+									id={chat.id}
+									title={chat.title}
+									createdAt={chat.created_at}
+									updatedAt={chat.updated_at}
+									lastReadAt={chat.last_read_at}
+									{shiftKey}
+									selected={selectedChatId === chat.id}
+									openFilesOnSelect={false}
+									on:select={() => {
+										selectedChatId = chat.id;
+									}}
+									on:unselect={() => {
+										selectedChatId = null;
+									}}
+									on:change={async () => {
+										initChatList();
+									}}
+									on:tag={(e) => {
+										const { type, name } = e.detail;
+										tagEventHandler(type, name, chat.id);
+									}}
+								/>
+							{/each}
+						</div>
 					</Folder>
 				{/if}
 
