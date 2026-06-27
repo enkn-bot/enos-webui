@@ -1658,6 +1658,19 @@
 		// Backend handles outlet filters and persistence inline.
 		// Just refresh the sidebar chat list.
 		if ($chatId == _chatId && !$temporaryChatEnabled) {
+			// The backend persists the streamed chat with an EMPTY meta column. On Desk a
+			// project-less (loose) chat must be tagged surface:'desk' or filterChatsBySurface
+			// treats it as chat-surface and hides it — so it would never appear under the
+			// native "Chats" group without a reload (only the reactive repair tags it, on
+			// load). This is the one handler that runs for a normal streamed turn, so tag
+			// it here, before the list refresh below, and it shows with no reload. The
+			// backend merges {meta} into the row (content/title preserved). Loose chats
+			// only: foldered chats derive their surface from their folder.
+			if (isDeskSurface() && !$selectedFolder?.id && chat?.meta?.surface !== 'desk') {
+				chat = await updateChatById(localStorage.token, _chatId, {
+					meta: withSurfaceMeta({ meta: chat?.meta ?? {} }, 'desk').meta
+				}).catch(() => chat);
+			}
 			currentChatPage.set(1);
 			await chats.set(await getChatList(localStorage.token, $currentChatPage));
 		}

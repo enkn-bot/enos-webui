@@ -639,6 +639,24 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(save).toMatch(/newlyTagged[\s\S]*getChatList/);
 	});
 
+	test('desk tags the loose chat in chatCompletedHandler (the streamed-completion path)', () => {
+		const chat = read('src/lib/components/chat/Chat.svelte');
+
+		// Streamed completions are persisted by the BACKEND with an empty meta column;
+		// the frontend's chatCompletedHandler only refreshes the list. So the surface
+		// tag must be applied HERE (the handler that actually runs for a normal turn),
+		// before the existing getChatList refresh — otherwise the loose chat is hidden
+		// by filterChatsBySurface until a reload. Loose chats only.
+		const handler = chat.slice(
+			chat.indexOf('const chatCompletedHandler'),
+			chat.indexOf('const chatActionHandler')
+		);
+		expect(handler).toMatch(/isDeskSurface\(\)\s*&&\s*!\$selectedFolder\?\.id/);
+		expect(handler).toContain("withSurfaceMeta({ meta: chat?.meta ?? {} }, 'desk').meta");
+		expect(handler).toContain('getChatList');
+	});
+
+
 	test('local project can be copied into the active cloud workspace from Files', () => {
 		const chatControls = read('src/lib/components/chat/ChatControls.svelte');
 		const localFileNav = read('src/lib/components/chat/LocalFileNav.svelte');
