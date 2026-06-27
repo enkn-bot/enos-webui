@@ -17,7 +17,14 @@
 	// Restrained "who is acting" color: tint ONLY the live (in-progress) indicator dot
 	// to the active mind's orb tone (Subconscious/Conscious/Ego). Null for unknown/idle
 	// → neutral, no false attribution. Never applied to the persisted/expanded trail.
-	$: mindColor = enosOrbColorForModel(modelId);
+	// Latch the model id: message.model can be momentarily null early in a turn, which
+	// would make the dot flicker off mid-stream. Once a real id is seen, keep it (a
+	// message's mind doesn't change), so the dot is stable across the turn.
+	let resolvedModelId = null;
+	$: if (modelId) {
+		resolvedModelId = modelId;
+	}
+	$: mindColor = enosOrbColorForModel(resolvedModelId);
 	$: inProgress = status?.done !== true;
 
 	$: if (expand) {
@@ -47,10 +54,10 @@
 	{#if status?.hidden !== true}
 		{#if compactDesk}
 			<div class="text-sm flex flex-col w-full">
-				<div class="flex items-center gap-2">
+				<div class="flex items-start gap-2">
 					{#if inProgress && mindColor}
 						<span
-							class="relative inline-flex size-1.5 rounded-full flex-shrink-0 enos-mind-dot"
+							class="relative inline-flex size-1.5 rounded-full flex-shrink-0 mt-0.5 enos-mind-dot"
 							style="background-color: {mindColor};"
 						></span>
 					{/if}
@@ -67,10 +74,10 @@
 						showHistory = !showHistory;
 					}}
 				>
-					<div class="flex items-center gap-2">
+					<div class="flex items-start gap-2">
 						{#if inProgress && mindColor}
 							<span
-								class="relative inline-flex size-1.5 rounded-full flex-shrink-0 enos-mind-dot"
+								class="relative inline-flex size-1.5 rounded-full flex-shrink-0 mt-0.5 enos-mind-dot"
 								style="background-color: {mindColor};"
 							></span>
 						{/if}
