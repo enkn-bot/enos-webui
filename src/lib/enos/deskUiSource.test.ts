@@ -419,10 +419,13 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(modal).not.toContain("placeholder={$i18n.t('Enter folder name')}");
 	});
 
-	test('Desk first run creates and selects an ENOS home project before Files opens', () => {
+	test('Desk first run creates and selects a home project before Files opens', () => {
 		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
 
-		expect(sidebar).toContain("const DESK_HOME_PROJECT_NAME = 'ENOS';");
+		// Q3: the home scaffold is minted with the neutral name, not the literal
+		// 'ENOS' / 'ENOS N' (legacy rows still resolve via isScaffoldName).
+		expect(sidebar).toContain('const DESK_HOME_PROJECT_NAME = DESK_SCAFFOLD_NAME;');
+		expect(sidebar).not.toContain("const DESK_HOME_PROJECT_NAME = 'ENOS';");
 		expect(sidebar).toMatch(
 			/import \{[\s\S]*isDuplicateDeskHomeProjectName,[\s\S]*isFolderAlreadyExistsError,[\s\S]*selectDeskHomeProject[\s\S]*\} from '\$lib\/enos\/deskHomeProject';/
 		);

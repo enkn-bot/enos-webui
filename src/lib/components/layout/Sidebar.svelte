@@ -119,10 +119,14 @@
 		resolveDeskProjectFileRuntime
 	} from '$lib/enos/deskProjectRuntime';
 	import { nextProjectFolderName } from '$lib/enos/projectFolderNames';
+	import { DESK_SCAFFOLD_NAME, isScaffoldName } from '$lib/enos/deskProjectName';
 
 	const BREAKPOINT = 768;
 	const DEFAULT_PINNED_ITEMS = ['notes', 'workspace'];
-	const DESK_HOME_PROJECT_NAME = 'ENOS';
+	// The home scaffold is minted with the neutral placeholder name (no literal
+	// 'ENOS' / 'ENOS N'). Detection of an EXISTING home scaffold uses isScaffoldName
+	// so legacy 'ENOS' rows still resolve (migration without renaming live data).
+	const DESK_HOME_PROJECT_NAME = DESK_SCAFFOLD_NAME;
 
 	let scrollTop = 0;
 
@@ -615,7 +619,7 @@
 			if (
 				!isDeskSurface ||
 				parent_id !== null ||
-				String(name ?? '').trim() !== DESK_HOME_PROJECT_NAME ||
+				!isScaffoldName(name) ||
 				!isFolderAlreadyExistsError(error)
 			) {
 				return false;
@@ -630,10 +634,7 @@
 				legacyDeskItemIds: legacyDeskProjectIds
 			});
 			const existingHomeProject = selectDeskHomeProject(folderList);
-			if (
-				existingHomeProject?.id &&
-				String(existingHomeProject?.name ?? '').trim() === DESK_HOME_PROJECT_NAME
-			) {
+			if (existingHomeProject?.id && isScaffoldName(existingHomeProject?.name)) {
 				await selectInitialDeskProject([existingHomeProject], { force: true });
 				return true;
 			}

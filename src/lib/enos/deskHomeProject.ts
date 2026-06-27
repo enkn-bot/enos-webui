@@ -1,4 +1,4 @@
-const DESK_HOME_PROJECT_NAME = 'ENOS';
+import { DESK_SCAFFOLD_NAME } from './deskProjectName';
 
 type DeskHomeProject = {
 	name?: string | null;
@@ -14,8 +14,18 @@ type DeskHomeProject = {
 export const isDuplicateDeskHomeProjectName = (name: string | null | undefined): boolean =>
 	/^ENOS\s+\d+$/i.test(String(name ?? '').trim());
 
-const isDeskHomeProjectName = (name: unknown): boolean =>
-	String(name ?? '').trim() === DESK_HOME_PROJECT_NAME;
+// The CANONICAL home scaffold name: the neutral placeholder OR the exact legacy
+// 'ENOS' (so existing home projects still resolve after the rename, without
+// touching live data). Numbered 'ENOS N' duplicates are deliberately NOT
+// canonical here — they're handled by isDuplicateDeskHomeProjectName + the
+// selectDeskHomeProject fallback, preserving "canonical ENOS wins over numbered
+// duplicates". (The Sidebar recovery path uses the broader isScaffoldName.)
+const isDeskHomeProjectName = (name: unknown): boolean => {
+	const n = String(name ?? '')
+		.trim()
+		.toLowerCase();
+	return n === DESK_SCAFFOLD_NAME.toLowerCase() || n === 'enos';
+};
 
 export const isFolderAlreadyExistsError = (error: unknown): boolean => {
 	const message =
