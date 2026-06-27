@@ -623,6 +623,19 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(chat).toContain("meta: withSurfaceMeta({ meta: existingMeta }, 'desk').meta");
 	});
 
+	test('desk stamps the surface on loose chats at SAVE time (deterministic, not just the reactive)', () => {
+		const chat = read('src/lib/components/chat/Chat.svelte');
+
+		// A project-less Desk chat is created backend-side by the streaming socket with
+		// an empty meta column, so filterChatsBySurface would treat it as chat-surface
+		// and hide it on Desk. saveChatHandler runs every turn, so stamp the surface
+		// there — deterministic, no dependency on the reactive repair's timing. Guarded
+		// to loose chats (foldered chats derive surface from their folder).
+		const save = chat.slice(chat.indexOf('const saveChatHandler'));
+		expect(save).toMatch(/isDeskSurface\(\)\s*&&\s*!\$selectedFolder\?\.id/);
+		expect(save).toContain("withSurfaceMeta({ meta: chat?.meta ?? {} }, 'desk').meta");
+	});
+
 	test('local project can be copied into the active cloud workspace from Files', () => {
 		const chatControls = read('src/lib/components/chat/ChatControls.svelte');
 		const localFileNav = read('src/lib/components/chat/LocalFileNav.svelte');

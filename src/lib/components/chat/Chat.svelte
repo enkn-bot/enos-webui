@@ -3960,13 +3960,25 @@
 	const saveChatHandler = async (_chatId, history) => {
 		if ($chatId == _chatId) {
 			if (!$temporaryChatEnabled) {
-				chat = await updateChatById(localStorage.token, _chatId, {
+				const payload = {
 					models: selectedModels,
 					history: history,
 					messages: createMessagesList(history, history.currentId),
 					params: params,
 					files: chatFiles
-				});
+				};
+				// A project-less Desk chat is created backend-side by the streaming socket
+				// with an empty meta column, so filterChatsBySurface treats it as a
+				// chat-surface chat and hides it on Desk. saveChatHandler runs every turn,
+				// so stamp the surface here — deterministic, no dependency on the reactive
+				// repair's load timing. The backend lifts chat.meta into the meta column
+				// (and preserves it across later metaless updates), so the chat collects
+				// under the native "Chats" group (deskLooseChats.ts). Loose chats only:
+				// foldered chats derive their surface from the folder.
+				if (isDeskSurface() && !$selectedFolder?.id) {
+					payload.meta = withSurfaceMeta({ meta: chat?.meta ?? {} }, 'desk').meta;
+				}
+				chat = await updateChatById(localStorage.token, _chatId, payload);
 			}
 		}
 	};
