@@ -197,27 +197,40 @@ const consumeDeskSseEvents = async (
 	const reader = evRes.body.getReader();
 	const decoder = new TextDecoder();
 	let buffer = '';
-	for (;;) {
-		const { value, done } = await reader.read();
-		if (done) break;
-		const { events, buffer: nb } = parseSseChunk(buffer, decoder.decode(value, { stream: true }));
-		buffer = nb;
-		let dirty = false;
-		for (const raw of events) {
-			const ev = normalize(raw);
-			if (!ev) continue;
-			const result = applyDeskStreamEvent(ev, state, cb);
-			if (result === 'dirty') {
-				dirty = true;
-			} else if (result === 'done') {
-				cb.onUpdate({ content: state.content(), reasoning: state.reasoning() });
-				return { content: state.content(), reasoning: state.reasoning() };
+	// ALWAYS cancel the reader on exit (done, early-return, or throw). The relay holds
+	// ONE persistent Pi rpc proc per (user, workspace) and streams its stdout into this
+	// SSE; leaving the reader open keeps the relay's `for line in proc.stdout` loop alive
+	// as an orphan that steals a later turn's events from the shared proc → hangs +
+	// "agent already processing". Cancelling closes the SSE → the relay loop exits.
+	try {
+		for (;;) {
+			const { value, done } = await reader.read();
+			if (done) break;
+			const { events, buffer: nb } = parseSseChunk(buffer, decoder.decode(value, { stream: true }));
+			buffer = nb;
+			let dirty = false;
+			for (const raw of events) {
+				const ev = normalize(raw);
+				if (!ev) continue;
+				const result = applyDeskStreamEvent(ev, state, cb);
+				if (result === 'dirty') {
+					dirty = true;
+				} else if (result === 'done') {
+					cb.onUpdate({ content: state.content(), reasoning: state.reasoning() });
+					return { content: state.content(), reasoning: state.reasoning() };
+				}
 			}
+			if (dirty) cb.onUpdate({ content: state.content(), reasoning: state.reasoning() });
 		}
-		if (dirty) cb.onUpdate({ content: state.content(), reasoning: state.reasoning() });
-	}
 
-	return { content: state.content(), reasoning: state.reasoning() };
+		return { content: state.content(), reasoning: state.reasoning() };
+	} finally {
+		try {
+			await reader.cancel();
+		} catch {
+			/* best-effort: already closed/errored */
+		}
+	}
 };
 
 export const bridgeTransport = (

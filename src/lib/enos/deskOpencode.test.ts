@@ -201,6 +201,48 @@ describe('runOpencodeDeskTurn (driver, faked serve)', () => {
 		expect(promptBody).toEqual({ message: 'fix', mind: 'deepmind' });
 	});
 
+		test('cancels the SSE reader when the turn ends (no orphan reader on the shared Pi proc)', async () => {
+			// The relay streams ONE persistent Pi proc's stdout into this SSE; if the
+			// reader isn't cancelled on `agent_end`, the relay's stdout loop stays alive
+			// as an orphan that steals the next turn's events → hang + "already
+			// processing". Assert reader.cancel() fires on turn completion.
+			let cancelled = 0;
+			const enc = new TextEncoder();
+			const objs = [piTextDelta, piAgentEnd, piToolStart /* would-be next-turn line */];
+			let i = 0;
+			const body = {
+				getReader: () => ({
+					read: async () =>
+						i < objs.length
+							? { value: enc.encode(`data: ${JSON.stringify(objs[i++])}\n`), done: false }
+							: { value: undefined, done: true },
+					cancel: async () => {
+						cancelled += 1;
+					}
+				})
+			};
+			const fetchImpl = (async (url: string) => {
+				if (url.includes('/event')) return { body } as any;
+				if (url.endsWith('/prompt')) return { json: async () => ({ ok: true }) } as any;
+				return { json: async () => ({}) } as any;
+			}) as any;
+
+			const out = await runOpencodeDeskTurn(
+				{
+					base: '/api/oc2/ws-1',
+					engine: 'pi',
+					message: 'fix',
+					agent: 'build',
+					model: { providerID: 'enos', modelID: 'enos' },
+					fetchImpl,
+					normalize: normalizePiEvent
+				},
+				{ onUpdate: () => {}, onTool: () => {} }
+			);
+			expect(out.content).toBe('Done.'); // resolved on agent_end, before the 3rd line
+			expect(cancelled).toBe(1); // reader cancelled → relay loop can exit
+		});
+
 		test('drives a turn over the desktop bridge transport with cumulative replace semantics', async () => {
 		const events: ((ev: any) => void)[] = [];
 		const calls: string[] = [];
