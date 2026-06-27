@@ -17,6 +17,8 @@
 	import Knowledge from '$lib/components/workspace/Models/Knowledge.svelte';
 	import { getFolderById } from '$lib/apis/folders';
 	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
+	import { isDeskHostname } from '$lib/enos/deskRuntime';
+	import { browser } from '$app/environment';
 	const i18n = getContext('i18n');
 
 	type ProjectEnvironment = 'local' | 'cloud';
@@ -57,7 +59,11 @@
 	$: canUseLocalProject = showLocalFolderAction && Boolean(getEnosDesktopBridge());
 	$: submitLabel = edit ? $i18n.t('Save') : $i18n.t('Create project');
 	$: showLegacyFolderOptions = edit && !projectEditMode;
-	$: showProjectSetupOptions = !edit && !cloudOnlyProjectMode;
+	// Project environment (Local vs ENOS Cloud) is a Desk-surface concept. On the
+	// Chat surface a "project" is just a plain folder, so the Desk location/workspace
+	// chooser must never render there.
+	$: isDeskSurface = browser && isDeskHostname();
+	$: showProjectSetupOptions = !edit && !cloudOnlyProjectMode && isDeskSurface;
 	$: selectedCloudWorkspaceName = cloudWorkspaceOptions.find(
 		(option) => option.id === selectedCloudWorkspaceId
 	)?.name;

@@ -206,13 +206,28 @@ describe('ENOS Desk UI source guardrails', () => {
 			'src/lib/components/layout/Sidebar.svelte',
 			'src/lib/components/layout/Sidebar/RecursiveFolder.svelte',
 			'src/lib/components/layout/Sidebar/ChatItem.svelte',
-			'src/lib/components/chat/Placeholder/FolderTitle.svelte'
+			'src/lib/components/chat/Placeholder/FolderTitle.svelte',
+			'src/lib/components/layout/Sidebar/Folders/FolderModal.svelte'
 		];
 		for (const file of files) {
 			const src = read(file);
 			expect(src).not.toContain("window.location.hostname === 'enosdesk.duckdns.org'");
 			expect(src).toContain("from '$lib/enos/deskRuntime'");
 		}
+	});
+
+	test('project environment chooser is Desk-only (no Desk project chrome on Chat) [C5]', () => {
+		const modal = read('src/lib/components/layout/Sidebar/Folders/FolderModal.svelte');
+		// Surface detection centralized in deskRuntime.
+		expect(modal).toContain("import { isDeskHostname } from '$lib/enos/deskRuntime';");
+		expect(modal).toContain('$: isDeskSurface = browser && isDeskHostname();');
+		// The Local/Cloud "Where should this project live?" chooser only renders on Desk;
+		// on Chat a project is a plain folder with no environment chrome.
+		expect(modal).toContain(
+			'$: showProjectSetupOptions = !edit && !cloudOnlyProjectMode && isDeskSurface;'
+		);
+		// The old surface-blind gate is gone.
+		expect(modal).not.toContain('$: showProjectSetupOptions = !edit && !cloudOnlyProjectMode;');
 	});
 
 	test('browser desk degrades to a calm lite-mode notice, not a red error', () => {
