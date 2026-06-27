@@ -98,6 +98,8 @@
 		withSurfaceMeta
 	} from '$lib/enos/surfaceScope';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
+	import { isProjectVisibleOnSurface } from '$lib/enos/deskFolderVisibility';
+	import { workspaceBadgeFromFolder } from '$lib/enos/workspaceBadge';
 	import { deskSurfaceLabel } from '$lib/enos/deskSessionLabels';
 	import {
 		canAdoptDeskHomeProjectToCloud,
@@ -163,6 +165,21 @@
 	$: sidebarChats = filterChatsBySurface($chats ?? [], currentSurface, deskFolderIds);
 	$: sidebarPinnedChats = filterChatsBySurface($pinnedChats ?? [], currentSurface, deskFolderIds);
 	$: hasDesktopBridge = browser && Boolean(getEnosDesktopBridge());
+	// Desk Local/Cloud separation (F1): on the Desk web surface, purely-local
+	// projects must not appear at all — their files live on a machine this surface
+	// can't reach. `folders` is a map (id -> folder); rebuild it keeping only the
+	// visible entries. Off Desk (or in the app, where the bridge reaches the disk)
+	// nothing is filtered. Unbound scaffolds have a null kind → stay visible.
+	$: visibleFolders = isDeskSurface
+		? Object.fromEntries(
+				Object.entries(folders ?? {}).filter(([, folder]) =>
+					isProjectVisibleOnSurface({
+						folderKind: workspaceBadgeFromFolder(folder).kind,
+						hasBridge: hasDesktopBridge
+					})
+				)
+			)
+		: (folders ?? {});
 	const cloudWorkspaceOptionLabel = (terminal) => {
 		const name = String(terminal?.name ?? '').trim();
 		if (!name || name === terminal?.id || name.startsWith('ws-') || name === 'Cloud Workspace') {
@@ -1924,7 +1941,7 @@
 					>
 						<Folders
 							bind:folderRegistry
-							{folders}
+							folders={visibleFolders}
 							{shiftKey}
 							onDelete={async (folderId) => {
 								await resetDeletedProjectView(folderId);
