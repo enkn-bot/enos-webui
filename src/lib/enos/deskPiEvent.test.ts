@@ -12,7 +12,7 @@ const thinkingDelta = { type: 'message_update', assistantMessageEvent: {
   partial: { role: 'assistant', content: [{ type: 'thinking', thinking: 'The plan' }] } } };
 const toolStart = { type: 'tool_execution_start', toolCallId: 'c1', toolName: 'write', args: { path: 'r.js' } };
 const toolEnd = { type: 'tool_execution_end', toolCallId: 'c1', toolName: 'write',
-  result: { content: [{ type: 'text', text: 'ok' }] }, isError: false };
+  result: { title: 'Wrote r.js', content: [{ type: 'text', text: 'ok' }] }, isError: false };
 const toolErr = { ...toolEnd, isError: true };
 const agentEnd = { type: 'agent_end', messages: [] };
 const respFail = { type: 'response', command: 'prompt', success: false, error: 'boom' };
@@ -28,10 +28,16 @@ describe('normalizePiEvent', () => {
     expect(normalizePiEvent(toolStart)).toEqual({ kind: 'tool_start', callId: 'c1', tool: 'write', input: { path: 'r.js' } });
   });
   it('tool_execution_end → tool_end ok', () => {
-    expect(normalizePiEvent(toolEnd)).toEqual({ kind: 'tool_end', callId: 'c1', tool: 'write', ok: true });
+    expect(normalizePiEvent(toolEnd)).toEqual({
+      kind: 'tool_end',
+      callId: 'c1',
+      tool: 'write',
+      ok: true,
+      detail: 'Wrote r.js'
+    });
   });
   it('tool_execution_end isError → tool_end not ok', () => {
-    expect(normalizePiEvent(toolErr).ok).toBe(false);
+    expect(normalizePiEvent(toolErr)).toMatchObject({ ok: false, detail: 'Wrote r.js' });
   });
   it('agent_end → done', () => { expect(normalizePiEvent(agentEnd)).toEqual({ kind: 'done' }); });
   it('response success:false → error', () => {

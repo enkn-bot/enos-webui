@@ -11,12 +11,13 @@
 //   session.error -> failure
 
 import type { EnosDesktopOpencodeBridge, EnosDesktopOpencodeEvent } from './desktopBridge';
+import { extractOpencodeOutcome } from './toolStatusLabels';
 
 export type DeskStreamEvent =
 	| { kind: 'content'; partId: string; text: string; messageId?: string }
 	| { kind: 'reasoning'; partId: string; text: string; messageId?: string }
 	| { kind: 'tool_start'; callId: string; tool: string; input: unknown }
-	| { kind: 'tool_end'; callId: string; tool: string; ok: boolean }
+	| { kind: 'tool_end'; callId: string; tool: string; ok: boolean; detail?: string }
 	| { kind: 'user_message'; messageId: string }
 	| { kind: 'done' }
 	| { kind: 'error'; message: string };
@@ -93,7 +94,13 @@ export const normalizeOpencodeEvent = (event: any): DeskStreamEvent | null => {
 				: null;
 		}
 		if (toolEndStatuses.has(status)) {
-			return { kind: 'tool_end', callId, tool, ok: status === 'completed' };
+			return {
+				kind: 'tool_end',
+				callId,
+				tool,
+				ok: status === 'completed',
+				detail: extractOpencodeOutcome(part?.state)
+			};
 		}
 		return null;
 	}
@@ -145,6 +152,7 @@ export type DeskOpencodeCallbacks = {
 		kind: 'tool_start' | 'tool_end';
 		tool: string;
 		ok?: boolean;
+		detail?: string;
 		/** tool arguments (path, query, code, etc.) — present on tool_start */
 		input?: unknown;
 	}) => void;
@@ -183,7 +191,13 @@ const applyDeskStreamEvent = (
 		return 'clean';
 	}
 	if (ev.kind === 'tool_start' || ev.kind === 'tool_end') {
-		cb.onTool?.({ kind: ev.kind, tool: ev.tool, ok: (ev as any).ok, input: (ev as any).input });
+		cb.onTool?.({
+			kind: ev.kind,
+			tool: ev.tool,
+			ok: (ev as any).ok,
+			input: (ev as any).input,
+			detail: (ev as any).detail
+		});
 		return 'clean';
 	}
 	if (ev.kind === 'error') {
@@ -422,7 +436,13 @@ export const normalizePiEvent = (event: any): DeskStreamEvent | null => {
 		return { kind: 'tool_start', callId: event.toolCallId, tool: event.toolName, input: event.args };
 	}
 	if (t === 'tool_execution_end') {
-		return { kind: 'tool_end', callId: event.toolCallId, tool: event.toolName, ok: !event.isError };
+		return {
+			kind: 'tool_end',
+			callId: event.toolCallId,
+			tool: event.toolName,
+			ok: !event.isError,
+			detail: extractOpencodeOutcome(event.result ?? event.output ?? event.state)
+		};
 	}
 	if (t === 'message_update') {
 		const ae = event.assistantMessageEvent;

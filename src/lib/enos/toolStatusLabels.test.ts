@@ -3,6 +3,8 @@ import { describe, expect, test } from 'vitest';
 import {
 	formatToolStartStatus,
 	formatToolEndStatus,
+	formatToolOutcome,
+	extractOpencodeOutcome,
 	compactToolContext,
 	type ToolInfo
 } from './toolStatusLabels';
@@ -62,6 +64,53 @@ describe('tool status labels', () => {
 
 		test('blank start label falls back to bare tool name', () => {
 			expect(formatToolEndStatus('read', true, '   ')).toBe('Read');
+		});
+	});
+
+	describe('formatToolOutcome', () => {
+		test('successful tool with detail appends outcome', () => {
+			expect(formatToolOutcome('edit', true, 'Edit src/parser.ts', '12 passed')).toBe(
+				'Edit src/parser.ts · 12 passed'
+			);
+		});
+
+		test('successful tool with no detail falls back to plain end label', () => {
+			expect(formatToolOutcome('edit', true, 'Edit src/parser.ts', '')).toBe(
+				'Edit src/parser.ts'
+			);
+		});
+
+		test('failed tool with detail keeps failed label only', () => {
+			expect(formatToolOutcome('edit', false, 'Edit src/parser.ts', '12 passed')).toBe(
+				'Edit src/parser.ts (failed)'
+			);
+		});
+
+		test('failed tool with no detail keeps failed label only', () => {
+			expect(formatToolOutcome('edit', false, 'Edit src/parser.ts')).toBe(
+				'Edit src/parser.ts (failed)'
+			);
+		});
+	});
+
+	describe('extractOpencodeOutcome', () => {
+		test('returns state title when present', () => {
+			expect(extractOpencodeOutcome({ title: 'Edited src/parser.ts' })).toBe(
+				'Edited src/parser.ts'
+			);
+		});
+
+		test('returns empty when state title absent or undefined', () => {
+			expect(extractOpencodeOutcome({ title: undefined, status: 'completed' })).toBe('');
+		});
+
+		test('returns empty for empty state object', () => {
+			expect(extractOpencodeOutcome({})).toBe('');
+		});
+
+		test('returns empty for null or undefined state', () => {
+			expect(extractOpencodeOutcome(null)).toBe('');
+			expect(extractOpencodeOutcome(undefined)).toBe('');
 		});
 	});
 

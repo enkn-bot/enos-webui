@@ -85,6 +85,46 @@ export const formatToolEndStatus = (
 };
 
 /**
+ * Open-tray outcome (Desk slice 4): a tool's COMPLETION carries the operational
+ * result, not just the start label — e.g. "Edit src/parser.ts" → "Edited
+ * src/parser.ts · 12 passed". The detail comes from the structured Pi tool event
+ * (OpenCode tool part state), on the SAME statusHistory channel — no parallel
+ * timeline. Defensive: an absent/empty detail degrades to the plain end label, so
+ * a tool that emits no structured outcome behaves exactly as before.
+ */
+export const formatToolOutcome = (
+	tool: string,
+	ok: boolean,
+	startDescription?: string,
+	detail?: string
+): string => {
+	const base = formatToolEndStatus(tool, ok, startDescription);
+	const d = (detail ?? '').trim();
+	// Only enrich a successful step; failures keep the explicit "(failed)" label.
+	if (!d || !ok) return base;
+	// Don't duplicate when the detail already echoes the base label.
+	if (base.includes(d) || d.includes(base)) return d.length >= base.length ? d : base;
+	return `${base} · ${d}`;
+};
+
+/**
+ * Pull a short outcome detail from an OpenCode (Pi) completed tool part state.
+ * Prefers the structured `title` (a human one-liner like "12 passed" or the edited
+ * path); never the raw `output` (can be a whole file / huge). Defensive by design:
+ * unknown shapes return '' so the caller falls back to the plain end label. The
+ * exact field is verified live (the bridge session) — this reader is safe either way.
+ */
+export const extractOpencodeOutcome = (state: unknown): string => {
+	if (!state || typeof state !== 'object') return '';
+	const title = (state as Record<string, unknown>).title;
+	if (typeof title !== 'string') return '';
+	const trimmed = title.trim();
+	if (!trimmed) return '';
+	// Cap so the tray stays one calm line.
+	return trimmed.length > 60 ? trimmed.slice(0, 58) + '…' : trimmed;
+};
+
+/**
  * Extract a short summary of tool input for Desk's compact label.
  * Returns e.g. "main.ts" (just the filename, not full path).
  */

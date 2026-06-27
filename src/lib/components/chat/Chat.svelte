@@ -130,7 +130,7 @@
 	import { composeDeskMessageContent } from '$lib/enos/deskReasoning';
 	import {
 		formatToolStartStatus,
-		formatToolEndStatus
+		formatToolOutcome
 	} from '$lib/enos/toolStatusLabels';
 	import { bridgeTransport, runOpencodeDeskTurn, normalizePiEvent } from '$lib/enos/deskOpencode';
 	import { DESK_FILE_TOOLS, describeDeskTool, executeDeskFileTool } from '$lib/enos/deskFileTools';
@@ -2286,7 +2286,7 @@
 						}
 						render(false);
 					},
-					onTool: ({ kind, tool, ok, input }) => {
+					onTool: ({ kind, tool, ok, input, detail }) => {
 						if (kind === 'tool_start') {
 							const thinkingStatus = statusHistory.find(s => s.action === 'reasoning' && !s.done);
 							if (thinkingStatus) thinkingStatus.done = true;
@@ -2295,8 +2295,7 @@
 							const last = statusHistory[statusHistory.length - 1];
 							if (last) {
 								last.done = true;
-								// Keep the contextual start label (e.g. "Read src/main.ts") on completion.
-								last.description = formatToolEndStatus(tool, ok === true, last.description);
+								last.description = formatToolOutcome(tool, ok === true, last.description, detail);
 							}
 						}
 						flush();
@@ -2410,7 +2409,7 @@
 						}
 						render(false);
 					},
-					onTool: ({ kind, tool, ok, input }) => {
+					onTool: ({ kind, tool, ok, input, detail }) => {
 						if (kind === 'tool_start') {
 							const thinkingStatus = statusHistory.find(s => s.action === 'reasoning' && !s.done);
 							if (thinkingStatus) thinkingStatus.done = true;
@@ -2419,8 +2418,7 @@
 							const last = statusHistory[statusHistory.length - 1];
 							if (last) {
 								last.done = true;
-								// Keep the contextual start label (e.g. "Read src/main.ts") on completion.
-								last.description = formatToolEndStatus(tool, ok === true, last.description);
+								last.description = formatToolOutcome(tool, ok === true, last.description, detail);
 							}
 						}
 						flush();

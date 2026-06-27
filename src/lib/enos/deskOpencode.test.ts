@@ -33,11 +33,24 @@ describe('normalizeOpencodeEvent', () => {
 			)
 		).toEqual({ kind: 'tool_start', callId: 'c1', tool: 'edit', input: { path: 'a' } });
 		expect(
-			normalizeOpencodeEvent(partUpdated({ type: 'tool', callID: 'c1', tool: 'edit', state: { status: 'completed' } }))
-		).toEqual({ kind: 'tool_end', callId: 'c1', tool: 'edit', ok: true });
+			normalizeOpencodeEvent(
+				partUpdated({
+					type: 'tool',
+					callID: 'c1',
+					tool: 'edit',
+					state: { status: 'completed', title: 'Edited src/parser.ts' }
+				})
+			)
+		).toEqual({
+			kind: 'tool_end',
+			callId: 'c1',
+			tool: 'edit',
+			ok: true,
+			detail: 'Edited src/parser.ts'
+		});
 		expect(
 			normalizeOpencodeEvent(partUpdated({ type: 'tool', callID: 'c2', tool: 'bash', state: { status: 'error' } }))
-		).toEqual({ kind: 'tool_end', callId: 'c2', tool: 'bash', ok: false });
+		).toEqual({ kind: 'tool_end', callId: 'c2', tool: 'bash', ok: false, detail: '' });
 	});
 
 	test('pending tool + step parts are ignored', () => {
