@@ -100,7 +100,7 @@
 	} from '$lib/enos/surfaceScope';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
 	import { isProjectVisibleOnSurface } from '$lib/enos/deskFolderVisibility';
-	import { workspaceBadgeFromFolder } from '$lib/enos/workspaceBadge';
+	import { workspaceBadgeFromFolder, systemCloudWorkspaceId } from '$lib/enos/workspaceBadge';
 	import { deskSurfaceLabel } from '$lib/enos/deskSessionLabels';
 	import {
 		canAdoptDeskHomeProjectToCloud,
@@ -368,12 +368,18 @@
 		if (!folder?.id || ($selectedFolder?.id && !force)) return false;
 
 		await selectedFolder.set(folder);
-		applyDeskProjectFileRuntime(resolveDeskProjectFileRuntime(folder, { hasDesktopBridge }), {
-			showLocalFileFolderId,
-			showFileNavDir,
-			showFileNavPath,
-			selectedTerminalId
-		});
+		applyDeskProjectFileRuntime(
+			resolveDeskProjectFileRuntime(folder, {
+				hasDesktopBridge,
+				cloudWorkspaceId: $selectedTerminalId ?? systemCloudWorkspaceId($terminalServers)
+			}),
+			{
+				showLocalFileFolderId,
+				showFileNavDir,
+				showFileNavPath,
+				selectedTerminalId
+			}
+		);
 		return true;
 	};
 
@@ -809,8 +815,13 @@
 				parent_id: null,
 				localWorkspace,
 				projectEnvironment: hasDesktopBridge ? 'local' : 'cloud',
-				dedupeName: false,
-				preferExistingCloudRoot: !hasDesktopBridge
+				// Folder-first model: every project is its OWN folder. `preferExistingCloudRoot`
+				// reused `/home/user/New project/` for EVERY web project → all projects collided
+				// on one cloud dir (no isolation). Always mint a UNIQUE root; dedupe the display
+				// name too. (selectDeskHomeProject above still reuses an existing empty scaffold,
+				// so this only creates when there's genuinely no scaffold to reuse.)
+				dedupeName: true,
+				preferExistingCloudRoot: false
 			});
 		} finally {
 			ensuringDeskHomeProject = false;

@@ -126,7 +126,6 @@
 		type EnosDesktopBridge
 	} from '$lib/enos/desktopBridge';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
-	import { deriveProjectName, isScaffoldName } from '$lib/enos/deskProjectName';
 	import { buildProjectActionContext } from '$lib/enos/projectActions';
 	import { runDeskAgentLoop } from '$lib/enos/deskAgentLoop';
 	import { composeDeskMessageContent } from '$lib/enos/deskReasoning';
@@ -1886,7 +1885,14 @@
 	};
 	const activateDeskProjectFiles = (folder: any) => {
 		applyDeskProjectFileRuntime(
-			resolveDeskProjectFileRuntime(folder, { hasDesktopBridge: deskLocalBridgePresent }),
+			resolveDeskProjectFileRuntime(folder, {
+				hasDesktopBridge: deskLocalBridgePresent,
+				// Bug 1: opening a chat inside a cloud project must re-select the project's
+				// cloud workspace (else the Files panel can't render and shows the empty
+				// "select a project" state). Prefer the already-selected terminal, else the
+				// user's system cloud workspace.
+				cloudWorkspaceId: $selectedTerminalId ?? systemCloudWorkspaceId($terminalServers)
+			}),
 			{ showLocalFileFolderId, showFileNavDir, showFileNavPath, selectedTerminalId }
 		);
 	};
@@ -2495,19 +2501,11 @@
 				await awaitDeskProjectSelected();
 			}
 
-			// F2/Q3: the project forms around the work — when the first message lands in
-			// a still-unnamed scaffold project, derive the project's name from it. The
-			// isScaffoldName guard makes this fire once (it's false after the rename), so
-			// later turns don't keep renaming a project the user has settled into.
-			if ($selectedFolder?.id && isScaffoldName($selectedFolder?.name) && userPrompt?.trim()) {
-				const derived = deriveProjectName(userPrompt);
-				if (derived && derived !== $selectedFolder.name) {
-					const updated = await updateFolderById(localStorage.token, $selectedFolder.id, {
-						name: derived
-					}).catch(() => null);
-					if (updated) selectedFolder.set({ ...$selectedFolder, ...updated, name: derived });
-				}
-			}
+			// Folder-first model: a project is a deliberately-bound FOLDER, never named
+			// from a message. (Old behaviour renamed the project to the raw first message
+			// → "hi" / "What are you?" as project names.) The scaffold keeps its neutral
+			// "New project" name; the user renames it, and each chat keeps its own
+			// generated title. Deliberate creation (FolderModal) is where a project is named.
 
 			// Cloud workspace selected → OpenCode (web path, no bridge needed). Must come
 			// BEFORE the bridge gate, or cloud-web chat falls through to the plain pipe

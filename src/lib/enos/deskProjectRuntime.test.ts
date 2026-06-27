@@ -62,6 +62,38 @@ describe('deskProjectRuntime', () => {
 		expect(get(selectedTerminalId)).toBe('ws-active');
 	});
 
+	test('cloud runtime carries the workspace id when resolved with one', () => {
+		const runtime = resolveDeskProjectFileRuntime(
+			{
+				id: 'folder-cloud',
+				data: { project_context_source: { kind: 'cloud', cloudPath: '/home/user/ENOS/' } }
+			},
+			{ hasDesktopBridge: true, cloudWorkspaceId: 'ws-77' }
+		);
+		expect(runtime).toEqual({
+			kind: 'cloud',
+			folderId: 'folder-cloud',
+			cloudPath: '/home/user/ENOS/',
+			workspaceId: 'ws-77'
+		});
+	});
+
+	test('applying a cloud runtime with a workspaceId SELECTS that cloud terminal (Bug 1: files on chat-open)', () => {
+		const showLocalFileFolderId = writable<string | null>('folder-local');
+		const showFileNavDir = writable<string | null>(null);
+		const showFileNavPath = writable<string | null>('.');
+		// No cloud terminal selected yet (e.g. opening a chat inside the project on the app).
+		const selectedTerminalId = writable<string | null>(null);
+
+		applyDeskProjectFileRuntime(
+			{ kind: 'cloud', folderId: 'folder-cloud', cloudPath: '/home/user/ENOS/', workspaceId: 'ws-77' },
+			{ showLocalFileFolderId, showFileNavDir, showFileNavPath, selectedTerminalId }
+		);
+
+		expect(get(showFileNavDir)).toBe('/home/user/ENOS/');
+		expect(get(selectedTerminalId)).toBe('ws-77'); // cloud terminal now selected → Files panel renders
+	});
+
 	test('applying local runtime clears stale cloud terminal and opens local project root lazily', () => {
 		const showLocalFileFolderId = writable<string | null>(null);
 		const showFileNavDir = writable<string | null>('/home/user/ENOS/');

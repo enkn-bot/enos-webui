@@ -17,12 +17,8 @@ export const isScaffoldName = (name: unknown): boolean => {
 	return /^enos(\s+\d+)?$/i.test(n);
 };
 
-/**
- * Derive a short project title from the user's first message — the project
- * forms around the work, name follows it (no pre-made folder to decode).
- */
-export const deriveProjectName = (firstMessage: string): string => {
-	const firstLine = norm(String(firstMessage ?? '').split('\n')[0]).replace(/\s+/g, ' ');
-	if (!firstLine) return DESK_SCAFFOLD_NAME;
-	return firstLine.length > 48 ? firstLine.slice(0, 48).trimEnd() : firstLine;
-};
+// deriveProjectName(firstMessage) was REMOVED in the folder-first model: a project
+// is a deliberately-bound folder, never named from a message (that produced "hi" /
+// "What are you?" as project names). The scaffold keeps its neutral DESK_SCAFFOLD_NAME
+// and the user renames it; deliberate creation (FolderModal) is where naming happens.
+// See docs/superpowers/specs/2026-06-27-desk-project-model-folder-first.md.

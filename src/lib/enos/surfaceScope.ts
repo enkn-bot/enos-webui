@@ -125,6 +125,46 @@ export const filterChatsBySurface = <T extends SurfaceScopedChat>(
 	});
 };
 
+// Desk-folder ids from a folders map OR list (mirrors the Sidebar predicate: a
+// folder is a desk folder if tagged `surface:desk` or it has a project source).
+// Used to surface-scope cross-tab notifications without the bridge.
+export const deskFolderIdSet = (
+	folders: unknown,
+	extraDeskIds: Iterable<string> = []
+): Set<string> => {
+	const set = new Set<string>();
+	const list = Array.isArray(folders)
+		? folders
+		: folders && typeof folders === 'object'
+			? Object.values(folders as Record<string, unknown>)
+			: [];
+	for (const folder of list as SurfaceScopedItem[]) {
+		if (folder?.id != null && (itemSurface(folder) === 'desk' || hasProjectSource(folder))) {
+			set.add(String(folder.id));
+		}
+	}
+	for (const id of extraDeskIds) set.add(String(id));
+	return set;
+};
+
+// Resolve ONE chat's surface (folder-authoritative, same rule as
+// filterChatsBySurface). A foldered chat's surface = its folder's surface; a loose
+// chat defaults to 'chat' and honors an explicit meta tag.
+export const resolveChatSurface = (
+	chat: SurfaceScopedChat | null | undefined,
+	deskFolderIds: Iterable<string> | Set<string>
+): EnosSurface => {
+	const deskFolders =
+		deskFolderIds instanceof Set
+			? deskFolderIds
+			: new Set(Array.from(deskFolderIds, (id) => String(id)));
+	const folderId = chat?.folder_id;
+	if (folderId != null) {
+		return deskFolders.has(String(folderId)) ? 'desk' : 'chat';
+	}
+	return itemSurface(chat ?? {}) ?? 'chat';
+};
+
 export const withSurfaceMeta = <T extends SurfaceScopedItem>(
 	item: T,
 	surface: EnosSurface

@@ -1,10 +1,12 @@
 import { describe, expect, test } from 'vitest';
 
 import {
+	deskFolderIdSet,
 	filterBySurface,
 	filterChatsBySurface,
 	filterProjectsForDeskRuntime,
-	isProjectAvailableInDeskRuntime
+	isProjectAvailableInDeskRuntime,
+	resolveChatSurface
 } from './surfaceScope';
 
 describe('filterBySurface', () => {
@@ -231,5 +233,35 @@ describe('filterProjectsForDeskRuntime', () => {
 				hasDesktopBridge: false
 			})
 		).toBe(false);
+	});
+});
+
+describe('deskFolderIdSet + resolveChatSurface (notification surface-scoping, Bug 3)', () => {
+	const folders = {
+		f1: { id: 'f1', meta: { surface: 'desk' } },
+		f2: { id: 'f2', data: { project_context_source: { kind: 'cloud' } } },
+		f3: { id: 'f3', meta: { surface: 'chat' } }
+	};
+
+	test('deskFolderIdSet picks desk-tagged + project-source folders (map or list)', () => {
+		const fromMap = deskFolderIdSet(folders);
+		expect(fromMap.has('f1')).toBe(true);
+		expect(fromMap.has('f2')).toBe(true);
+		expect(fromMap.has('f3')).toBe(false);
+		const fromList = deskFolderIdSet(Object.values(folders));
+		expect(fromList).toEqual(fromMap);
+	});
+
+	test('a chat in a desk folder resolves to desk; in a chat folder, to chat', () => {
+		const desk = deskFolderIdSet(folders);
+		expect(resolveChatSurface({ id: 'c1', folder_id: 'f1' }, desk)).toBe('desk');
+		expect(resolveChatSurface({ id: 'c2', folder_id: 'f2' }, desk)).toBe('desk');
+		expect(resolveChatSurface({ id: 'c3', folder_id: 'f3' }, desk)).toBe('chat');
+	});
+
+	test('a loose chat defaults to chat (honors an explicit tag)', () => {
+		const desk = deskFolderIdSet(folders);
+		expect(resolveChatSurface({ id: 'c4' }, desk)).toBe('chat');
+		expect(resolveChatSurface({ id: 'c5', meta: { surface: 'desk' } }, desk)).toBe('desk');
 	});
 });

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { DESK_SCAFFOLD_NAME, isScaffoldName, deriveProjectName } from './deskProjectName';
+import { DESK_SCAFFOLD_NAME, isScaffoldName } from './deskProjectName';
 
 describe('isScaffoldName', () => {
 	test('the neutral scaffold name', () => {
@@ -16,20 +16,6 @@ describe('isScaffoldName', () => {
 	});
 });
 
-describe('deriveProjectName', () => {
-	test('derives a short title from the first message', () => {
-		expect(deriveProjectName('Build me a CSV invoice parser please')).toBe(
-			'Build me a CSV invoice parser please'
-		);
-	});
-	test('takes the first line and collapses whitespace', () => {
-		expect(deriveProjectName('  Fix   the   login   bug\nmore detail')).toBe('Fix the login bug');
-	});
-	test('truncates long input to <= 48 chars', () => {
-		const out = deriveProjectName('a'.repeat(100));
-		expect(out.length).toBeLessThanOrEqual(48);
-	});
-	test('empty input falls back to the scaffold name', () => {
-		expect(deriveProjectName('   ')).toBe(DESK_SCAFFOLD_NAME);
-	});
-});
+// deriveProjectName (name a project from the first message) was REMOVED — the
+// folder-first model never names a project from a message. See
+// docs/superpowers/specs/2026-06-27-desk-project-model-folder-first.md.

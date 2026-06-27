@@ -23,6 +23,7 @@
 		socketConnected,
 		chatId,
 		chats,
+		folders,
 		currentChatPage,
 		tags,
 		temporaryChatEnabled,
@@ -57,6 +58,8 @@
 	import { getSessionUser, updateUserTimezone, userSignOut } from '$lib/apis/auths';
 	import { getAllTags, getChatList } from '$lib/apis/chats';
 	import { chatCompletion } from '$lib/apis/openai';
+	import { isDeskHostname } from '$lib/enos/deskRuntime';
+	import { deskFolderIdSet, resolveChatSurface, surfaceFromIsDesk } from '$lib/enos/surfaceScope';
 	import {
 		addOpenAIConnection,
 		removeOpenAIConnection,
@@ -615,7 +618,20 @@
 				const { done, content, title } = data;
 				const displayTitle = title || $i18n.t('New Chat');
 
-				if (done) {
+				// Surface-scope the notification (Bug 3): the backend broadcasts a
+				// completion to ALL of a user's sockets, so a Desk tab receives Chat-surface
+				// completions and vice versa. Only notify for chats on THIS surface. The
+				// completed chat's surface is its folder's surface (resolveChatSurface). If
+				// the chat isn't loaded here yet, fall back to notifying (don't drop a
+				// legitimate same-surface alert over a refresh race).
+				const completedChat = ($chats ?? []).find((c) => c?.id === event.chat_id);
+				const currentSurface = surfaceFromIsDesk(isDeskHostname());
+				const completedSurface = completedChat
+					? resolveChatSurface(completedChat, deskFolderIdSet($folders))
+					: currentSurface;
+				const onThisSurface = completedSurface === currentSurface;
+
+				if (done && onThisSurface) {
 					if (
 						($settings?.notificationSound ?? true) &&
 						($settings?.notificationSoundAlways ?? false)

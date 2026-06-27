@@ -446,7 +446,12 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(sidebar).toContain('bridge.createCleanWorkspace(DESK_HOME_PROJECT_NAME)');
 		expect(sidebar).toContain("projectEnvironment: hasDesktopBridge ? 'local' : 'cloud'");
 		expect(sidebar).toContain('name: DESK_HOME_PROJECT_NAME');
-		expect(sidebar).toContain('dedupeName: false');
+		// Folder-first model: every project gets its OWN unique cloud root + deduped name.
+		// `preferExistingCloudRoot: true` reused /home/user/New project/ for EVERY web
+		// project → collision. Must be unique now.
+		expect(sidebar).toContain('preferExistingCloudRoot: false');
+		expect(sidebar).toContain('dedupeName: true');
+		expect(sidebar).not.toMatch(/preferExistingCloudRoot: !hasDesktopBridge/);
 		expect(sidebar).toContain('await createFolder({');
 	});
 
