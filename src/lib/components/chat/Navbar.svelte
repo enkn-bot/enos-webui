@@ -114,7 +114,6 @@
 	// "No Project" only when there is genuinely no active location.
 	$: hasDeskWorkspace = deskWorkspace?.kind != null;
 	$: deskWorkspaceKindLabel = $i18n.t(workspaceKindLabel(deskWorkspace?.kind));
-	$: deskWorkspaceReadOnly = Boolean(deskWorkspace?.readOnly);
 	$: currentSurface = surfaceFromIsDesk(isDeskSurface);
 	$: newChatLabel = $i18n.t(deskSurfaceLabel('new', currentSurface));
 	$: renameChatLabel = $i18n.t(deskSurfaceLabel('rename', currentSurface));
@@ -298,25 +297,11 @@
 									{:else}
 										<Folder className="size-4 shrink-0" strokeWidth="2" />
 									{/if}
-									<!-- Binary current-location: where work is happening NOW (Local | Cloud),
-									     not the project's origin. When repo-sync lands, the label can extend
-									     to "{environment}: <Github/> {repo}". No project-name echo (it's in the
-									     sidebar). read-only = a Local project viewed where it can't be reached
-									     (e.g. on web, no bridge): files don't teleport — chats are read-only
-									     history and "Continue in cloud" is the path to work on it elsewhere. -->
-									<span
-										class="truncate"
-										class:text-gray-400={deskWorkspaceReadOnly}
-										class:dark:text-gray-500={deskWorkspaceReadOnly}>{deskWorkspaceKindLabel}</span
-									>
-									{#if deskWorkspaceReadOnly}
-										<span
-											class="shrink-0 text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500"
-											title={$i18n.t('Read-only here — continue in cloud to work on this project')}
-										>
-											{$i18n.t('read-only')}
-										</span>
-									{/if}
+									<!-- Binary current-location badge: where work is happening NOW (Local | Cloud).
+									     Purely-local projects don't appear on the web surface at all (see
+									     deskFolderVisibility), so there is no "read-only / continue in cloud"
+									     dead-end state to render here. -->
+									<span class="truncate">{deskWorkspaceKindLabel}</span>
 									<ChevronDown className="size-3 shrink-0" strokeWidth="2.5" />
 								{:else}
 									<span class="truncate text-gray-500 dark:text-gray-400"

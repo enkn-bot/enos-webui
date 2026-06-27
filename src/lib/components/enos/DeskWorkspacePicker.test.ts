@@ -16,11 +16,12 @@ describe('Desk workspace picker source contract', () => {
 		expect(navbar).toContain('<ChevronDown');
 		expect(navbar).toContain('deskWorkspaceEmptyLabel()');
 		// Binary current-location: badge shows env when there's a live location (kind),
-		// not merely when a name exists; read-only marker for a local project that can't
-		// be reached here (web, no bridge).
+		// not merely when a name exists. F1 separation: purely-local projects don't
+		// appear on web at all, so the old "read-only / continue in cloud" dead-end
+		// badge state is REMOVED — the badge is just the location label + a chevron.
 		expect(navbar).toContain('hasDeskWorkspace = deskWorkspace?.kind != null');
-		expect(navbar).toContain('deskWorkspaceReadOnly');
-		expect(navbar).toContain("$i18n.t('read-only')");
+		expect(navbar).not.toContain('deskWorkspaceReadOnly');
+		expect(navbar).not.toContain("$i18n.t('read-only')");
 		expect(navbar).toContain('Select workspace…');
 		expect(navbar).toContain('{#if hasDeskWorkspace}');
 		expect(navbar).toContain('id="desk-workspace-status-button"');
