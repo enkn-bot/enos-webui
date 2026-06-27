@@ -49,6 +49,20 @@ describe('tool status labels', () => {
 		test('failed tool', () => {
 			expect(formatToolEndStatus('write', false)).toBe('Write (failed)');
 		});
+
+		test('keeps the contextual start label on completion', () => {
+			expect(formatToolEndStatus('read', true, 'Read src/main.ts')).toBe('Read src/main.ts');
+		});
+
+		test('appends (failed) to the contextual label', () => {
+			expect(formatToolEndStatus('read', false, 'Read src/main.ts')).toBe(
+				'Read src/main.ts (failed)'
+			);
+		});
+
+		test('blank start label falls back to bare tool name', () => {
+			expect(formatToolEndStatus('read', true, '   ')).toBe('Read');
+		});
 	});
 
 	describe('compactToolContext', () => {

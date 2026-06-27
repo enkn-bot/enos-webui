@@ -12,7 +12,7 @@ const FILE_TOOLS = new Set([
 ]);
 
 /** Extract the most meaningful snippet from tool args for status context. */
-const toolContext = (tool: string, input?: Record<string, unknown>): string => {
+const toolContext = (input?: Record<string, unknown>): string => {
 	if (!input || typeof input !== 'object') return '';
 
 	if (input.path && typeof input.path === 'string') return input.path;
@@ -55,7 +55,7 @@ const toolName = (tool: string): string => {
  */
 export const formatToolStartStatus = (tool: string, input?: Record<string, unknown>): string => {
 	const name = toolName(tool);
-	const ctx = toolContext(tool, input);
+	const ctx = toolContext(input);
 
 	if (FILE_TOOLS.has(tool) && ctx) {
 		return `${name} ${ctx}`;
@@ -71,11 +71,17 @@ export const formatToolStartStatus = (tool: string, input?: Record<string, unkno
 };
 
 /**
- * Build a compact one-line status description for a tool end event.
+ * Build a compact one-line status description for a tool end event. Prefers the
+ * contextual label captured at tool_start (e.g. "Read src/main.ts") so completion
+ * keeps the context; falls back to the bare tool name when no start label is given.
  */
-export const formatToolEndStatus = (tool: string, ok: boolean): string => {
-	const name = toolName(tool);
-	return ok ? name : `${name} (failed)`;
+export const formatToolEndStatus = (
+	tool: string,
+	ok: boolean,
+	startDescription?: string
+): string => {
+	const base = startDescription?.trim() ? startDescription.trim() : toolName(tool);
+	return ok ? base : `${base} (failed)`;
 };
 
 /**
@@ -83,7 +89,7 @@ export const formatToolEndStatus = (tool: string, ok: boolean): string => {
  * Returns e.g. "main.ts" (just the filename, not full path).
  */
 export const compactToolContext = (tool: string, input?: Record<string, unknown>): string => {
-	const ctx = toolContext(tool, input);
+	const ctx = toolContext(input);
 	if (!ctx) return '';
 
 	if (FILE_TOOLS.has(tool)) {

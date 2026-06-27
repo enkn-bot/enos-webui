@@ -2245,29 +2245,30 @@
 				},
 				{
 					onUpdate: ({ content, reasoning }) => {
-							liveContent = content;
-							liveReasoning = reasoning;
-							if (reasoning && !reasoningStartMs) {
-								reasoningStartMs = Date.now();
-								if (!statusHistory.find(s => s.action === 'reasoning')) {
-									statusHistory.push({ action: 'reasoning', description: 'Thinking', done: false });
-									flush();
+						liveContent = content;
+						liveReasoning = reasoning;
+						if (reasoning && !reasoningStartMs) {
+							reasoningStartMs = Date.now();
+							if (!statusHistory.find(s => s.action === 'reasoning')) {
+								statusHistory.push({ action: 'reasoning', description: 'Thinking', done: false });
+								flush();
+							}
+						}
+						// Content starting = close the pending "Thinking" status (dead-air fix).
+						// Tool statuses close on their own tool_end, so leave them in-flight here.
+						if (content) {
+							let dirty = false;
+							for (const s of statusHistory) {
+								if (!s.done && s.action === 'reasoning') {
+									s.done = true;
+									dirty = true;
 								}
 							}
-							// Content starting = close any stale pending status (dead air fix)
-							if (content) {
-								let dirty = false;
-								for (const s of statusHistory) {
-									if (!s.done && s.action !== 'web_search' && s.action !== 'knowledge_search') {
-										s.done = true;
-										dirty = true;
-									}
-								}
-								if (dirty) flush();
-							}
-							render(false);
-						},
-						onTool: ({ kind, tool, ok, input }) => {
+							if (dirty) flush();
+						}
+						render(false);
+					},
+					onTool: ({ kind, tool, ok, input }) => {
 						if (kind === 'tool_start') {
 							const thinkingStatus = statusHistory.find(s => s.action === 'reasoning' && !s.done);
 							if (thinkingStatus) thinkingStatus.done = true;
@@ -2276,7 +2277,8 @@
 							const last = statusHistory[statusHistory.length - 1];
 							if (last) {
 								last.done = true;
-								last.description = formatToolEndStatus(tool, ok === true);
+								// Keep the contextual start label (e.g. "Read src/main.ts") on completion.
+								last.description = formatToolEndStatus(tool, ok === true, last.description);
 							}
 						}
 						flush();
@@ -2376,11 +2378,12 @@
 								flush();
 							}
 						}
-						// Content starting = close any stale pending status (dead air fix)
+						// Content starting = close the pending "Thinking" status (dead-air fix).
+						// Tool statuses close on their own tool_end, so leave them in-flight here.
 						if (content) {
 							let dirty = false;
 							for (const s of statusHistory) {
-								if (!s.done && s.action !== 'web_search' && s.action !== 'knowledge_search') {
+								if (!s.done && s.action === 'reasoning') {
 									s.done = true;
 									dirty = true;
 								}
@@ -2398,7 +2401,8 @@
 							const last = statusHistory[statusHistory.length - 1];
 							if (last) {
 								last.done = true;
-								last.description = formatToolEndStatus(tool, ok === true);
+								// Keep the contextual start label (e.g. "Read src/main.ts") on completion.
+								last.description = formatToolEndStatus(tool, ok === true, last.description);
 							}
 						}
 						flush();
