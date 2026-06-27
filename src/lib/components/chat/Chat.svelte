@@ -2308,7 +2308,7 @@
 	// B — local desk chat can also run through the Electron-hosted opencode serve.
 	// This mirrors the cloud OpenCode renderer path while keeping runDeskAgentLoop
 	// as the fallback for older desktop builds.
-	const handleLocalOpencodeChat = async (userPrompt, folderId, opencode) => {
+	const handleLocalOpencodeChat = async (userPrompt, folderId, opencode, deskEngine) => {
 		const responseMessageId = await createLocalProjectActionMessage(userPrompt, '', {
 			done: false
 		});
@@ -2339,7 +2339,7 @@
 					model: { providerID: 'local', modelID: 'opencode' },
 					transport: bridgeTransport(opencode, folderId),
 						normalize:
-							desktopCapabilities?.deskEngine === 'pi' ? normalizePiEvent : undefined
+							deskEngine === 'pi' ? normalizePiEvent : undefined
 				},
 				{
 					onUpdate: ({ content, reasoning }) => {
@@ -2448,7 +2448,12 @@
 				console.warn('Unable to load ENOS Desk capabilities', error);
 			}
 			if (bridge.opencode && canUseEnosLocalOpencode(desktopCapabilities)) {
-				return await handleLocalOpencodeChat(userPrompt, folderId, bridge.opencode);
+				return await handleLocalOpencodeChat(
+					userPrompt,
+					folderId,
+					bridge.opencode,
+					desktopCapabilities?.deskEngine
+				);
 			}
 			const projectFolder =
 				activeProjectFolder() ?? deskActiveFolder ?? knownProjectFolderById(folderId);

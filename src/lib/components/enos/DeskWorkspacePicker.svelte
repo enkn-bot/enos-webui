@@ -219,10 +219,13 @@
 
 	// F4: moving local→cloud is adopting a HOME, not "uploading files". The triad
 	// (comes-along / stays-here / private-to) kills the deletion fear — it's a COPY.
-	const environmentSwitchTitle = () =>
+	// REACTIVE (not a function): the dialog title/message must recompute when
+	// pendingSwitchTarget flips — a plain `() =>` call isn't tracked by Svelte, so the
+	// title rendered STALE (showed "Work locally?" while switching TO cloud).
+	$: environmentSwitchTitle =
 		pendingSwitchTarget === 'cloud' ? 'Give this project a home in ENOS Cloud' : 'Work locally?';
 
-	const environmentSwitchMessage = () =>
+	$: environmentSwitchMessage =
 		pendingSwitchTarget === 'cloud'
 			? 'A copy runs on ENOS’s always-on machine — reachable from any device. ' +
 				'Comes along: this project’s files + history. Stays here: the original, on this Mac. ' +
@@ -593,12 +596,12 @@
 
 <ConfirmDialog
 	bind:show={showEnvironmentSwitchConfirm}
-	title={$i18n.t(environmentSwitchTitle())}
+	title={$i18n.t(environmentSwitchTitle)}
 	confirmLabel={$i18n.t(pendingSwitchTarget === 'cloud' ? 'Give it a home in Cloud' : 'Continue')}
 	onConfirm={confirmPendingSwitch}
 	on:cancel={clearPendingSwitch}
 >
 	<div class="text-sm text-gray-500 dark:text-gray-400 flex-1">
-		{$i18n.t(environmentSwitchMessage())}
+		{$i18n.t(environmentSwitchMessage)}
 	</div>
 </ConfirmDialog>
