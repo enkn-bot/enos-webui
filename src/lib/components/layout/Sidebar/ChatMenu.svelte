@@ -26,6 +26,10 @@
 	import Download from '$lib/components/icons/Download.svelte';
 	import Folder from '$lib/components/icons/Folder.svelte';
 	import Messages from '$lib/components/chat/Messages.svelte';
+	import { browser } from '$app/environment';
+	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
+	import { isDeskHostname } from '$lib/enos/deskRuntime';
+	import { filterProjectsForDeskRuntime, surfaceFromIsDesk } from '$lib/enos/surfaceScope';
 
 	const i18n = getContext('i18n');
 
@@ -42,6 +46,18 @@
 
 	let show = false;
 	let pinned = false;
+
+	$: isDeskSurface = browser && isDeskHostname();
+	$: moveTargetSurface = surfaceFromIsDesk(isDeskSurface);
+	$: hasDesktopBridge = browser && Boolean(getEnosDesktopBridge());
+	// Move targets are surface-scoped: file a chat only into projects/folders that
+	// belong to the current surface (Desk → Desk projects, Chat → chat folders).
+	// Same scope the sidebar shows, so you never move a chat into a folder that is
+	// invisible on this surface.
+	$: moveFolderList = filterProjectsForDeskRuntime($folders, {
+		surface: moveTargetSurface,
+		hasDesktopBridge
+	});
 
 	let chat = null;
 	let showFullMessages = false;
@@ -399,7 +415,7 @@
 				<div class="flex items-center">{$i18n.t('Clone')}</div>
 			</button>
 
-			{#if chatId && $folders.length > 0}
+			{#if chatId && moveFolderList.length > 0}
 				<DropdownSub
 					contentClass="select-none rounded-2xl p-1 z-50 bg-white dark:bg-gray-850 dark:text-white border border-gray-100 dark:border-gray-800 shadow-lg max-h-52 overflow-y-auto scrollbar-hidden"
 				>
@@ -412,7 +428,7 @@
 						<div class="flex items-center">{$i18n.t('Move')}</div>
 					</button>
 
-					{#each $folders.sort((a, b) => b.updated_at - a.updated_at) as folder}
+					{#each [...moveFolderList].sort((a, b) => b.updated_at - a.updated_at) as folder}
 						<button
 							draggable="false"
 							class="flex gap-2 items-center px-3 py-1.5 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl overflow-hidden w-full"

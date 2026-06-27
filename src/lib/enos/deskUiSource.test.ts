@@ -45,6 +45,26 @@ describe('ENOS Desk UI source guardrails', () => {
 		);
 	});
 
+	test('chat move-to-folder targets are surface-scoped (no cross-surface folders)', () => {
+		const chatMenu = read('src/lib/components/layout/Sidebar/ChatMenu.svelte');
+		// Centralized surface detection (no inline hostname checks).
+		expect(chatMenu).toContain("import { isDeskHostname } from '$lib/enos/deskRuntime';");
+		expect(chatMenu).toContain('filterProjectsForDeskRuntime');
+		expect(chatMenu).toContain('surfaceFromIsDesk');
+		// The Move list is the surface-scoped project list, not the raw cross-surface store.
+		expect(chatMenu).toMatch(
+			/\$: moveFolderList = filterProjectsForDeskRuntime\(\$folders, \{[\s\S]*surface: moveTargetSurface[\s\S]*hasDesktopBridge[\s\S]*\}\);/
+		);
+		expect(chatMenu).toContain('{#if chatId && moveFolderList.length > 0}');
+		expect(chatMenu).toContain(
+			'{#each [...moveFolderList].sort((a, b) => b.updated_at - a.updated_at) as folder}'
+		);
+		// The unscoped cross-surface iteration is gone.
+		expect(chatMenu).not.toContain(
+			'{#each $folders.sort((a, b) => b.updated_at - a.updated_at) as folder}'
+		);
+	});
+
 	test('chat list summaries carry surface fields needed by the Desk sidebar', () => {
 		const chatsModel = read('backend/open_webui/models/chats.py');
 
