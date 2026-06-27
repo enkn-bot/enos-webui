@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { enosOrbAssetForModel } from './modelTier';
+import { enosOrbAssetForModel, enosOrbColorForModel } from './modelTier';
 
 describe('ENOS model tier orb mapping', () => {
 	test('maps model tiers to the requested brand tones', () => {
@@ -20,5 +20,17 @@ describe('ENOS model tier orb mapping', () => {
 	test('uses all-orbs for generic or unknown model loading states', () => {
 		expect(enosOrbAssetForModel(null)).toBe('/static/enos_loader_all_orbs.svg');
 		expect(enosOrbAssetForModel('unknown-model')).toBe('/static/enos_loader_all_orbs.svg');
+	});
+
+	test('maps a mind to its in-progress indicator color', () => {
+		expect(enosOrbColorForModel('enos.subconscious')).toBe('#f59e0b');
+		expect(enosOrbColorForModel('enos.mind')).toBe('#f87171');
+		expect(enosOrbColorForModel('enos.deepmind')).toBe('#14b8a6');
+		expect(enosOrbColorForModel('enos.desk.deepmind')).toBe('#14b8a6');
+	});
+
+	test('stays neutral (null) for unknown/idle states — no false mind attribution', () => {
+		expect(enosOrbColorForModel(null)).toBeNull();
+		expect(enosOrbColorForModel('unknown-model')).toBeNull();
 	});
 });

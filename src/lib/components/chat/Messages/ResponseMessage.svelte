@@ -713,6 +713,8 @@
 								<StatusHistory
 									statusHistory={message?.statusHistory}
 									compactDesk={isDeskSurface}
+									modelId={message?.model}
+									answerPresent={message?.done === true}
 								/>
 							{/if}
 

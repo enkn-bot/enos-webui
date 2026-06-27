@@ -4,6 +4,8 @@
  * while falling back to normalized generic labels for legacy/non-contextual status.
  */
 
+import { cognitionLabel } from './cognitionVocabulary';
+
 type StatusLike = {
 	action?: string;
 	description?: string;
@@ -74,12 +76,17 @@ export const formatDeskStatusLabel = (status: StatusLike | null | undefined): st
 		if (isContextual(description)) {
 			return description;
 		}
-		// Legacy bare tool name — normalize to sentence case
+		// Legacy bare tool name — normalize through the controlled cognition vocabulary
+		// so a raw tool ("edit_file", "git_status") speaks a consistent verb (Edited,
+		// Read) with the correct in-progress/done tense, instead of an ad-hoc title-case.
 		const rawTool = description.replace(/[.…]+$/g, '');
 		if (rawTool === 'web_search') return done ? 'Checked web' : 'Checking web';
+		if (rawTool) return cognitionLabel(rawTool, done);
 		const readable = sentenceCaseToolName(description);
 		if (readable) return readable;
 	}
 
-	return description || (done ? 'Done' : 'Working');
+	// Generic fallback: speak the canonical verb for the action rather than a bare
+	// "Working"/"Done", so every status reads as a cognition step.
+	return description || cognitionLabel(action, done);
 };
