@@ -130,6 +130,10 @@
 	import { buildProjectActionContext } from '$lib/enos/projectActions';
 	import { runDeskAgentLoop } from '$lib/enos/deskAgentLoop';
 	import { composeDeskMessageContent } from '$lib/enos/deskReasoning';
+	import {
+		formatToolStartStatus,
+		formatToolEndStatus
+	} from '$lib/enos/toolStatusLabels';
 	import { bridgeTransport, runOpencodeDeskTurn, normalizePiEvent } from '$lib/enos/deskOpencode';
 	import { DESK_FILE_TOOLS, describeDeskTool, executeDeskFileTool } from '$lib/enos/deskFileTools';
 	import { deskSurfaceGroundingLine, groundingLine } from '$lib/enos/grounding';
@@ -2241,19 +2245,38 @@
 				},
 				{
 					onUpdate: ({ content, reasoning }) => {
-						liveContent = content;
-						liveReasoning = reasoning;
-						if (reasoning && !reasoningStartMs) reasoningStartMs = Date.now();
-						render(false);
-					},
-					onTool: ({ kind, tool, ok }) => {
+							liveContent = content;
+							liveReasoning = reasoning;
+							if (reasoning && !reasoningStartMs) {
+								reasoningStartMs = Date.now();
+								if (!statusHistory.find(s => s.action === 'reasoning')) {
+									statusHistory.push({ action: 'reasoning', description: 'Thinking', done: false });
+									flush();
+								}
+							}
+							// Content starting = close any stale pending status (dead air fix)
+							if (content) {
+								let dirty = false;
+								for (const s of statusHistory) {
+									if (!s.done && s.action !== 'web_search' && s.action !== 'knowledge_search') {
+										s.done = true;
+										dirty = true;
+									}
+								}
+								if (dirty) flush();
+							}
+							render(false);
+						},
+						onTool: ({ kind, tool, ok, input }) => {
 						if (kind === 'tool_start') {
-							statusHistory.push({ action: 'enos_desk', description: `${tool}…`, done: false });
+							const thinkingStatus = statusHistory.find(s => s.action === 'reasoning' && !s.done);
+							if (thinkingStatus) thinkingStatus.done = true;
+							statusHistory.push({ action: 'enos_desk', description: formatToolStartStatus(tool, input), done: false });
 						} else {
 							const last = statusHistory[statusHistory.length - 1];
 							if (last) {
 								last.done = true;
-								last.description = ok === false ? `${tool} (failed)` : tool;
+								last.description = formatToolEndStatus(tool, ok === true);
 							}
 						}
 						flush();
@@ -2346,17 +2369,36 @@
 					onUpdate: ({ content, reasoning }) => {
 						liveContent = content;
 						liveReasoning = reasoning;
-						if (reasoning && !reasoningStartMs) reasoningStartMs = Date.now();
+						if (reasoning && !reasoningStartMs) {
+							reasoningStartMs = Date.now();
+							if (!statusHistory.find(s => s.action === 'reasoning')) {
+								statusHistory.push({ action: 'reasoning', description: 'Thinking', done: false });
+								flush();
+							}
+						}
+						// Content starting = close any stale pending status (dead air fix)
+						if (content) {
+							let dirty = false;
+							for (const s of statusHistory) {
+								if (!s.done && s.action !== 'web_search' && s.action !== 'knowledge_search') {
+									s.done = true;
+									dirty = true;
+								}
+							}
+							if (dirty) flush();
+						}
 						render(false);
 					},
-					onTool: ({ kind, tool, ok }) => {
+					onTool: ({ kind, tool, ok, input }) => {
 						if (kind === 'tool_start') {
-							statusHistory.push({ action: 'enos_desk', description: `${tool}…`, done: false });
+							const thinkingStatus = statusHistory.find(s => s.action === 'reasoning' && !s.done);
+							if (thinkingStatus) thinkingStatus.done = true;
+							statusHistory.push({ action: 'enos_desk', description: formatToolStartStatus(tool, input), done: false });
 						} else {
 							const last = statusHistory[statusHistory.length - 1];
 							if (last) {
 								last.done = true;
-								last.description = ok === false ? `${tool} (failed)` : tool;
+								last.description = formatToolEndStatus(tool, ok === true);
 							}
 						}
 						flush();

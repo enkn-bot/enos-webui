@@ -196,7 +196,7 @@
 			class="mx-auto px-4 md:max-w-3xl md:px-6 font-primary min-h-62"
 			in:fade={{ duration: 200, delay: 200 }}
 		>
-			<FolderPlaceholder folder={$selectedFolder} />
+			<FolderPlaceholder folder={$selectedFolder} {isDesk} />
 		</div>
 	{:else}
 		<div class="mx-auto max-w-2xl font-primary mt-2" in:fade={{ duration: 200, delay: 200 }}>

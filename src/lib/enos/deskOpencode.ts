@@ -140,8 +140,14 @@ export class DeskStreamState {
 export type DeskOpencodeCallbacks = {
 	/** current full content + reasoning after each update (for the desk message + accordion) */
 	onUpdate: (s: { content: string; reasoning: string }) => void;
-	/** tool lifecycle for statusHistory */
-	onTool?: (ev: { kind: 'tool_start' | 'tool_end'; tool: string; ok?: boolean }) => void;
+	/** tool lifecycle for statusHistory — input carries the tool args for context */
+	onTool?: (ev: {
+		kind: 'tool_start' | 'tool_end';
+		tool: string;
+		ok?: boolean;
+		/** tool arguments (path, query, code, etc.) — present on tool_start */
+		input?: unknown;
+	}) => void;
 };
 
 export type DeskOpencodeTransport = {
@@ -177,7 +183,7 @@ const applyDeskStreamEvent = (
 		return 'clean';
 	}
 	if (ev.kind === 'tool_start' || ev.kind === 'tool_end') {
-		cb.onTool?.({ kind: ev.kind, tool: ev.tool, ok: (ev as any).ok });
+		cb.onTool?.({ kind: ev.kind, tool: ev.tool, ok: (ev as any).ok, input: (ev as any).input });
 		return 'clean';
 	}
 	if (ev.kind === 'error') {

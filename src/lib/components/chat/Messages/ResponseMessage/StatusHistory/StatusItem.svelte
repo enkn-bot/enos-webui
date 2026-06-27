@@ -117,7 +117,21 @@
 					{/each}
 				</div>
 			</div>
-		{:else if status?.action === 'sources_retrieved' && status?.count !== undefined}
+		{:else if status?.action === 'reasoning'}
+	<div class="flex flex-col justify-center -space-y-0.5">
+		<div
+			class="{(done || status?.done) === false
+				? 'shimmer'
+				: ''} text-base line-clamp-1 text-wrap"
+		>
+			{#if (done || status?.done) === false}
+				Thinking
+			{:else}
+				Thought
+			{/if}
+		</div>
+	</div>
+	{:else if status?.action === 'sources_retrieved' && status?.count !== undefined}
 			<div class="flex flex-col justify-center -space-y-0.5">
 				<div
 					class="{(done || status?.done) === false
