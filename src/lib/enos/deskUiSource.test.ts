@@ -634,6 +634,9 @@ describe('ENOS Desk UI source guardrails', () => {
 		const save = chat.slice(chat.indexOf('const saveChatHandler'));
 		expect(save).toMatch(/isDeskSurface\(\)\s*&&\s*!\$selectedFolder\?\.id/);
 		expect(save).toContain("withSurfaceMeta({ meta: chat?.meta ?? {} }, 'desk').meta");
+		// The sidebar list is fetched before the tag lands, so refresh it once on the
+		// turn we first tag the chat — the "Chats" group must appear without a reload.
+		expect(save).toMatch(/newlyTagged[\s\S]*getChatList/);
 	});
 
 	test('local project can be copied into the active cloud workspace from Files', () => {

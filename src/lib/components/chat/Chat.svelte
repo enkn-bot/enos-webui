@@ -3975,10 +3975,20 @@
 				// (and preserves it across later metaless updates), so the chat collects
 				// under the native "Chats" group (deskLooseChats.ts). Loose chats only:
 				// foldered chats derive their surface from the folder.
-				if (isDeskSurface() && !$selectedFolder?.id) {
+				const tagDeskLoose = isDeskSurface() && !$selectedFolder?.id;
+				const newlyTagged = tagDeskLoose && chat?.meta?.surface !== 'desk';
+				if (tagDeskLoose) {
 					payload.meta = withSurfaceMeta({ meta: chat?.meta ?? {} }, 'desk').meta;
 				}
 				chat = await updateChatById(localStorage.token, _chatId, payload);
+				// The sidebar list was fetched before the tag landed, so refresh it once
+				// when we first tag the chat — otherwise the "Chats" group only appears
+				// after a manual reload. Subsequent turns are already tagged → no refetch.
+				if (newlyTagged) {
+					currentChatPage.set(1);
+					await chats.set(await getChatList(localStorage.token, $currentChatPage));
+					await pinnedChats.set(await getPinnedChatList(localStorage.token));
+				}
 			}
 		}
 	};
