@@ -321,14 +321,16 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(picker).not.toContain('window.confirm');
 		expect(picker).toContain('pendingSwitchTarget');
 		expect(picker).toContain('copyLocalProjectIntoCloudWorkspace');
-		expect(picker).toContain('Copy this project to cloud?');
+		// F4: the local→cloud move is reframed as adopting a home, not "uploading".
+		expect(picker).toContain('Give this project a home in ENOS Cloud');
+		expect(picker).not.toContain('Copy this project to cloud?');
 		expect(picker).toContain('exportProjectArchive');
 		expect(picker).toContain('uploadLocalProjectToCloud');
 		expect(picker).not.toContain(
 			'Local files stay on this device until you copy the project to cloud.'
 		);
 		expect(picker).toContain('Work locally?');
-		expect(picker).toContain('ENOS Cloud files stay in ENOS Cloud until local copy is added.');
+		expect(picker).toContain('ENOS Cloud files stay in ENOS Cloud until a local copy is added.');
 		expect(picker).not.toContain('$selectedTerminalId === terminal.id ? null : terminal.id');
 
 		expect(chat).toContain('ensureWebDeskCloudDefault');

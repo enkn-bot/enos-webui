@@ -28,6 +28,7 @@
 		deskCurrentLocation,
 		systemCloudWorkspaceId
 	} from '$lib/enos/workspaceBadge';
+	import { consequenceLines, homeSection } from '$lib/enos/workspaceConsequences';
 
 	import Dropdown from '$lib/components/common/Dropdown.svelte';
 	import ConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
@@ -62,6 +63,16 @@
 		projectKind: boundBadge.kind
 	});
 	$: isLocalActive = currentLocation === 'local';
+	// F3/Q7 explainer: what the current location MEANS (where files live, privacy,
+	// reach). Kind = the live location when known, else the bound origin.
+	$: explainerKind = currentLocation ?? boundBadge.kind;
+	$: explainerLines = consequenceLines({ kind: explainerKind, repo: boundBadge.name });
+	// Cloud "home" section. wiredCloudTools = the cloud workspace's connected MCP/
+	// tool servers by display name. No such list is in scope here without a new
+	// fetch, so default to [] → the honest teach line renders (not a dead chips row).
+	// TODO(home-chips): wire real connected-tool names (e.g. GitHub, context7).
+	$: wiredCloudTools = [] as string[];
+	$: cloudHome = currentLocation === 'cloud' ? homeSection({ wiredTools: wiredCloudTools }) : null;
 	$: systemTerminals = ($terminalServers ?? []).filter(
 		(terminal) => terminal.id && String(terminal.id).startsWith('ws-')
 	);
@@ -146,6 +157,12 @@
 		showCreateCloudEnvironmentModal = true;
 	};
 
+	// T9 dependency: the "Private to your workspace only" promise in the F4 home-
+	// adoption copy requires per-user cloud isolation. Do not present that as a
+	// privacy GUARANTEE in prod until T9 isolation is verified.
+	// TODO(f4-publish): a "Publish to GitHub instead" alternative (the portable
+	// bridge) is deferred until an app→GitHub publish action exists — connectGithub
+	// only starts OAuth, so offering it here would be a dead/misleading affordance.
 	const copyLocalProjectIntoCloudWorkspace = async () => {
 		if (!activeFolderId || copyingLocalProjectToCloud) return;
 
@@ -200,13 +217,17 @@
 		);
 	};
 
+	// F4: moving local→cloud is adopting a HOME, not "uploading files". The triad
+	// (comes-along / stays-here / private-to) kills the deletion fear — it's a COPY.
 	const environmentSwitchTitle = () =>
-		pendingSwitchTarget === 'cloud' ? 'Copy this project to cloud?' : 'Work locally?';
+		pendingSwitchTarget === 'cloud' ? 'Give this project a home in ENOS Cloud' : 'Work locally?';
 
 	const environmentSwitchMessage = () =>
 		pendingSwitchTarget === 'cloud'
-			? 'ENOS will upload this local folder to ENOS Cloud and continue there. Files stay on this device too.'
-			: 'Choose or bind a folder on this device. ENOS Cloud files stay in ENOS Cloud until local copy is added.';
+			? 'A copy runs on ENOS’s always-on machine — reachable from any device. ' +
+				'Comes along: this project’s files + history. Stays here: the original, on this Mac. ' +
+				'Private to: your workspace only.'
+			: 'Choose or bind a folder on this device. ENOS Cloud files stay in ENOS Cloud until a local copy is added.';
 
 	const clearPendingSwitch = () => {
 		pendingSwitchTarget = null;
@@ -364,6 +385,38 @@
 					{$i18n.t('Environment')}
 				</span>
 			</div>
+
+			{#if explainerLines.length > 0}
+				<div class="px-3 pb-2 pt-1 space-y-0.5">
+					{#each explainerLines as line}
+						<div class="text-[11px] leading-snug text-gray-500 dark:text-gray-400">
+							{$i18n.t(line)}
+						</div>
+					{/each}
+					{#if cloudHome}
+						<div class="pt-1.5">
+							{#if cloudHome.tools.length > 0}
+								<div class="flex flex-wrap gap-1">
+									{#each cloudHome.tools as tool}
+										<span
+											class="rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-[10px] text-gray-600 dark:text-gray-300"
+											>{tool}</span
+										>
+									{/each}
+								</div>
+								<div class="pt-1 text-[10px] text-gray-400 dark:text-gray-500">
+									{$i18n.t(cloudHome.tagline)}
+								</div>
+							{:else}
+								<div class="text-[10px] text-gray-400 dark:text-gray-500">
+									{$i18n.t(cloudHome.tagline)}
+								</div>
+							{/if}
+						</div>
+					{/if}
+				</div>
+				<div class="mx-3 mb-1 border-t border-gray-100 dark:border-gray-800"></div>
+			{/if}
 
 			{#if !webDeskCloudLocked}
 				<button
@@ -541,7 +594,7 @@
 <ConfirmDialog
 	bind:show={showEnvironmentSwitchConfirm}
 	title={$i18n.t(environmentSwitchTitle())}
-	confirmLabel={$i18n.t(pendingSwitchTarget === 'cloud' ? 'Copy to cloud' : 'Continue')}
+	confirmLabel={$i18n.t(pendingSwitchTarget === 'cloud' ? 'Give it a home in Cloud' : 'Continue')}
 	onConfirm={confirmPendingSwitch}
 	on:cancel={clearPendingSwitch}
 >
