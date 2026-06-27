@@ -43,7 +43,6 @@
 		terminalServers,
 		functions,
 		selectedFolder,
-		deskHomeProjectRequest,
 		folders,
 		pinnedChats,
 		showEmbeds,
@@ -2461,31 +2460,6 @@
 		return true;
 	};
 
-	// Wait until the Sidebar has created + selected a Desk project (after Chat sets
-	// deskHomeProjectRequest), so the turn runs inside it. Resolves with the folder,
-	// or null on timeout — the turn then degrades gracefully (web still runs in the
-	// cloud workspace; the app falls back to plain chat).
-	const awaitDeskProjectSelected = (timeoutMs = 10000): Promise<any> =>
-		new Promise((resolve) => {
-			if ($selectedFolder?.id) {
-				resolve($selectedFolder);
-				return;
-			}
-			let settled = false;
-			let unsub = () => {};
-			let timer: ReturnType<typeof setTimeout>;
-			const finish = (v: any) => {
-				if (settled) return;
-				settled = true;
-				unsub();
-				clearTimeout(timer);
-				resolve(v);
-			};
-			timer = setTimeout(() => finish(null), timeoutMs);
-			unsub = selectedFolder.subscribe((f) => {
-				if (f?.id) finish(f);
-			});
-		});
 
 	const handleProjectChatAction = async (userPrompt) => {
 		try {
@@ -2496,9 +2470,15 @@
 			// now (the Sidebar owns the create machinery; we signal via the store and
 			// await the selection), so the turn runs inside a real project. The rename
 			// block just below then names that scaffold from the message.
-			if (!$selectedFolder?.id && userPrompt?.trim()) {
-				deskHomeProjectRequest.set(true);
-				await awaitDeskProjectSelected();
+			// Native "Chats" group: a message with NO project selected is a LOOSE chat,
+			// not a reason to spawn a project. Return false so the normal chat pipe (the
+			// minds) answers it — NOT the Pi file-agent (which would otherwise run because a
+			// cloud workspace is auto-selected on web). repairDeskLooseChatSurface tags the
+			// chat to the Desk surface so it collects under the native "Chats" group
+			// (deskLooseChats.ts). Projects are created deliberately (FolderModal), never
+			// from a message.
+			if (!$selectedFolder?.id) {
+				return false;
 			}
 
 			// Folder-first model: a project is a deliberately-bound FOLDER, never named

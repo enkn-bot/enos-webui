@@ -421,38 +421,33 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(modal).not.toContain("placeholder={$i18n.t('Enter folder name')}");
 	});
 
-	test('Desk first run shows the welcome and creates the project on the first message', () => {
+	test('Desk does NOT auto-create a project on the first message — loose chats go to the native Chats group', () => {
 		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
+		const chat = read('src/lib/components/chat/Chat.svelte');
 
-		// Q3: the home scaffold is minted with the neutral name, not the literal
-		// 'ENOS' / 'ENOS N' (legacy rows still resolve via isScaffoldName).
+		// Folder-first + native Chats group (§9): the F2 auto-create-a-project-on-first-
+		// message machinery is GONE. A project-less first message is a loose chat, not a
+		// reason to spawn a project. Projects are created deliberately (FolderModal).
+		expect(sidebar).not.toMatch(/ensureDeskHomeProject\(/); // no calls
+		expect(sidebar).not.toContain('const ensureDeskHomeProject'); // no definition
+		expect(sidebar).not.toMatch(/\$deskHomeProjectRequest/); // store no longer consumed
+		expect(sidebar).not.toContain('let ensuringDeskHomeProject');
+		expect(sidebar).not.toContain('bridge.createCleanWorkspace(DESK_HOME_PROJECT_NAME)');
+
+		// Chat: a turn with NO project selected returns false from handleProjectChatAction
+		// so the normal chat pipe (the minds) answers it — not the Pi file-agent, and no
+		// project is spawned.
+		expect(chat).toMatch(/if \(!\$selectedFolder\?\.id\) \{\s*return false;/);
+		expect(chat).not.toContain('deskHomeProjectRequest');
+		expect(chat).not.toContain('deriveProjectName');
+
+		// DESK_HOME_PROJECT_NAME is still the neutral scaffold name (used by the duplicate-
+		// recovery path), never the meta-confusing literal 'ENOS'.
 		expect(sidebar).toContain('const DESK_HOME_PROJECT_NAME = DESK_SCAFFOLD_NAME;');
 		expect(sidebar).not.toContain("const DESK_HOME_PROJECT_NAME = 'ENOS';");
-		expect(sidebar).toMatch(
-			/import \{[\s\S]*isDuplicateDeskHomeProjectName,[\s\S]*isFolderAlreadyExistsError,[\s\S]*selectDeskHomeProject[\s\S]*\} from '\$lib\/enos\/deskHomeProject';/
-		);
-		expect(sidebar).toContain('let ensuringDeskHomeProject = false;');
-		expect(sidebar).toContain('let deskHomeProjectAttempted = false;');
-		expect(sidebar).toContain('selectInitialDeskProject(folderList, { force: true })');
-		expect(sidebar).toMatch(
-			/if \(\s*isDeskSurface &&\s*folderList\.length > 0[\s\S]*selectedDuplicateHome[\s\S]*selectInitialDeskProject\(folderList, \{ force: true \}\)/
-		);
-		expect(sidebar).toContain('ensureDeskHomeProject');
-		// F2: NO auto-create at 0 folders (the welcome IS the empty state). The project
-		// is created on the user's first message, request-driven via the store.
-		expect(sidebar).not.toMatch(/folderList\.length === 0[\s\S]*ensureDeskHomeProject\(\)/);
-		expect(sidebar).toContain('deskHomeProjectRequest');
-		expect(sidebar).toContain('ensureDeskHomeProject({ force: true })');
-		expect(sidebar).toContain('bridge.createCleanWorkspace(DESK_HOME_PROJECT_NAME)');
-		expect(sidebar).toContain("projectEnvironment: hasDesktopBridge ? 'local' : 'cloud'");
-		expect(sidebar).toContain('name: DESK_HOME_PROJECT_NAME');
-		// Folder-first model: every project gets its OWN unique cloud root + deduped name.
-		// `preferExistingCloudRoot: true` reused /home/user/New project/ for EVERY web
-		// project → collision. Must be unique now.
-		expect(sidebar).toContain('preferExistingCloudRoot: false');
-		expect(sidebar).toContain('dedupeName: true');
-		expect(sidebar).not.toMatch(/preferExistingCloudRoot: !hasDesktopBridge/);
-		expect(sidebar).toContain('await createFolder({');
+
+		// Deliberate creation still flows through the FolderModal -> createFolder.
+		expect(sidebar).toContain('await createFolder(');
 	});
 
 	test('Desk home duplicate create adopts the existing project instead of showing a folder-exists toast', () => {

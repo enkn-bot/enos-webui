@@ -35,7 +35,6 @@
 		showFileNavDir,
 		showLocalFileFolderId,
 		showDeskFolderPicker,
-		deskHomeProjectRequest,
 		terminalServers,
 		selectedTerminalId
 	} from '$lib/stores';
@@ -153,8 +152,6 @@
 	let folders = {};
 	let allKnownFolders = [];
 	let folderRegistry = {};
-	let ensuringDeskHomeProject = false;
-	let deskHomeProjectAttempted = false;
 	// Ids of folders that belong to the desk surface (tagged desk, locally bound,
 	// or legacy bridge workspace). Captured from the UNFILTERED folder list so the
 	// chat surface filter can also recognize desk folders. Drives filterChatsBySurface.
@@ -204,14 +201,6 @@
 	$: if ($showDeskFolderPicker) {
 		showCreateFolderModal = true;
 		showDeskFolderPicker.set(false);
-	}
-	// F2: Chat asks for the project to be created on the user's first message (no
-	// project yet → the welcome was showing). Create + select it here, where the
-	// create machinery lives; Chat awaits $selectedFolder, then renames it from the
-	// message. `force` bypasses the once-per-load attempted guard.
-	$: if ($deskHomeProjectRequest && isDeskSurface) {
-		deskHomeProjectRequest.set(false);
-		void ensureDeskHomeProject({ force: true });
 	}
 
 	const isMenuItemVisible = (id) => {
@@ -762,71 +751,10 @@
 		return false;
 	};
 
-	const ensureDeskHomeProject = async ({ force = false } = {}) => {
-		if (
-			!isDeskSurface ||
-			ensuringDeskHomeProject ||
-			(!force && deskHomeProjectAttempted) ||
-			$selectedFolder?.id
-		) {
-			return false;
-		}
-
-		ensuringDeskHomeProject = true;
-		deskHomeProjectAttempted = true;
-
-		try {
-			const existingHomeProject = selectDeskHomeProject(
-				filterProjectsForDeskRuntime(allKnownFolders, {
-					surface: currentSurface,
-					hasDesktopBridge,
-					legacyDeskItemIds: []
-				})
-			);
-			if (existingHomeProject?.id) {
-				return await selectInitialDeskProject([existingHomeProject], { force: true });
-			}
-
-			const freshFolders = await getFolders(localStorage.token).catch(() => []);
-			allKnownFolders = freshFolders;
-			const freshHomeProject = selectDeskHomeProject(
-				filterProjectsForDeskRuntime(freshFolders, {
-					surface: currentSurface,
-					hasDesktopBridge,
-					legacyDeskItemIds: []
-				})
-			);
-			if (freshHomeProject?.id) {
-				return await selectInitialDeskProject([freshHomeProject], { force: true });
-			}
-
-			let localWorkspace = null;
-			if (hasDesktopBridge) {
-				const bridge = getEnosDesktopBridge();
-				if (!bridge?.createCleanWorkspace) return false;
-				localWorkspace = await bridge.createCleanWorkspace(DESK_HOME_PROJECT_NAME);
-				if (!localWorkspace) return false;
-			}
-
-			return await createFolder({
-				name: DESK_HOME_PROJECT_NAME,
-				meta: {},
-				data: {},
-				parent_id: null,
-				localWorkspace,
-				projectEnvironment: hasDesktopBridge ? 'local' : 'cloud',
-				// Folder-first model: every project is its OWN folder. `preferExistingCloudRoot`
-				// reused `/home/user/New project/` for EVERY web project → all projects collided
-				// on one cloud dir (no isolation). Always mint a UNIQUE root; dedupe the display
-				// name too. (selectDeskHomeProject above still reuses an existing empty scaffold,
-				// so this only creates when there's genuinely no scaffold to reuse.)
-				dedupeName: true,
-				preferExistingCloudRoot: false
-			});
-		} finally {
-			ensuringDeskHomeProject = false;
-		}
-	};
+	// ensureDeskHomeProject (the F2 auto-create-a-project-on-first-message machinery)
+	// was REMOVED with the native "Chats" group: a project-less first message is now a
+	// loose chat, not a reason to spawn a project. Projects are created deliberately via
+	// the FolderModal. See docs/superpowers/specs/2026-06-27-desk-project-model-folder-first.md §9.
 
 	const handleDeskLocalFolderPick = async () => {
 		const bridge = getEnosDesktopBridge();
