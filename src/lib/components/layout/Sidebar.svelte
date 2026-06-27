@@ -35,6 +35,7 @@
 		showFileNavDir,
 		showLocalFileFolderId,
 		showDeskFolderPicker,
+		deskHomeProjectRequest,
 		terminalServers,
 		selectedTerminalId
 	} from '$lib/stores';
@@ -204,6 +205,14 @@
 		showCreateFolderModal = true;
 		showDeskFolderPicker.set(false);
 	}
+	// F2: Chat asks for the project to be created on the user's first message (no
+	// project yet → the welcome was showing). Create + select it here, where the
+	// create machinery lives; Chat awaits $selectedFolder, then renames it from the
+	// message. `force` bypasses the once-per-load attempted guard.
+	$: if ($deskHomeProjectRequest && isDeskSurface) {
+		deskHomeProjectRequest.set(false);
+		void ensureDeskHomeProject({ force: true });
+	}
 
 	const isMenuItemVisible = (id) => {
 		switch (id) {
@@ -315,15 +324,10 @@
 			void selectInitialDeskProject(folderList, { force: true });
 		}
 
-		if (
-			isDeskSurface &&
-			folderList.length === 0 &&
-			!$selectedFolder?.id &&
-			!ensuringDeskHomeProject &&
-			!deskHomeProjectAttempted
-		) {
-			void ensureDeskHomeProject();
-		}
+		// F2: do NOT auto-create a project at 0 folders anymore — the welcome IS the
+		// empty state. The project is created on the user's first message instead
+		// (Chat sets deskHomeProjectRequest → the reactive below). This keeps returning
+		// users (folderList > 0, handled above) unchanged.
 
 		folders = {};
 
@@ -752,11 +756,11 @@
 		return false;
 	};
 
-	const ensureDeskHomeProject = async () => {
+	const ensureDeskHomeProject = async ({ force = false } = {}) => {
 		if (
 			!isDeskSurface ||
 			ensuringDeskHomeProject ||
-			deskHomeProjectAttempted ||
+			(!force && deskHomeProjectAttempted) ||
 			$selectedFolder?.id
 		) {
 			return false;

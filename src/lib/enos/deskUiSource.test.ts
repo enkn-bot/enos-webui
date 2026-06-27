@@ -421,7 +421,7 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(modal).not.toContain("placeholder={$i18n.t('Enter folder name')}");
 	});
 
-	test('Desk first run creates and selects a home project before Files opens', () => {
+	test('Desk first run shows the welcome and creates the project on the first message', () => {
 		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
 
 		// Q3: the home scaffold is minted with the neutral name, not the literal
@@ -438,7 +438,11 @@ describe('ENOS Desk UI source guardrails', () => {
 			/if \(\s*isDeskSurface &&\s*folderList\.length > 0[\s\S]*selectedDuplicateHome[\s\S]*selectInitialDeskProject\(folderList, \{ force: true \}\)/
 		);
 		expect(sidebar).toContain('ensureDeskHomeProject');
-		expect(sidebar).toMatch(/folderList\.length === 0[\s\S]*ensureDeskHomeProject\(\)/);
+		// F2: NO auto-create at 0 folders (the welcome IS the empty state). The project
+		// is created on the user's first message, request-driven via the store.
+		expect(sidebar).not.toMatch(/folderList\.length === 0[\s\S]*ensureDeskHomeProject\(\)/);
+		expect(sidebar).toContain('deskHomeProjectRequest');
+		expect(sidebar).toContain('ensureDeskHomeProject({ force: true })');
 		expect(sidebar).toContain('bridge.createCleanWorkspace(DESK_HOME_PROJECT_NAME)');
 		expect(sidebar).toContain("projectEnvironment: hasDesktopBridge ? 'local' : 'cloud'");
 		expect(sidebar).toContain('name: DESK_HOME_PROJECT_NAME');

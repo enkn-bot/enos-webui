@@ -108,6 +108,11 @@ export const showFileNavDir: Writable<string | null> = writable(null);
 export const showLocalFileFolderId: Writable<string | null> = writable(null);
 export const showLocalFilePath: Writable<string> = writable('.');
 export const showDeskFolderPicker: Writable<boolean> = writable(false);
+// F2: Desk no longer auto-creates a project on first run (the welcome IS the empty
+// state). When the user sends their first message with no project selected, Chat
+// sets this; the Sidebar (which owns the create machinery) reacts by creating +
+// selecting the project, then Chat renames it from the message. A one-shot signal.
+export const deskHomeProjectRequest: Writable<boolean> = writable(false);
 export const selectedTerminalId: Writable<string | null> = writable(null);
 export type ControlPaneTab = 'overview' | 'controls' | 'files';
 export type PendingTrayOpenTab = ControlPaneTab | 'default';
