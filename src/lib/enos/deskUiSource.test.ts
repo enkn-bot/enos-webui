@@ -791,14 +791,19 @@ describe('ENOS Desk UI source guardrails', () => {
 	});
 
 	test('desk agent carries ENOS identity (three minds, no underlying-model leak) — B4', () => {
+		// The ENOS identity now lives in the extracted desk agent prompt builder
+		// (deskAgentPrompt.ts), which Chat.svelte invokes for the local desk turn.
+		const prompt = read('src/lib/enos/deskAgentPrompt.ts');
 		const chat = read('src/lib/components/chat/Chat.svelte');
 		// The desk agent must know it is ENOS (three minds), not leak/deny an underlying
 		// model (the "I don't have three models / Claude models" gap).
-		expect(chat).toContain('IDENTITY: You are ENOS');
-		expect(chat).toContain('three minds');
-		expect(chat).toContain('Subconscious');
-		expect(chat).toContain('Ego');
-		expect(chat).toMatch(/never claim to[\s\S]*Claude, GPT, Gemini/);
+		expect(prompt).toContain('IDENTITY: You are ENOS');
+		expect(prompt).toContain('three minds');
+		expect(prompt).toContain('Subconscious');
+		expect(prompt).toContain('Ego');
+		expect(prompt).toMatch(/never claim to[\s\S]*Claude, GPT, Gemini/);
+		// ...and Chat.svelte must actually use the builder so the identity reaches the agent.
+		expect(chat).toContain('deskAgentPrompt');
 	});
 
 	test('cross-machine bound project opens the recovery state', () => {
