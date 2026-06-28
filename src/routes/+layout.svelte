@@ -947,6 +947,21 @@
 		document.addEventListener('touchmove', touchmoveHandler, { passive: false });
 		document.addEventListener('touchend', touchendHandler);
 
+		// svelte-sonner runs swipe + pointer-capture logic on the toast <li>'s
+		// pointerdown. When that handler calls setPointerCapture on the close
+		// button (or its SVG child), Chromium can swallow the button's click and
+		// the X stops dismissing the toast. Intercept the close-button pointerdown
+		// in the capture phase so svelte-sonner's <li> handler never runs — the
+		// button's own click handler (deleteToast) then fires cleanly. Scoped to
+		// [data-close-button], so swipe-to-dismiss and action buttons are untouched.
+		const toastCloseGuard = (e) => {
+			const t = e.target;
+			if (t instanceof Element && t.closest('[data-close-button]')) {
+				e.stopPropagation();
+			}
+		};
+		document.addEventListener('pointerdown', toastCloseGuard, true);
+
 		if (typeof window !== 'undefined') {
 			if (window.applyTheme) {
 				window.applyTheme();
