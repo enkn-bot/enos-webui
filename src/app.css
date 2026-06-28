@@ -285,6 +285,12 @@ select {
 	animation: fade-in-token 100ms ease-out;
 }
 
+/* Sonner close button: pass pointer events through SVG child so event.target is
+   always the <button>, making svelte-sonner's tagName==='BUTTON' guard succeed. */
+[data-close-button] svg {
+	pointer-events: none;
+}
+
 .katex-mathml {
 	display: none;
 }
