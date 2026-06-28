@@ -128,11 +128,8 @@
 	import { buildProjectActionContext } from '$lib/enos/projectActions';
 	import { runDeskAgentLoop } from '$lib/enos/deskAgentLoop';
 	import { composeDeskMessageContent } from '$lib/enos/deskReasoning';
-	import {
-		formatToolStartStatus,
-		formatToolOutcome
-	} from '$lib/enos/toolStatusLabels';
 	import { bridgeTransport, runOpencodeDeskTurn, normalizePiEvent } from '$lib/enos/deskOpencode';
+	import { createDeskOpencodeTurnView } from '$lib/enos/deskOpencodeTurnView';
 	import { DESK_FILE_TOOLS, describeDeskTool, executeDeskFileTool } from '$lib/enos/deskFileTools';
 	import {
 		buildDeskAgentSystemPrompt,
@@ -2217,22 +2214,18 @@
 		const responseMessageId = await createLocalProjectActionMessage(userPrompt, '', {
 			done: false
 		});
-		const statusHistory: any[] = [];
-		let liveContent = '';
-		let liveReasoning = '';
-		let reasoningStartMs = 0;
-		const flush = () => {
+		const turnView = createDeskOpencodeTurnView();
+		const flush = (statusHistory = turnView.statusHistory()) => {
 			const m = history.messages[responseMessageId];
 			if (!m) return;
 			m.statusHistory = statusHistory.map((s) => ({ ...s }));
 			history.messages[responseMessageId] = m;
 			history = history;
 		};
-		const render = (done) => {
+		const render = (messageContent) => {
 			const m = history.messages[responseMessageId];
 			if (!m) return;
-			const durationS = reasoningStartMs ? (Date.now() - reasoningStartMs) / 1000 : 0;
-			m.content = composeDeskMessageContent(liveReasoning, liveContent, { done, durationS });
+			m.content = messageContent;
 			history.messages[responseMessageId] = m;
 			history = history;
 		};
@@ -2258,57 +2251,24 @@
 				},
 				{
 					onUpdate: ({ content, reasoning }) => {
-						liveContent = content;
-						liveReasoning = reasoning;
-						if (reasoning && !reasoningStartMs) {
-							reasoningStartMs = Date.now();
-							if (!statusHistory.find(s => s.action === 'reasoning')) {
-								statusHistory.push({ action: 'reasoning', description: 'Thinking', done: false });
-								flush();
-							}
-						}
-						// Content starting = close the pending "Thinking" status (dead-air fix).
-						// Tool statuses close on their own tool_end, so leave them in-flight here.
-						if (content) {
-							let dirty = false;
-							for (const s of statusHistory) {
-								if (!s.done && s.action === 'reasoning') {
-									s.done = true;
-									dirty = true;
-								}
-							}
-							if (dirty) flush();
-						}
-						render(false);
+						const update = turnView.onUpdate({ content, reasoning });
+						if (update.statusChanged) flush(update.statusHistory);
+						render(update.messageContent);
 					},
 					onTool: ({ kind, tool, ok, input, detail }) => {
-						if (kind === 'tool_start') {
-							const thinkingStatus = statusHistory.find(s => s.action === 'reasoning' && !s.done);
-							if (thinkingStatus) thinkingStatus.done = true;
-							statusHistory.push({ action: 'enos_desk', description: formatToolStartStatus(tool, input), done: false });
-						} else {
-							const last = statusHistory[statusHistory.length - 1];
-							if (last) {
-								last.done = true;
-								last.description = formatToolOutcome(tool, ok === true, last.description, detail);
-							}
-						}
-						flush();
+						flush(turnView.onTool({ kind, tool, ok, input, detail }));
 					}
 				}
 			);
 			const done = history.messages[responseMessageId];
 			if (done) {
-				const durationS = reasoningStartMs ? (Date.now() - reasoningStartMs) / 1000 : 0;
-				done.content = composeDeskMessageContent(
-					r.reasoning,
-					r.content || '(No response from ENOS Cloud.)',
-					{
-						done: true,
-						durationS
-					}
-				);
-				done.statusHistory = statusHistory.map((s) => ({ ...s, done: true }));
+				const final = turnView.finalMessage({
+					reasoning: r.reasoning,
+					content: r.content,
+					fallbackContent: '(No response from ENOS Cloud.)'
+				});
+				done.content = final.messageContent;
+				done.statusHistory = final.statusHistory;
 				done.done = true;
 				history.messages[responseMessageId] = done;
 				history = history;
@@ -2350,22 +2310,18 @@
 		const responseMessageId = await createLocalProjectActionMessage(userPrompt, '', {
 			done: false
 		});
-		const statusHistory: any[] = [];
-		let liveContent = '';
-		let liveReasoning = '';
-		let reasoningStartMs = 0;
-		const flush = () => {
+		const turnView = createDeskOpencodeTurnView();
+		const flush = (statusHistory = turnView.statusHistory()) => {
 			const m = history.messages[responseMessageId];
 			if (!m) return;
 			m.statusHistory = statusHistory.map((s) => ({ ...s }));
 			history.messages[responseMessageId] = m;
 			history = history;
 		};
-		const render = (done) => {
+		const render = (messageContent) => {
 			const m = history.messages[responseMessageId];
 			if (!m) return;
-			const durationS = reasoningStartMs ? (Date.now() - reasoningStartMs) / 1000 : 0;
-			m.content = composeDeskMessageContent(liveReasoning, liveContent, { done, durationS });
+			m.content = messageContent;
 			history.messages[responseMessageId] = m;
 			history = history;
 		};
@@ -2381,57 +2337,24 @@
 				},
 				{
 					onUpdate: ({ content, reasoning }) => {
-						liveContent = content;
-						liveReasoning = reasoning;
-						if (reasoning && !reasoningStartMs) {
-							reasoningStartMs = Date.now();
-							if (!statusHistory.find(s => s.action === 'reasoning')) {
-								statusHistory.push({ action: 'reasoning', description: 'Thinking', done: false });
-								flush();
-							}
-						}
-						// Content starting = close the pending "Thinking" status (dead-air fix).
-						// Tool statuses close on their own tool_end, so leave them in-flight here.
-						if (content) {
-							let dirty = false;
-							for (const s of statusHistory) {
-								if (!s.done && s.action === 'reasoning') {
-									s.done = true;
-									dirty = true;
-								}
-							}
-							if (dirty) flush();
-						}
-						render(false);
+						const update = turnView.onUpdate({ content, reasoning });
+						if (update.statusChanged) flush(update.statusHistory);
+						render(update.messageContent);
 					},
 					onTool: ({ kind, tool, ok, input, detail }) => {
-						if (kind === 'tool_start') {
-							const thinkingStatus = statusHistory.find(s => s.action === 'reasoning' && !s.done);
-							if (thinkingStatus) thinkingStatus.done = true;
-							statusHistory.push({ action: 'enos_desk', description: formatToolStartStatus(tool, input), done: false });
-						} else {
-							const last = statusHistory[statusHistory.length - 1];
-							if (last) {
-								last.done = true;
-								last.description = formatToolOutcome(tool, ok === true, last.description, detail);
-							}
-						}
-						flush();
+						flush(turnView.onTool({ kind, tool, ok, input, detail }));
 					}
 				}
 			);
 			const done = history.messages[responseMessageId];
 			if (done) {
-				const durationS = reasoningStartMs ? (Date.now() - reasoningStartMs) / 1000 : 0;
-				done.content = composeDeskMessageContent(
-					r.reasoning,
-					r.content || '(No response from ENOS Cloud.)',
-					{
-						done: true,
-						durationS
-					}
-				);
-				done.statusHistory = statusHistory.map((s) => ({ ...s, done: true }));
+				const final = turnView.finalMessage({
+					reasoning: r.reasoning,
+					content: r.content,
+					fallbackContent: '(No response from ENOS Cloud.)'
+				});
+				done.content = final.messageContent;
+				done.statusHistory = final.statusHistory;
 				done.done = true;
 				history.messages[responseMessageId] = done;
 				history = history;
