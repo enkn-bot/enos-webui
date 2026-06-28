@@ -442,7 +442,8 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(modal).toContain("$i18n.t('Use an existing folder')");
 		expect(modal).toContain("projectStartMode = 'clean'");
 		expect(modal).toContain("$i18n.t('Create project')");
-		expect(modal).toContain("{$i18n.t('Cancel')}");
+		// No Cancel button — the modal X and click-outside already dismiss it.
+		expect(modal).not.toContain("{$i18n.t('Cancel')}");
 		expect(modal).toContain('createCleanWorkspace');
 		expect(modal).toContain("placeholder={$i18n.t('Untitled project')}");
 		expect(modal).not.toContain("{$i18n.t('Start clean')}");

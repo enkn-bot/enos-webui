@@ -330,16 +330,14 @@
 						disabled={!canUseLocalProject}
 						on:click={() => setProjectEnvironment('local')}
 					>
-						<div class="flex items-start justify-between">
-							<Computer className="size-5 text-gray-500 dark:text-gray-400" strokeWidth="2" />
-							{#if projectEnvironment === 'local'}
-								<div class="flex size-5 shrink-0 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black">
-									<Check className="size-3.5" strokeWidth="3" />
-								</div>
-							{:else}
-								<div class="size-5 shrink-0 rounded-full border-2 border-gray-300 dark:border-gray-600"></div>
-							{/if}
-						</div>
+						<Computer className="size-5 text-gray-500 dark:text-gray-400" strokeWidth="2" />
+						{#if projectEnvironment === 'local'}
+							<div class="absolute right-4 top-4 flex size-5 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black">
+								<Check className="size-3.5" strokeWidth="3" />
+							</div>
+						{:else}
+							<div class="absolute right-4 top-4 size-5 rounded-full border-2 border-gray-300 dark:border-gray-600"></div>
+						{/if}
 						<div>
 							<div class="text-sm font-semibold">{$i18n.t('Local project')}</div>
 							<div class="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
@@ -358,16 +356,14 @@
 							: 'bg-gray-100 hover:bg-gray-200/70 dark:bg-gray-850 dark:hover:bg-gray-800'}"
 						on:click={() => setProjectEnvironment('cloud')}
 					>
-						<div class="flex items-start justify-between">
-							<Cloud className="size-5 text-gray-500 dark:text-gray-400" strokeWidth="2" />
-							{#if projectEnvironment === 'cloud'}
-								<div class="flex size-5 shrink-0 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black">
-									<Check className="size-3.5" strokeWidth="3" />
-								</div>
-							{:else}
-								<div class="size-5 shrink-0 rounded-full border-2 border-gray-300 dark:border-gray-600"></div>
-							{/if}
-						</div>
+						<Cloud className="size-5 text-gray-500 dark:text-gray-400" strokeWidth="2" />
+						{#if projectEnvironment === 'cloud'}
+							<div class="absolute right-4 top-4 flex size-5 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black">
+								<Check className="size-3.5" strokeWidth="3" />
+							</div>
+						{:else}
+							<div class="absolute right-4 top-4 size-5 rounded-full border-2 border-gray-300 dark:border-gray-600"></div>
+						{/if}
 						<div>
 							<div class="text-sm font-semibold">{$i18n.t('ENOS Cloud project')}</div>
 							<div class="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
@@ -484,22 +480,13 @@
 			{#if showProjectSetupOptions && projectEnvironment === 'local' && canUseLocalProject}
 				<button
 					type="button"
-					class="mr-auto rounded-full bg-gray-100 px-4 py-2 text-gray-900 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-850 dark:text-gray-100 dark:hover:bg-gray-800"
+					class="rounded-full bg-gray-100 px-4 py-2 text-gray-900 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-850 dark:text-gray-100 dark:hover:bg-gray-800"
 					disabled={loading}
 					on:click={useExistingFolderHandler}
 				>
 					{$i18n.t('Use an existing folder')}
 				</button>
 			{/if}
-			<button
-				type="button"
-				class="rounded-full px-4 py-2 transition hover:bg-gray-100 dark:hover:bg-gray-850"
-				on:click={() => {
-					show = false;
-				}}
-			>
-				{$i18n.t('Cancel')}
-			</button>
 			<button
 				class="flex items-center rounded-full bg-black px-5 py-2 text-sm font-medium text-white transition hover:bg-gray-950 disabled:cursor-not-allowed dark:bg-white dark:text-black dark:hover:bg-gray-100"
 				type="submit"
