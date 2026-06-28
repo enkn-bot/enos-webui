@@ -380,7 +380,7 @@
 					<button
 						type="button"
 						aria-pressed={projectStartMode === 'clean'}
-						class="rounded-2xl border p-4 text-left transition {projectStartMode === 'clean'
+						class="relative rounded-2xl border p-4 text-left transition {projectStartMode === 'clean'
 							? 'border-gray-900 bg-white dark:border-gray-100 dark:bg-gray-900'
 							: 'border-gray-200 hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700'}"
 						on:click={() => {
@@ -401,11 +401,16 @@
 								</div>
 							</div>
 						</div>
+						{#if projectStartMode === 'clean'}
+							<div class="absolute right-4 top-4 flex size-5 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black">
+								<Check className="size-3.5" strokeWidth="3" />
+							</div>
+						{/if}
 					</button>
 					<button
 						type="button"
 						aria-pressed={projectStartMode === 'folder'}
-						class="rounded-2xl border p-4 text-left transition {projectStartMode === 'folder'
+						class="relative rounded-2xl border p-4 text-left transition {projectStartMode === 'folder'
 							? 'border-gray-900 bg-white dark:border-gray-100 dark:bg-gray-900'
 							: 'border-gray-200 hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700'} {projectEnvironment !==
 						'local'
@@ -422,7 +427,7 @@
 								<div class="text-sm font-semibold">
 									{localWorkspace ? $i18n.t('Local folder selected') : $i18n.t('Use an existing folder')}
 								</div>
-								<div class="mt-1 truncate text-sm leading-5 text-gray-500 dark:text-gray-400">
+								<div class="mt-1 line-clamp-2 text-sm leading-5 text-gray-500 dark:text-gray-400">
 									{localWorkspace?.rootDisplay ??
 										(projectEnvironment === 'local'
 											? $i18n.t('Connect ENOS to a folder already on this device.')
@@ -430,6 +435,11 @@
 								</div>
 							</div>
 						</div>
+						{#if projectStartMode === 'folder'}
+							<div class="absolute right-4 top-4 flex size-5 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black">
+								<Check className="size-3.5" strokeWidth="3" />
+							</div>
+						{/if}
 					</button>
 				</div>
 			</div>
