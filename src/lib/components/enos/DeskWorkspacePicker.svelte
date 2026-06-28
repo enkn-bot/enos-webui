@@ -26,6 +26,7 @@
 	import {
 		workspaceBadgeFromFolder,
 		deskCurrentLocation,
+		deskBadgeKind,
 		systemCloudWorkspaceId
 	} from '$lib/enos/workspaceBadge';
 	import { consequenceLines, homeSection } from '$lib/enos/workspaceConsequences';
@@ -63,6 +64,9 @@
 		projectKind: boundBadge.kind
 	});
 	$: isLocalActive = currentLocation === 'local';
+	// Single source of truth for the trigger chip: the SAME reactive currentLocation
+	// the menu uses, so the trigger label/icon can never disagree with the checkmark.
+	$: triggerKind = deskBadgeKind({ location: currentLocation, projectKind: boundBadge.kind });
 	// F3/Q7 explainer: what the current location MEANS (where files live, privacy,
 	// reach). Kind = the live location when known, else the bound origin.
 	$: explainerKind = currentLocation ?? boundBadge.kind;
@@ -375,7 +379,7 @@
 </script>
 
 <Dropdown bind:show align="end">
-	<slot />
+	<slot {triggerKind} />
 
 	<div slot="content">
 		<div

@@ -4,6 +4,7 @@ import {
 	workspaceBadgeFromFolder,
 	workspaceKindLabel,
 	deskCurrentLocation,
+	deskBadgeKind,
 	systemCloudWorkspaceId
 } from './workspaceBadge';
 
@@ -146,5 +147,22 @@ describe('systemCloudWorkspaceId', () => {
 			systemCloudWorkspaceId([{ url: 'https://terminal.example' }, { id: 'legacy-m11' }])
 		).toBeNull();
 		expect(systemCloudWorkspaceId(null)).toBeNull();
+	});
+});
+
+describe('deskBadgeKind (single source for the env trigger label/icon)', () => {
+	test('an active location wins → that kind', () => {
+		expect(deskBadgeKind({ location: 'cloud', projectKind: 'local' })).toBe('cloud');
+		expect(deskBadgeKind({ location: 'local', projectKind: 'cloud' })).toBe('local');
+	});
+
+	test('no active location but a bound-local project → local (read-only fallback)', () => {
+		expect(deskBadgeKind({ location: null, projectKind: 'local' })).toBe('local');
+	});
+
+	test('no active location, non-local project → null (Select/No Project)', () => {
+		expect(deskBadgeKind({ location: null, projectKind: 'cloud' })).toBeNull();
+		expect(deskBadgeKind({ location: null, projectKind: 'github' })).toBeNull();
+		expect(deskBadgeKind({ location: null, projectKind: null })).toBeNull();
 	});
 });

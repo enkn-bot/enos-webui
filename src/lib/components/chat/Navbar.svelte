@@ -108,12 +108,9 @@
 		normalizeTitle(deskWorkspace?.name) || $i18n.t('Select workspace…');
 	const deskWorkspaceEmptyLabel = () => $i18n.t('No Project');
 
-	$: deskWorkspaceDisplayName = normalizeTitle(deskWorkspace?.name);
-	// Binary current-location model: the badge shows where work is happening NOW
-	// (Local | Cloud), keyed off the live location (kind), not whether a name exists.
-	// "No Project" only when there is genuinely no active location.
-	$: hasDeskWorkspace = deskWorkspace?.kind != null;
-	$: deskWorkspaceKindLabel = $i18n.t(workspaceKindLabel(deskWorkspace?.kind));
+	// Binary current-location model: the env trigger shows where work is happening NOW
+	// (Local | Cloud). Its kind comes from the picker's reactive `triggerKind` slot prop
+	// (single source of truth) so the chip can never disagree with the menu's checkmark.
 	$: currentSurface = surfaceFromIsDesk(isDeskSurface);
 	$: newChatLabel = $i18n.t(deskSurfaceLabel('new', currentSurface));
 	$: renameChatLabel = $i18n.t(deskSurfaceLabel('rename', currentSurface));
@@ -281,6 +278,7 @@
 							bind:show={showDeskWorkspacePicker}
 							activeFolderId={deskWorkspaceFolderId}
 							activeFolder={deskWorkspaceFolder}
+							let:triggerKind
 						>
 							<button
 								id="desk-workspace-status-button"
@@ -289,10 +287,10 @@
 								aria-label={deskWorkspaceLabel()}
 								title={$i18n.t('Environment')}
 							>
-								{#if hasDeskWorkspace}
-									{#if deskWorkspace?.kind === 'cloud'}
+								{#if triggerKind != null}
+									{#if triggerKind === 'cloud'}
 										<Cloud className="size-4 shrink-0" strokeWidth="2" />
-									{:else if deskWorkspace?.kind === 'local'}
+									{:else if triggerKind === 'local'}
 										<Computer className="size-4 shrink-0" strokeWidth="2" />
 									{:else}
 										<Folder className="size-4 shrink-0" strokeWidth="2" />
@@ -301,7 +299,7 @@
 									     Purely-local projects don't appear on the web surface at all (see
 									     deskFolderVisibility), so there is no "read-only / continue in cloud"
 									     dead-end state to render here. -->
-									<span class="truncate">{deskWorkspaceKindLabel}</span>
+									<span class="truncate">{$i18n.t(workspaceKindLabel(triggerKind))}</span>
 									<ChevronDown className="size-3 shrink-0" strokeWidth="2.5" />
 								{:else}
 									<span class="truncate text-gray-500 dark:text-gray-400"

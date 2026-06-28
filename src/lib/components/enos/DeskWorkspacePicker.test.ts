@@ -12,18 +12,21 @@ describe('Desk workspace picker source contract', () => {
 		// with a "Select" fallback when nothing is bound. (Replaced the old <Plus
 		// add-button — you are ALWAYS in an environment, so it reads the env, not "add".)
 		expect(navbar).not.toContain('<Plus');
-		expect(navbar).toContain('deskWorkspaceKindLabel');
+		// Single source of truth: the trigger's kind/label come from the picker's
+		// reactive `triggerKind` slot prop, NOT a parallel Chat-derived badge — so the
+		// chip can never disagree with the menu's checkmark (the divergence bug).
+		expect(navbar).toContain('let:triggerKind');
+		expect(navbar).toContain('workspaceKindLabel(triggerKind)');
 		expect(navbar).toContain('<ChevronDown');
 		expect(navbar).toContain('deskWorkspaceEmptyLabel()');
 		// Binary current-location: badge shows env when there's a live location (kind),
 		// not merely when a name exists. F1 separation: purely-local projects don't
 		// appear on web at all, so the old "read-only / continue in cloud" dead-end
 		// badge state is REMOVED — the badge is just the location label + a chevron.
-		expect(navbar).toContain('hasDeskWorkspace = deskWorkspace?.kind != null');
+		expect(navbar).toContain('{#if triggerKind != null}');
 		expect(navbar).not.toContain('deskWorkspaceReadOnly');
 		expect(navbar).not.toContain("$i18n.t('read-only')");
 		expect(navbar).toContain('Select workspace…');
-		expect(navbar).toContain('{#if hasDeskWorkspace}');
 		expect(navbar).toContain('id="desk-workspace-status-button"');
 	});
 
@@ -74,6 +77,10 @@ describe('Desk workspace picker source contract', () => {
 		// so Local + Cloud can't both show a check at once.
 		expect(picker).toContain('deskCurrentLocation');
 		expect(picker).toContain("isLocalActive = currentLocation === 'local'");
+		// The trigger chip reads the SAME reactive currentLocation via deskBadgeKind,
+		// exposed as a slot prop — one source feeds both menu checkmark and chip.
+		expect(picker).toContain('triggerKind = deskBadgeKind({ location: currentLocation');
+		expect(picker).toContain('<slot {triggerKind}');
 		expect(picker).toMatch(/\{#if isLocalActive\}[\s\S]*<Check/);
 		expect(picker).not.toMatch(/\{#if isLocalBound\}[\s\S]*<Check/);
 	});

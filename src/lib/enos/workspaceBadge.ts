@@ -58,6 +58,19 @@ export const deskCurrentLocation = (args: {
 	return null;
 };
 
+// The kind the environment trigger (chip + icon) should display. Single source so
+// the trigger and the picker menu can never disagree: prefer the live location;
+// otherwise fall back to 'local' for a bound-local project that isn't workable
+// here (read-only on web). Mirrors deskCurrentLocation's null = "not here".
+export const deskBadgeKind = (args: {
+	location: WorkspaceLocation | null;
+	projectKind: WorkspaceKind | null;
+}): WorkspaceKind | null => {
+	if (args.location) return args.location;
+	if (args.projectKind === 'local') return 'local';
+	return null;
+};
+
 export const systemCloudWorkspaceId = (
 	terminals: Array<{ id?: unknown }> | null | undefined
 ): string | null => {
