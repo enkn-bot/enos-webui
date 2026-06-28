@@ -1493,16 +1493,6 @@ async def chat_memory_handler(request: Request, form_data: dict, extra_params: d
 
 async def chat_web_search_handler(request: Request, form_data: dict, extra_params: dict, user):
     event_emitter = extra_params['__event_emitter__']
-    await event_emitter(
-        {
-            'type': 'status',
-            'data': {
-                'action': 'web_search',
-                'description': 'Searching the web',
-                'done': False,
-            },
-        }
-    )
 
     messages = form_data['messages']
     user_message = get_last_user_message(messages)
@@ -1572,6 +1562,20 @@ async def chat_web_search_handler(request: Request, form_data: dict, extra_param
             }
         )
         return form_data
+
+    # ENOS: announce the search only once queries are confirmed non-empty, so
+    # the relevance gate (empty queries -> no search) never flashes a phantom
+    # "Searching the web" on questions that won't actually search.
+    await event_emitter(
+        {
+            'type': 'status',
+            'data': {
+                'action': 'web_search',
+                'description': 'Searching the web',
+                'done': False,
+            },
+        }
+    )
 
     await event_emitter(
         {
