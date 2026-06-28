@@ -136,7 +136,7 @@
 	} from '$lib/enos/deskAgentPrompt';
 	import { deskSurfaceGroundingLine, groundingLine } from '$lib/enos/grounding';
 	import { surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
-	import { workspaceBadgeFromFolder } from '$lib/enos/workspaceBadge';
+	import { workspaceBadgeFromFolder, systemCloudWorkspaceId } from '$lib/enos/workspaceBadge';
 	import {
 		deskLocationState,
 		localLocationDefaultIntent,
