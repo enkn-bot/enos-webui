@@ -45,7 +45,10 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { beforeNavigate } from '$app/navigation';
-	import { updated } from '$app/state';
+	// `$app/stores` (not `$app/state`) so we can `.subscribe` outside runes: this
+	// component runs in legacy (non-runes) mode, and we need to react to version
+	// changes to surface the update prompt (N9), not only on navigation.
+	import { updated } from '$app/stores';
 
 	import i18n, { initI18n, getLanguages, changeLanguage } from '$lib/i18n';
 
@@ -93,9 +96,17 @@
 		return false;
 	};
 
+	// A deployed frontend update only reaches a client once the cached service
+	// worker refreshes. SvelteKit's version poller (svelte.config `version`,
+	// 60s) flips `updated` true ~a minute after a deploy. Track it so both the
+	// navigation fallback below AND the update-available toast (set up in onMount)
+	// can react.
+	let frontendUpdated = false;
+	let updatePromptShown = false;
+
 	// handle frontend updates (https://svelte.dev/docs/kit/configuration#version)
 	beforeNavigate(async ({ willUnload, to }) => {
-		if (updated.current && !willUnload && to?.url) {
+		if (frontendUpdated && !willUnload && to?.url) {
 			await unregisterServiceWorkers();
 			location.href = to.url.href;
 		}
@@ -1001,6 +1012,28 @@
 
 		// Call visibility change handler initially to set state on load
 		handleVisibilityChange();
+
+		// N9 — update-available prompt. When the version poller detects a new
+		// frontend build, show one non-disruptive toast so the user reloads on
+		// their terms (no work lost mid-task) instead of being stuck on a cached
+		// build until they happen to navigate.
+		updated.subscribe((isUpdated) => {
+			frontendUpdated = isUpdated;
+			if (isUpdated && !updatePromptShown) {
+				updatePromptShown = true;
+				toast.info($i18n.t('A new version of ENOS is available.'), {
+					description: $i18n.t('Reload to get the latest.'),
+					duration: Number.POSITIVE_INFINITY,
+					action: {
+						label: $i18n.t('Reload'),
+						onClick: async () => {
+							await unregisterServiceWorkers();
+							location.reload();
+						}
+					}
+				});
+			}
+		});
 
 		theme.set(localStorage.theme);
 
