@@ -435,17 +435,16 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(modal).toContain('showProjectSetupOptions = !edit && !cloudOnlyProjectMode');
 		expect(modal).toMatch(/\{#if showProjectSetupOptions\}[\s\S]*Where should this project live\?/);
 		expect(modal).toContain("{$i18n.t('Where should this project live?')}");
-		expect(modal).toContain("{$i18n.t('How do you want to start?')}");
+		// The Local/Cloud location chooser is the primary decision; "use an existing
+		// folder" is a footer action rather than a separate start-mode card section.
 		expect(modal).toContain("{$i18n.t('Local project')}");
 		expect(modal).toContain("{$i18n.t('ENOS Cloud project')}");
-		expect(modal).toContain("{$i18n.t('Create a new project')}");
 		expect(modal).toContain("$i18n.t('Use an existing folder')");
 		expect(modal).toContain("projectStartMode = 'clean'");
 		expect(modal).toContain("$i18n.t('Create project')");
 		expect(modal).toContain("{$i18n.t('Cancel')}");
 		expect(modal).toContain('createCleanWorkspace');
 		expect(modal).toContain("placeholder={$i18n.t('Untitled project')}");
-		expect(modal).toContain('app-managed folder on this device');
 		expect(modal).not.toContain("{$i18n.t('Start clean')}");
 		expect(modal).not.toContain('Create clean local project');
 		expect(modal).not.toContain('Documents/ENOS');
@@ -533,7 +532,7 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(modal).toContain('ENOS Cloud space');
 		expect(modal).toContain('cloudWorkspaceOptions.length > 1');
 		expect(modal).toContain('onCloudWorkspaceSelect');
-		expect(modal).toMatch(/\{#if showProjectSetupOptions\}[\s\S]*How do you want to start\?/);
+		expect(modal).toMatch(/\{#if showProjectSetupOptions\}[\s\S]*Where should this project live\?/);
 		expect(modal).not.toContain('Open in the desktop app to create local projects.');
 	});
 

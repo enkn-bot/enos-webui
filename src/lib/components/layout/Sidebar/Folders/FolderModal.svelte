@@ -7,8 +7,6 @@
 	import Check from '$lib/components/icons/Check.svelte';
 	import Cloud from '$lib/components/icons/Cloud.svelte';
 	import Computer from '$lib/components/icons/Computer.svelte';
-	import Document from '$lib/components/icons/Document.svelte';
-	import FolderIcon from '$lib/components/icons/Folder.svelte';
 
 	import { toast } from 'svelte-sonner';
 	import { user, config } from '$lib/stores';
@@ -134,6 +132,14 @@
 			name = workspace.name;
 		}
 		return workspace;
+	};
+
+	// Footer secondary action: pick an existing local folder, then create the
+	// project from it directly (the primary button creates a fresh folder).
+	const useExistingFolderHandler = async () => {
+		const workspace = await selectLocalFolder();
+		if (!workspace) return;
+		await submitHandler();
 	};
 
 	const submitHandler = async () => {
@@ -308,119 +314,74 @@
 
 		{#if showProjectSetupOptions}
 			<div class="mt-5">
-				<div class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+				<div class="mb-2 text-sm font-medium text-gray-900 dark:text-gray-100">
 					{$i18n.t('Where should this project live?')}
 				</div>
-				<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+				<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 					<button
 						type="button"
 						aria-pressed={projectEnvironment === 'local'}
-						class="relative rounded-xl border p-3.5 text-left transition {projectEnvironment ===
+						class="relative flex h-32 flex-col justify-between rounded-2xl p-4 text-left transition {projectEnvironment ===
 						'local'
-							? 'border-gray-900 dark:border-gray-100'
-							: 'border-gray-200 hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700'} {!canUseLocalProject
+							? 'bg-gray-100 ring-2 ring-gray-900 dark:bg-gray-850 dark:ring-gray-100'
+							: 'bg-gray-100 hover:bg-gray-200/70 dark:bg-gray-850 dark:hover:bg-gray-800'} {!canUseLocalProject
 							? 'cursor-not-allowed opacity-45'
 							: ''}"
 						disabled={!canUseLocalProject}
 						on:click={() => setProjectEnvironment('local')}
 					>
-						<div class="flex items-center gap-2 pr-6">
-							<Computer className="size-4 shrink-0 text-gray-500 dark:text-gray-400" strokeWidth="2" />
-							<div class="text-sm font-medium">{$i18n.t('Local project')}</div>
+						<div class="flex items-start justify-between">
+							<Computer className="size-5 text-gray-500 dark:text-gray-400" strokeWidth="2" />
+							{#if projectEnvironment === 'local'}
+								<div class="flex size-5 shrink-0 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black">
+									<Check className="size-3.5" strokeWidth="3" />
+								</div>
+							{:else}
+								<div class="size-5 shrink-0 rounded-full border-2 border-gray-300 dark:border-gray-600"></div>
+							{/if}
 						</div>
-						<div class="mt-1.5 text-xs leading-5 text-gray-500 dark:text-gray-400">
-							{canUseLocalProject
-								? $i18n.t('Stored on this device. Best for private work and offline use.')
-								: $i18n.t('Local projects require the desktop app.')}
-						</div>
-						{#if projectEnvironment === 'local'}
-							<div class="absolute right-3 top-3 flex size-4 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black">
-								<Check className="size-3" strokeWidth="3" />
+						<div>
+							<div class="text-sm font-semibold">{$i18n.t('Local project')}</div>
+							<div class="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
+								{canUseLocalProject
+									? $i18n.t('Stored on this device. Best for private work and offline use.')
+									: $i18n.t('Local projects require the desktop app.')}
 							</div>
-						{/if}
+						</div>
 					</button>
 					<button
 						type="button"
 						aria-pressed={projectEnvironment === 'cloud'}
-						class="relative rounded-xl border p-3.5 text-left transition {projectEnvironment ===
+						class="relative flex h-32 flex-col justify-between rounded-2xl p-4 text-left transition {projectEnvironment ===
 						'cloud'
-							? 'border-gray-900 dark:border-gray-100'
-							: 'border-gray-200 hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700'}"
+							? 'bg-gray-100 ring-2 ring-gray-900 dark:bg-gray-850 dark:ring-gray-100'
+							: 'bg-gray-100 hover:bg-gray-200/70 dark:bg-gray-850 dark:hover:bg-gray-800'}"
 						on:click={() => setProjectEnvironment('cloud')}
 					>
-						<div class="flex items-center gap-2 pr-6">
-							<Cloud className="size-4 shrink-0 text-gray-500 dark:text-gray-400" strokeWidth="2" />
-							<div class="text-sm font-medium">{$i18n.t('ENOS Cloud project')}</div>
+						<div class="flex items-start justify-between">
+							<Cloud className="size-5 text-gray-500 dark:text-gray-400" strokeWidth="2" />
+							{#if projectEnvironment === 'cloud'}
+								<div class="flex size-5 shrink-0 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black">
+									<Check className="size-3.5" strokeWidth="3" />
+								</div>
+							{:else}
+								<div class="size-5 shrink-0 rounded-full border-2 border-gray-300 dark:border-gray-600"></div>
+							{/if}
 						</div>
-						<div class="mt-1.5 text-xs leading-5 text-gray-500 dark:text-gray-400">
-							{$i18n.t('Synced to your ENOS workspace. Access across devices.')}
-						</div>
-						{#if projectEnvironment === 'cloud'}
-							<div class="absolute right-3 top-3 flex size-4 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black">
-								<Check className="size-3" strokeWidth="3" />
+						<div>
+							<div class="text-sm font-semibold">{$i18n.t('ENOS Cloud project')}</div>
+							<div class="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
+								{$i18n.t('Synced to your ENOS workspace. Access across devices.')}
 							</div>
-						{/if}
+						</div>
 					</button>
 				</div>
+				{#if projectEnvironment === 'local' && localWorkspace?.rootDisplay}
+					<div class="mt-2 truncate text-xs text-gray-500 dark:text-gray-400">
+						{$i18n.t('Existing folder')}: {localWorkspace.rootDisplay}
+					</div>
+				{/if}
 			</div>
-
-			{#if projectEnvironment === 'local'}
-				<div class="mt-4">
-					<div class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">
-						{$i18n.t('How do you want to start?')}
-					</div>
-					<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-						<button
-							type="button"
-							aria-pressed={projectStartMode === 'clean'}
-							class="relative rounded-xl border p-3.5 text-left transition {projectStartMode === 'clean'
-								? 'border-gray-900 dark:border-gray-100'
-								: 'border-gray-200 hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700'}"
-							on:click={() => {
-								localWorkspace = null;
-								projectStartMode = 'clean';
-							}}
-						>
-							<div class="flex items-center gap-2 pr-6">
-								<Document className="size-4 shrink-0 text-gray-500 dark:text-gray-400" strokeWidth="2" />
-								<div class="text-sm font-medium">{$i18n.t('Create a new project')}</div>
-							</div>
-							<div class="mt-1.5 text-xs leading-5 text-gray-500 dark:text-gray-400">
-								{$i18n.t('ENOS will create a fresh app-managed folder on this device.')}
-							</div>
-							{#if projectStartMode === 'clean'}
-								<div class="absolute right-3 top-3 flex size-4 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black">
-									<Check className="size-3" strokeWidth="3" />
-								</div>
-							{/if}
-						</button>
-						<button
-							type="button"
-							aria-pressed={projectStartMode === 'folder'}
-							class="relative rounded-xl border p-3.5 text-left transition {projectStartMode === 'folder'
-								? 'border-gray-900 dark:border-gray-100'
-								: 'border-gray-200 hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700'}"
-							on:click={selectLocalFolder}
-						>
-							<div class="flex items-center gap-2 pr-6">
-								<FolderIcon className="size-4 shrink-0 text-gray-500 dark:text-gray-400" strokeWidth="2" />
-								<div class="text-sm font-medium">
-									{localWorkspace ? $i18n.t('Local folder selected') : $i18n.t('Use an existing folder')}
-								</div>
-							</div>
-							<div class="mt-1.5 line-clamp-2 text-xs leading-5 text-gray-500 dark:text-gray-400">
-								{localWorkspace?.rootDisplay ??
-									$i18n.t('Connect ENOS to a folder already on this device.')}
-							</div>
-							{#if projectStartMode === 'folder'}
-								<div class="absolute right-3 top-3 flex size-4 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black">
-									<Check className="size-3" strokeWidth="3" />
-								</div>
-							{/if}
-						</button>
-					</div>
-				</div>
-			{/if}
 		{/if}
 
 		{#if showLegacyFolderOptions}
@@ -519,7 +480,17 @@
 					</div>
 					{/if}
 
-		<div class="mt-5 flex justify-end gap-2 border-t border-gray-100 pt-4 text-sm font-medium dark:border-gray-800">
+		<div class="mt-5 flex items-center justify-end gap-2 border-t border-gray-100 pt-4 text-sm font-medium dark:border-gray-800">
+			{#if showProjectSetupOptions && projectEnvironment === 'local' && canUseLocalProject}
+				<button
+					type="button"
+					class="mr-auto rounded-full bg-gray-100 px-4 py-2 text-gray-900 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-850 dark:text-gray-100 dark:hover:bg-gray-800"
+					disabled={loading}
+					on:click={useExistingFolderHandler}
+				>
+					{$i18n.t('Use an existing folder')}
+				</button>
+			{/if}
 			<button
 				type="button"
 				class="rounded-full px-4 py-2 transition hover:bg-gray-100 dark:hover:bg-gray-850"
