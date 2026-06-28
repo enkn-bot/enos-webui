@@ -3458,6 +3458,11 @@
 				session_id: $socket?.id,
 				chat_id: _chatId || undefined,
 				folder_id: $selectedFolder?.id ?? undefined,
+				// Surface hint so the backend (which now owns chat persistence) can stamp
+				// meta.surface on a new chat. Without it, a loose Desk chat is created with
+				// no surface tag and is hidden from the Desk sidebar (filterChatsBySurface
+				// defaults untagged loose chats to the chat surface). See deskLooseChats.ts.
+				surface: currentSurface(),
 
 				id: responseMessageId,
 				...(messageIdsMap ? { message_ids: messageIdsMap } : {}),

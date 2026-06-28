@@ -816,4 +816,21 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(nav).toContain('Relink Folder');
 		expect(nav).toContain('Keep Read-Only');
 	});
+
+	test('N1: loose Desk chat surface is tagged on the backend-owned create path', () => {
+		// The backend now owns chat persistence, so the client must pass the surface
+		// in the completion request and the backend must stamp meta.surface at create —
+		// otherwise loose Desk chats are surface=None and hidden by filterChatsBySurface.
+		const chat = read('src/lib/components/chat/Chat.svelte');
+		const main = read('backend/open_webui/main.py');
+
+		// Frontend: completion request carries the surface hint.
+		expect(chat).toContain('surface: currentSurface()');
+
+		// Backend: surface is read from the completion form and stamped into the new
+		// chat's meta (insert_new_chat lifts chat['meta'] via _row_meta_from_chat).
+		expect(main).toContain("'surface': form_data.pop('surface', None)");
+		expect(main).toContain("{'meta': {'surface': metadata['surface']}}");
+		expect(main).toContain("if metadata.get('surface')");
+	});
 });

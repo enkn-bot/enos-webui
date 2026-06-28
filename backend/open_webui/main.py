@@ -1778,6 +1778,10 @@ async def chat_completion(
             'assistant_message_id': form_data.pop('assistant_message_id', None),
             'session_id': form_data.pop('session_id', None),
             'folder_id': form_data.pop('folder_id', None),
+            # ENOS surface hint ('desk' | 'chat') from the client. Used to stamp
+            # meta.surface when the backend creates a new chat, so loose Desk chats
+            # are visible in the Desk sidebar (filterChatsBySurface). Optional.
+            'surface': form_data.pop('surface', None),
             'filter_ids': form_data.pop('filter_ids', []),
             'tool_ids': form_data.get('tool_ids', None),
             'tool_servers': tool_servers,
@@ -1891,6 +1895,16 @@ async def chat_completion(
                                 'files': metadata.get('files') or [],
                                 'tags': [],
                                 'timestamp': int(time.time() * 1000),
+                                # Stamp the ENOS surface so a loose Desk chat is visible
+                                # in the Desk sidebar. insert_new_chat lifts chat['meta']
+                                # into the meta column (_row_meta_from_chat). Foldered/chat
+                                # chats are unaffected (filterChatsBySurface uses folder
+                                # authority for foldered chats; 'chat' is the default).
+                                **(
+                                    {'meta': {'surface': metadata['surface']}}
+                                    if metadata.get('surface')
+                                    else {}
+                                ),
                             },
                             folder_id=metadata.get('folder_id'),
                         ),
