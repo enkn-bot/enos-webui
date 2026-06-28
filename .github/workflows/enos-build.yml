@@ -1,0 +1,46 @@
+name: ENOS — build & push (arm64)
+
+on:
+  push:
+    branches:
+      - enos-status-narration
+  workflow_dispatch:
+
+concurrency:
+  group: enos-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE: ghcr.io/enkn-bot/enos-webui
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          platforms: linux/arm64
+          tags: |
+            ${{ env.IMAGE }}:enos-status-narration
+            ${{ env.IMAGE }}:git-${{ github.sha }}
+          cache-from: type=registry,ref=${{ env.IMAGE }}:cache-enos
+          cache-to: type=registry,ref=${{ env.IMAGE }}:cache-enos,mode=max
+          build-args: |
+            BUILD_HASH=${{ github.sha }}
