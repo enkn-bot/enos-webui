@@ -327,7 +327,7 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(fileNav).toContain('resolveCloudFilesInitialPath');
 		expect(fileNav).toContain('const resolveProjectPath');
 		expect(fileNav).toContain('path = resolveProjectPath(path);');
-		expect(localFileNav).toContain('Working on your device');
+		expect(localFileNav).toContain('Working on this Mac');
 		expect(localFileNav).not.toContain('Project context ready');
 	});
 
@@ -402,7 +402,7 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(menu).toContain("{$i18n.t('Project')}");
 		expect(menu).toContain('workspaceBadgeFromFolder(activeFolder)');
 		expect(menu).toContain('projectStatusLabel');
-		expect(menu).toContain('Working on your device');
+		expect(menu).toContain('Working on this Mac');
 		expect(menu).toContain('Working in ENOS Cloud');
 		expect(menu).toContain('No workspace connected yet');
 		expect(menu).toContain('Choose Local or ENOS Cloud to connect files.');

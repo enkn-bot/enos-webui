@@ -276,12 +276,13 @@
 					await selectedFolder.set(updated);
 					showLocalFileFolderId.set(activeFolderId);
 					showFileNavPath.set('.');
-					toast.info($i18n.t('Working on your device'));
+					toast.info($i18n.t('Working on this Mac'));
 				}
 				return;
 			}
 
 			show = false;
+			toast.info($i18n.t('Working on this Mac'));
 			showDeskFolderPicker.set(true);
 		});
 	};

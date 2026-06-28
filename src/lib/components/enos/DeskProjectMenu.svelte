@@ -26,7 +26,7 @@
 	$: projectIcon = sourceKind === 'cloud' || sourceKind === 'github' ? 'cloud' : 'folder';
 
 	const statusLabelFor = (kind: string | null | undefined) => {
-		if (kind === 'local') return $i18n.t('Working on your device');
+		if (kind === 'local') return $i18n.t('Working on this Mac');
 		if (kind === 'cloud' || kind === 'github') return $i18n.t('Working in ENOS Cloud');
 		return $i18n.t('No workspace connected yet');
 	};

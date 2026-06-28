@@ -443,7 +443,7 @@
 				</div>
 				{#if workspace && folderId}
 					<div class="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
-						{$i18n.t('Working on your device')}
+						{$i18n.t('Working on this Mac')}
 					</div>
 					<div class="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
 						{#if gitStatus?.isRepo}
