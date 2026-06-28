@@ -456,7 +456,9 @@ export const generateInitialsImage = (name) => {
 		return `${WEBUI_BASE_URL}/user.png`;
 	}
 
-	ctx.fillStyle = '#F39C12';
+	// Brand sage (var(--enos-brand-sage)) — keeps the user's generated initials
+	// avatar consistent with the sage UserAvatar used in the sidebar/overview.
+	ctx.fillStyle = '#a4b672';
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
 
 	ctx.fillStyle = '#FFFFFF';

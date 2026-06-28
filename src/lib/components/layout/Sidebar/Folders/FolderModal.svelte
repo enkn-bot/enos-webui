@@ -307,142 +307,120 @@
 		{/if}
 
 		{#if showProjectSetupOptions}
-			<div class="mt-6">
-				<div class="mb-3 text-sm font-medium text-gray-900 dark:text-gray-100">
+			<div class="mt-5">
+				<div class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">
 					{$i18n.t('Where should this project live?')}
 				</div>
-				<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+				<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
 					<button
 						type="button"
 						aria-pressed={projectEnvironment === 'local'}
-						class="relative rounded-2xl border p-4 text-left transition {projectEnvironment ===
+						class="relative rounded-xl border p-3.5 text-left transition {projectEnvironment ===
 						'local'
-							? 'border-gray-900 bg-white dark:border-gray-100 dark:bg-gray-900'
+							? 'border-gray-900 dark:border-gray-100'
 							: 'border-gray-200 hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700'} {!canUseLocalProject
 							? 'cursor-not-allowed opacity-45'
 							: ''}"
 						disabled={!canUseLocalProject}
 						on:click={() => setProjectEnvironment('local')}
 					>
-						<div class="flex gap-3">
-							<div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100">
-								<Computer className="size-5" strokeWidth="2" />
-							</div>
-							<div class="min-w-0">
-								<div class="text-sm font-semibold">{$i18n.t('Local project')}</div>
-								<div class="mt-1 text-sm leading-5 text-gray-500 dark:text-gray-400">
-									{canUseLocalProject
-										? $i18n.t('Stored on this device. Best for private work and offline use.')
-										: $i18n.t('Local projects require the desktop app.')}
-								</div>
-							</div>
+						<div class="flex items-center gap-2 pr-6">
+							<Computer className="size-4 shrink-0 text-gray-500 dark:text-gray-400" strokeWidth="2" />
+							<div class="text-sm font-medium">{$i18n.t('Local project')}</div>
+						</div>
+						<div class="mt-1.5 text-xs leading-5 text-gray-500 dark:text-gray-400">
+							{canUseLocalProject
+								? $i18n.t('Stored on this device. Best for private work and offline use.')
+								: $i18n.t('Local projects require the desktop app.')}
 						</div>
 						{#if projectEnvironment === 'local'}
-							<div class="absolute right-4 top-4 flex size-5 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black">
-								<Check className="size-3.5" strokeWidth="3" />
+							<div class="absolute right-3 top-3 flex size-4 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black">
+								<Check className="size-3" strokeWidth="3" />
 							</div>
 						{/if}
 					</button>
 					<button
 						type="button"
 						aria-pressed={projectEnvironment === 'cloud'}
-						class="relative rounded-2xl border p-4 text-left transition {projectEnvironment ===
+						class="relative rounded-xl border p-3.5 text-left transition {projectEnvironment ===
 						'cloud'
-							? 'border-gray-900 bg-white dark:border-gray-100 dark:bg-gray-900'
+							? 'border-gray-900 dark:border-gray-100'
 							: 'border-gray-200 hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700'}"
 						on:click={() => setProjectEnvironment('cloud')}
 					>
-						<div class="flex gap-3">
-							<div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100">
-								<Cloud className="size-5" strokeWidth="2" />
-							</div>
-							<div class="min-w-0">
-								<div class="text-sm font-semibold">{$i18n.t('ENOS Cloud project')}</div>
-								<div class="mt-1 text-sm leading-5 text-gray-500 dark:text-gray-400">
-									{$i18n.t('Synced to your ENOS workspace. Access across devices.')}
-								</div>
-							</div>
+						<div class="flex items-center gap-2 pr-6">
+							<Cloud className="size-4 shrink-0 text-gray-500 dark:text-gray-400" strokeWidth="2" />
+							<div class="text-sm font-medium">{$i18n.t('ENOS Cloud project')}</div>
+						</div>
+						<div class="mt-1.5 text-xs leading-5 text-gray-500 dark:text-gray-400">
+							{$i18n.t('Synced to your ENOS workspace. Access across devices.')}
 						</div>
 						{#if projectEnvironment === 'cloud'}
-							<div class="absolute right-4 top-4 flex size-5 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black">
-								<Check className="size-3.5" strokeWidth="3" />
+							<div class="absolute right-3 top-3 flex size-4 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black">
+								<Check className="size-3" strokeWidth="3" />
 							</div>
 						{/if}
 					</button>
 				</div>
 			</div>
 
-			<div class="mt-6">
-				<div class="mb-3 text-sm font-medium text-gray-900 dark:text-gray-100">
-					{$i18n.t('How do you want to start?')}
-				</div>
-				<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-					<button
-						type="button"
-						aria-pressed={projectStartMode === 'clean'}
-						class="relative rounded-2xl border p-4 text-left transition {projectStartMode === 'clean'
-							? 'border-gray-900 bg-white dark:border-gray-100 dark:bg-gray-900'
-							: 'border-gray-200 hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700'}"
-						on:click={() => {
-							localWorkspace = null;
-							projectStartMode = 'clean';
-						}}
-					>
-						<div class="flex gap-3">
-							<div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100">
-								<Document className="size-5" strokeWidth="2" />
+			{#if projectEnvironment === 'local'}
+				<div class="mt-4">
+					<div class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+						{$i18n.t('How do you want to start?')}
+					</div>
+					<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+						<button
+							type="button"
+							aria-pressed={projectStartMode === 'clean'}
+							class="relative rounded-xl border p-3.5 text-left transition {projectStartMode === 'clean'
+								? 'border-gray-900 dark:border-gray-100'
+								: 'border-gray-200 hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700'}"
+							on:click={() => {
+								localWorkspace = null;
+								projectStartMode = 'clean';
+							}}
+						>
+							<div class="flex items-center gap-2 pr-6">
+								<Document className="size-4 shrink-0 text-gray-500 dark:text-gray-400" strokeWidth="2" />
+								<div class="text-sm font-medium">{$i18n.t('Create a new project')}</div>
 							</div>
-							<div class="min-w-0">
-								<div class="text-sm font-semibold">{$i18n.t('Create a new project')}</div>
-								<div class="mt-1 text-sm leading-5 text-gray-500 dark:text-gray-400">
-									{projectEnvironment === 'local'
-										? $i18n.t('ENOS will create a fresh app-managed folder on this device.')
-										: $i18n.t('ENOS will create a fresh folder in ENOS Cloud.')}
+							<div class="mt-1.5 text-xs leading-5 text-gray-500 dark:text-gray-400">
+								{$i18n.t('ENOS will create a fresh app-managed folder on this device.')}
+							</div>
+							{#if projectStartMode === 'clean'}
+								<div class="absolute right-3 top-3 flex size-4 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black">
+									<Check className="size-3" strokeWidth="3" />
 								</div>
-							</div>
-						</div>
-						{#if projectStartMode === 'clean'}
-							<div class="absolute right-4 top-4 flex size-5 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black">
-								<Check className="size-3.5" strokeWidth="3" />
-							</div>
-						{/if}
-					</button>
-					<button
-						type="button"
-						aria-pressed={projectStartMode === 'folder'}
-						class="relative rounded-2xl border p-4 text-left transition {projectStartMode === 'folder'
-							? 'border-gray-900 bg-white dark:border-gray-100 dark:bg-gray-900'
-							: 'border-gray-200 hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700'} {projectEnvironment !==
-						'local'
-							? 'cursor-not-allowed opacity-45'
-							: ''}"
-						disabled={projectEnvironment !== 'local'}
-						on:click={selectLocalFolder}
-					>
-						<div class="flex gap-3">
-							<div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100">
-								<FolderIcon className="size-5" strokeWidth="2" />
-							</div>
-							<div class="min-w-0">
-								<div class="text-sm font-semibold">
+							{/if}
+						</button>
+						<button
+							type="button"
+							aria-pressed={projectStartMode === 'folder'}
+							class="relative rounded-xl border p-3.5 text-left transition {projectStartMode === 'folder'
+								? 'border-gray-900 dark:border-gray-100'
+								: 'border-gray-200 hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700'}"
+							on:click={selectLocalFolder}
+						>
+							<div class="flex items-center gap-2 pr-6">
+								<FolderIcon className="size-4 shrink-0 text-gray-500 dark:text-gray-400" strokeWidth="2" />
+								<div class="text-sm font-medium">
 									{localWorkspace ? $i18n.t('Local folder selected') : $i18n.t('Use an existing folder')}
 								</div>
-								<div class="mt-1 line-clamp-2 text-sm leading-5 text-gray-500 dark:text-gray-400">
-									{localWorkspace?.rootDisplay ??
-										(projectEnvironment === 'local'
-											? $i18n.t('Connect ENOS to a folder already on this device.')
-											: $i18n.t('Available for local projects.'))}
+							</div>
+							<div class="mt-1.5 line-clamp-2 text-xs leading-5 text-gray-500 dark:text-gray-400">
+								{localWorkspace?.rootDisplay ??
+									$i18n.t('Connect ENOS to a folder already on this device.')}
+							</div>
+							{#if projectStartMode === 'folder'}
+								<div class="absolute right-3 top-3 flex size-4 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black">
+									<Check className="size-3" strokeWidth="3" />
 								</div>
-							</div>
-						</div>
-						{#if projectStartMode === 'folder'}
-							<div class="absolute right-4 top-4 flex size-5 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black">
-								<Check className="size-3.5" strokeWidth="3" />
-							</div>
-						{/if}
-					</button>
+							{/if}
+						</button>
+					</div>
 				</div>
-			</div>
+			{/if}
 		{/if}
 
 		{#if showLegacyFolderOptions}

@@ -1917,7 +1917,7 @@
 					{#if Object.keys(visibleFolders ?? {}).length === 0}
 						<button
 							type="button"
-							class="w-full px-4 py-1.5 text-left text-xs text-gray-400 transition hover:text-gray-600 dark:text-gray-600 dark:hover:text-gray-400"
+							class="w-full pl-[1.125rem] pr-4 py-1.5 text-left text-xs text-gray-400 transition hover:text-gray-600 dark:text-gray-600 dark:hover:text-gray-400"
 							on:click={() => {
 								showCreateFolderModal = true;
 							}}
