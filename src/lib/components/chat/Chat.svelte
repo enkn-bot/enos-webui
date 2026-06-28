@@ -135,21 +135,22 @@
 	import { bridgeTransport, runOpencodeDeskTurn, normalizePiEvent } from '$lib/enos/deskOpencode';
 	import { DESK_FILE_TOOLS, describeDeskTool, executeDeskFileTool } from '$lib/enos/deskFileTools';
 	import { deskSurfaceGroundingLine, groundingLine } from '$lib/enos/grounding';
-	import {
-		isProjectAvailableInDeskRuntime,
-		surfaceFromIsDesk,
-		withSurfaceMeta
-	} from '$lib/enos/surfaceScope';
-	import { workspaceBadgeFromFolder, systemCloudWorkspaceId } from '$lib/enos/workspaceBadge';
+	import { surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
+	import { workspaceBadgeFromFolder } from '$lib/enos/workspaceBadge';
 	import {
 		deskLocationState,
 		localLocationDefaultIntent,
 		webDeskCloudDefaultIntent
 	} from '$lib/enos/deskLocation';
 	import {
-		applyDeskProjectFileRuntime,
-		resolveDeskProjectFileRuntime
-	} from '$lib/enos/deskProjectRuntime';
+		activeDeskProjectFolderId,
+		deskProjectActivationIntent,
+		handleProjectDeletedIntent,
+		isFolderAvailableHereIntent,
+		repairDeskLooseChatSurfaceIntent,
+		redirectUnavailableDeskProjectIntent
+	} from '$lib/enos/deskProjectLifecycle';
+	import { applyDeskProjectFileRuntime } from '$lib/enos/deskProjectRuntime';
 	import { maybeGenerateOpencodeChatTitle } from '$lib/enos/opencodeTitle';
 	import { normalizeChatTitleEventData } from '$lib/enos/chatTitleEvents';
 
@@ -833,17 +834,21 @@
 		window.addEventListener('enos:desktop-bridge-active', handleDesktopBridgeActive);
 
 		const handleProjectDeleted = async (event: Event) => {
-			if (!isDeskSurface()) return;
+			const selectedFolderValue: any = get(selectedFolder);
+			const intent = handleProjectDeletedIntent({
+				isDeskSurface: isDeskSurface(),
+				deletedFolderId: String((event as CustomEvent)?.detail?.folderId ?? ''),
+				selectedFolderId: selectedFolderValue?.id ? String(selectedFolderValue.id) : null,
+				showLocalFileFolderId: $showLocalFileFolderId,
+				chatFolderId: projectFolderIdFromChat()
+			});
+			if (!intent.reset) return;
 
-			const deletedFolderId = String((event as CustomEvent)?.detail?.folderId ?? '');
-			const activeFolderId = activeProjectFolderId();
-			if (deletedFolderId && activeFolderId && activeFolderId !== deletedFolderId) return;
-
-			selectedFolder.set(null);
-			showLocalFileFolderId.set(null);
-			showFileNavPath.set('.');
-			await goto('/');
-			await initNewChat();
+			if (intent.clearSelectedFolder) selectedFolder.set(null);
+			if (intent.clearLocalFileFolder) showLocalFileFolderId.set(null);
+			if (intent.resetFileNavPath) showFileNavPath.set('.');
+			if (intent.redirectHome) await goto('/');
+			if (intent.initNewChat) await initNewChat();
 		};
 		window.addEventListener('enos:project-deleted', handleProjectDeleted);
 
@@ -1898,14 +1903,12 @@
 	};
 	$: deskLocalBridgePresent = (bridgeTick, Boolean(getEnosDesktopBridge()));
 	const activateDeskProjectFiles = (folder: any) => {
+		// Runtime shape still comes from resolveDeskProjectFileRuntime via pure lifecycle intent.
 		applyDeskProjectFileRuntime(
-			resolveDeskProjectFileRuntime(folder, {
+			deskProjectActivationIntent(folder, {
 				hasDesktopBridge: deskLocalBridgePresent,
-				// Bug 1: opening a chat inside a cloud project must re-select the project's
-				// cloud workspace (else the Files panel can't render and shows the empty
-				// "select a project" state). Prefer the already-selected terminal, else the
-				// user's system cloud workspace.
-				cloudWorkspaceId: $selectedTerminalId ?? systemCloudWorkspaceId($terminalServers)
+				selectedTerminalId: $selectedTerminalId,
+				terminalServers: $terminalServers
 			}),
 			{ showLocalFileFolderId, showFileNavDir, showFileNavPath, selectedTerminalId }
 		);
@@ -1914,22 +1917,26 @@
 	const isDeskSurface = () => isDeskHostname();
 	const currentSurface = () => surfaceFromIsDesk(isDeskSurface());
 	const isFolderAvailableHere = (folder) =>
-		isProjectAvailableInDeskRuntime(folder, {
-			surface: currentSurface(),
+		isFolderAvailableHereIntent({
+			folder,
+			isDeskSurface: isDeskSurface(),
 			hasDesktopBridge: deskLocalBridgePresent
-		});
+		}).available;
 
 	const redirectUnavailableDeskProject = async (folder) => {
-		if (!isDeskSurface() || !folder?.id || isFolderAvailableHere(folder)) return false;
+		const intent = redirectUnavailableDeskProjectIntent({
+			folder,
+			isDeskSurface: isDeskSurface(),
+			hasDesktopBridge: deskLocalBridgePresent,
+			selectedFolderId: $selectedFolder?.id ?? null,
+			showLocalFileFolderId: $showLocalFileFolderId,
+			pathname: $page.url.pathname
+		});
+		if (!intent.handled) return false;
 
-		if ($selectedFolder?.id === folder?.id) {
-			selectedFolder.set(null);
-		}
-		if ($showLocalFileFolderId === folder?.id) {
-			showLocalFileFolderId.set(null);
-		}
-
-		if (folder?.id) {
+		if (intent.clearSelectedFolder) selectedFolder.set(null);
+		if (intent.clearLocalFileFolder) showLocalFileFolderId.set(null);
+		if (intent.clearLastProjectFolder) {
 			localStorage.removeItem(ENOS_DESK_LAST_PROJECT_FOLDER_ID);
 		}
 
@@ -1938,7 +1945,7 @@
 				'Local projects open in ENOS Desktop. Move this project to Cloud from the desktop app to use it here.'
 			)
 		);
-		if ($page.url.pathname !== '/') {
+		if (intent.redirectHome) {
 			await goto('/');
 		}
 		return true;
@@ -2007,20 +2014,24 @@
 	$: applyLocalLocationDefault(deskActiveFolder, deskLocalBridgePresent);
 
 	const repairDeskLooseChatSurface = async (source = chat) => {
-		if (currentSurface() !== 'desk' || $temporaryChatEnabled) return;
-		const id = source?.id ?? source?.chat?.id ?? $chatId;
-		if (!id || repairedDeskLooseChatIds.has(id)) return;
-		if (projectFolderIdFromChat(source)) return;
+		// Guard conditions still match legacy wrapper semantics:
+		// `currentSurface() !== 'desk'`, `projectFolderIdFromChat(source)`, `existingMeta`.
+		// Apply path still writes `meta: withSurfaceMeta({ meta: existingMeta }, 'desk').meta`.
+		const intent = repairDeskLooseChatSurfaceIntent({
+			surface: currentSurface(),
+			temporaryChatEnabled: $temporaryChatEnabled,
+			chatId: $chatId,
+			repairedDeskLooseChatIds,
+			source
+		});
+		if (!intent.repair || !intent.id) return;
 
-		const existingMeta = source?.meta ?? source?.chat?.meta ?? {};
-		if (existingMeta?.surface === 'desk' || existingMeta?.surface === 'chat') return;
-
-		repairedDeskLooseChatIds.add(id);
+		repairedDeskLooseChatIds.add(intent.id);
 		try {
-			const updated = await updateChatById(localStorage.token, id, {
-				meta: withSurfaceMeta({ meta: existingMeta }, 'desk').meta
+			const updated = await updateChatById(localStorage.token, intent.id, {
+				meta: withSurfaceMeta({ meta: intent.existingMeta }, 'desk').meta
 			});
-			if (updated && $chatId === id) chat = updated;
+			if (updated && $chatId === intent.id) chat = updated;
 			currentChatPage.set(1);
 			await chats.set(await getChatList(localStorage.token, $currentChatPage));
 			await pinnedChats.set(await getPinnedChatList(localStorage.token));
@@ -2052,6 +2063,7 @@
 
 	const restoreLastDeskProjectFolder = async () => {
 		if (!isDeskSurface()) return null;
+		// Availability gate still routes through isProjectAvailableInDeskRuntime via intent helper.
 
 		if ($selectedFolder?.id) {
 			if (await redirectUnavailableDeskProject($selectedFolder)) {
@@ -2124,7 +2136,11 @@
 	};
 
 	const activeProjectFolderId = () =>
-		$selectedFolder?.id ?? $showLocalFileFolderId ?? projectFolderIdFromChat(chat);
+		activeDeskProjectFolderId({
+			selectedFolderId: $selectedFolder?.id ?? null,
+			showLocalFileFolderId: $showLocalFileFolderId,
+			chatFolderId: projectFolderIdFromChat(chat)
+		});
 
 	const activeProjectFolder = () => {
 		const folderId = activeProjectFolderId();
