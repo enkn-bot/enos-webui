@@ -140,7 +140,8 @@
 	import {
 		deskLocationState,
 		localLocationDefaultIntent,
-		webDeskCloudDefaultIntent
+		webDeskCloudDefaultIntent,
+		deskLocalLaunchDefaultIntent
 	} from '$lib/enos/deskLocation';
 	import {
 		activeDeskProjectFolderId,
@@ -2012,6 +2013,25 @@
 		}
 	};
 	$: applyLocalLocationDefault(deskActiveFolder, deskLocalBridgePresent);
+
+	// Desktop launches Local: a system cloud workspace selection persisted from a prior
+	// session (restored by (app)/+layout.svelte) must not make a fresh ENOS Desk launch
+	// read as Cloud. Clear it ONCE, after the bridge is known to be present (desktop),
+	// when no local project is open. Latches so an explicit cloud re-select afterward
+	// sticks; never runs on the web desk (no bridge → cloud is the correct default).
+	let deskLocalLaunchApplied = false;
+	const applyDeskLocalLaunchDefault = (bridgePresent, selectedTid, projectKind) => {
+		if (deskLocalLaunchApplied || !isDeskSurface() || !bridgePresent) return;
+		const { clearTerminal } = deskLocalLaunchDefaultIntent({
+			isDeskSurface: isDeskSurface(),
+			bridgePresent,
+			selectedTerminalId: selectedTid,
+			activeLocalProject: projectKind === 'local'
+		});
+		if (clearTerminal) selectedTerminalId.set(null);
+		deskLocalLaunchApplied = true;
+	};
+	$: applyDeskLocalLaunchDefault(deskLocalBridgePresent, $selectedTerminalId, deskActiveProjectKind);
 
 	const repairDeskLooseChatSurface = async (source = chat) => {
 		// Guard conditions still match legacy wrapper semantics:

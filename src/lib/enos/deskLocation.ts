@@ -63,6 +63,28 @@ export const localLocationDefaultIntent = (args: {
 	};
 };
 
+// Desktop is local-first at launch. `selectedTerminalId` is globally persisted in
+// localStorage and restored on every load ((app)/+layout.svelte), so a system cloud
+// workspace (`ws-…`) picked in a prior session would otherwise survive into a fresh
+// ENOS Desk launch and force the env badge + Files panel to Cloud — even though the
+// desktop bridge is present and no project is open. This clears that stale SYSTEM
+// cloud selection once at init so the desktop genuinely starts Local (badge AND files,
+// never a desync). Scoped to the system workspace only (`ws-` id) — an explicit
+// user-added cloud terminal is left alone — and skipped when a local project is open
+// (location follows the project) or on the web desk (no bridge → cloud is correct).
+// Apply once per launch behind a guard so an explicit cloud re-select afterward sticks.
+export const deskLocalLaunchDefaultIntent = (args: {
+	isDeskSurface: boolean;
+	bridgePresent: boolean;
+	selectedTerminalId: string | null;
+	activeLocalProject: boolean;
+}): { clearTerminal: boolean } => {
+	if (!args.isDeskSurface || !args.bridgePresent || args.activeLocalProject)
+		return { clearTerminal: false };
+	const isSystemCloud = !!args.selectedTerminalId && args.selectedTerminalId.startsWith('ws-');
+	return { clearTerminal: isSystemCloud };
+};
+
 // On the web desk surface with no bridge and no terminal selected, default into
 // the system cloud workspace so the Files panel has something to render.
 export const webDeskCloudDefaultIntent = (args: {

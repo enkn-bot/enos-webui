@@ -3,7 +3,8 @@ import { describe, expect, test } from 'vitest';
 import {
 	deskLocationState,
 	localLocationDefaultIntent,
-	webDeskCloudDefaultIntent
+	webDeskCloudDefaultIntent,
+	deskLocalLaunchDefaultIntent
 } from './deskLocation';
 
 const localFolder = { data: { project_context_source: { kind: 'local', rootName: 'repo-a' } } };
@@ -121,5 +122,68 @@ describe('webDeskCloudDefaultIntent', () => {
 				systemCloudWorkspaceId: 'ws-sys'
 			})
 		).toEqual({ selectTerminalId: null });
+	});
+});
+
+describe('deskLocalLaunchDefaultIntent (desktop launches Local, not a stale cloud)', () => {
+	test('desktop bridge + persisted system cloud (ws-) + no local project → clear', () => {
+		expect(
+			deskLocalLaunchDefaultIntent({
+				isDeskSurface: true,
+				bridgePresent: true,
+				selectedTerminalId: 'ws-sys',
+				activeLocalProject: false
+			})
+		).toEqual({ clearTerminal: true });
+	});
+	test('web desk (no bridge) → keep cloud default, never clear', () => {
+		expect(
+			deskLocalLaunchDefaultIntent({
+				isDeskSurface: true,
+				bridgePresent: false,
+				selectedTerminalId: 'ws-sys',
+				activeLocalProject: false
+			})
+		).toEqual({ clearTerminal: false });
+	});
+	test('a local project is open → location follows project, never clear', () => {
+		expect(
+			deskLocalLaunchDefaultIntent({
+				isDeskSurface: true,
+				bridgePresent: true,
+				selectedTerminalId: 'ws-sys',
+				activeLocalProject: true
+			})
+		).toEqual({ clearTerminal: false });
+	});
+	test('explicit user terminal (not ws-) → system-cloud-only, never clear', () => {
+		expect(
+			deskLocalLaunchDefaultIntent({
+				isDeskSurface: true,
+				bridgePresent: true,
+				selectedTerminalId: 'user-term-7',
+				activeLocalProject: false
+			})
+		).toEqual({ clearTerminal: false });
+	});
+	test('no terminal selected → nothing to clear', () => {
+		expect(
+			deskLocalLaunchDefaultIntent({
+				isDeskSurface: true,
+				bridgePresent: true,
+				selectedTerminalId: null,
+				activeLocalProject: false
+			})
+		).toEqual({ clearTerminal: false });
+	});
+	test('not the desk surface → never clear', () => {
+		expect(
+			deskLocalLaunchDefaultIntent({
+				isDeskSurface: false,
+				bridgePresent: true,
+				selectedTerminalId: 'ws-sys',
+				activeLocalProject: false
+			})
+		).toEqual({ clearTerminal: false });
 	});
 });
