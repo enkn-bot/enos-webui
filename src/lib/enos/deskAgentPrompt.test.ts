@@ -1,9 +1,10 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 
 import {
 	buildDeskAgentSystemPrompt,
 	describeDeskProjectForPrompt,
 	deskAccessModePromptLine,
+	loadDeskAccessModeForPrompt,
 	normalizeDeskAccessMode
 } from './deskAgentPrompt';
 
@@ -44,6 +45,29 @@ describe('deskAgentPrompt', () => {
 		expect(deskAccessModePromptLine('read-only')).toContain('edits are disabled');
 		expect(deskAccessModePromptLine('auto')).toContain('edits are limited to this project');
 		expect(deskAccessModePromptLine('full')).toContain('read and edit anywhere on this Mac');
+	});
+
+	test('loads access mode from bridge and falls back to auto', async () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		expect(await loadDeskAccessModeForPrompt(null)).toBe('auto');
+		expect(
+			await loadDeskAccessModeForPrompt({
+				getAccessMode: async () => 'full'
+			})
+		).toBe('full');
+		expect(
+			await loadDeskAccessModeForPrompt({
+				getAccessMode: async () => 'unknown'
+			})
+		).toBe('auto');
+		expect(
+			await loadDeskAccessModeForPrompt({
+				getAccessMode: async () => {
+					throw new Error('nope');
+				}
+			})
+		).toBe('auto');
+		warn.mockRestore();
 	});
 
 	test('builds the desk agent system prompt from one source', () => {

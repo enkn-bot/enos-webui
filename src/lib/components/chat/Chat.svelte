@@ -120,9 +120,7 @@
 	import { getBanners } from '$lib/apis/configs';
 	import {
 		canUseEnosLocalOpencode,
-		getEnosDesktopBridge,
-		type EnosDesktopAccessMode,
-		type EnosDesktopBridge
+		getEnosDesktopBridge
 	} from '$lib/enos/desktopBridge';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
 	import { buildProjectActionContext } from '$lib/enos/projectActions';
@@ -134,7 +132,7 @@
 	import {
 		buildDeskAgentSystemPrompt,
 		describeDeskProjectForPrompt,
-		normalizeDeskAccessMode
+		loadDeskAccessModeForPrompt
 	} from '$lib/enos/deskAgentPrompt';
 	import { deskSurfaceGroundingLine, groundingLine } from '$lib/enos/grounding';
 	import { surfaceFromIsDesk, withSurfaceMeta } from '$lib/enos/surfaceScope';
@@ -2149,21 +2147,6 @@
 		if (!folderId) return null;
 		if ($selectedFolder?.id === folderId) return $selectedFolder;
 		return knownProjectFolderById(folderId);
-	};
-
-	const loadDeskAccessModeForPrompt = async (
-		bridge: EnosDesktopBridge | null
-	): Promise<EnosDesktopAccessMode> => {
-		if (typeof bridge?.getAccessMode !== 'function') {
-			return 'auto';
-		}
-
-		try {
-			return normalizeDeskAccessMode(await bridge.getAccessMode());
-		} catch (error) {
-			console.warn('Unable to load ENOS Desk access mode', error);
-			return 'auto';
-		}
 	};
 
 	const activeProjectPathForFolder = (folderId) =>

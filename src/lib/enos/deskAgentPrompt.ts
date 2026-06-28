@@ -1,4 +1,4 @@
-import type { EnosDesktopAccessMode } from './desktopBridge';
+import type { EnosDesktopAccessMode, EnosDesktopBridge } from './desktopBridge';
 
 export const describeDeskProjectForPrompt = (folder: any) => {
 	const source = folder?.data?.project_context_source ?? {};
@@ -25,6 +25,21 @@ export const normalizeDeskAccessMode = (mode: unknown): EnosDesktopAccessMode =>
 		return mode;
 	}
 	return 'auto';
+};
+
+export const loadDeskAccessModeForPrompt = async (
+	bridge: Pick<EnosDesktopBridge, 'getAccessMode'> | null
+): Promise<EnosDesktopAccessMode> => {
+	if (typeof bridge?.getAccessMode !== 'function') {
+		return 'auto';
+	}
+
+	try {
+		return normalizeDeskAccessMode(await bridge.getAccessMode());
+	} catch (error) {
+		console.warn('Unable to load ENOS Desk access mode', error);
+		return 'auto';
+	}
 };
 
 export const deskAccessModePromptLine = (mode: EnosDesktopAccessMode) => {
