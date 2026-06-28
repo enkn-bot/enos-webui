@@ -140,11 +140,12 @@
 		surfaceFromIsDesk,
 		withSurfaceMeta
 	} from '$lib/enos/surfaceScope';
+	import { workspaceBadgeFromFolder, systemCloudWorkspaceId } from '$lib/enos/workspaceBadge';
 	import {
-		workspaceBadgeFromFolder,
-		deskCurrentLocation,
-		systemCloudWorkspaceId
-	} from '$lib/enos/workspaceBadge';
+		deskLocationState,
+		localLocationDefaultIntent,
+		webDeskCloudDefaultIntent
+	} from '$lib/enos/deskLocation';
 	import {
 		applyDeskProjectFileRuntime,
 		resolveDeskProjectFileRuntime
@@ -1889,12 +1890,13 @@
 	let deskActiveFolder: any = null;
 	let deskWorkspaceBadge = workspaceBadgeFromFolder(null);
 	// Desktop bridge presence gates whether Local work can run here. It can arrive
-	// after mount in Desk, so Local switch events refresh this value.
-	let deskLocalBridgePresent = false;
+	// after mount in Desk; the bridge-active event bumps bridgeTick to force a
+	// reactive re-read (was a non-reactive let that could go stale → label desync).
+	let bridgeTick = 0;
 	const refreshDeskLocalBridgePresent = () => {
-		deskLocalBridgePresent = Boolean(getEnosDesktopBridge());
-		return deskLocalBridgePresent;
+		bridgeTick += 1;
 	};
+	$: deskLocalBridgePresent = (bridgeTick, Boolean(getEnosDesktopBridge()));
 	const activateDeskProjectFiles = (folder: any) => {
 		applyDeskProjectFileRuntime(
 			resolveDeskProjectFileRuntime(folder, {
@@ -1951,23 +1953,30 @@
 	// Badge = where work is happening NOW (binary), NOT the project's stored origin.
 	// Derived from the SAME signals the Files panel uses (cloud terminal active vs
 	// desktop bridge + local project) so the two can never disagree.
-	$: deskActiveProjectKind = workspaceBadgeFromFolder(deskActiveFolder).kind;
-	$: deskLocation = deskCurrentLocation({
+	// One source of truth for every location fact (deskLocation module) so the
+	// badge, the picker, and the Files panel can never disagree (label-desync fix).
+	$: deskLoc = deskLocationState({
 		cloudWorkspaceActive: Boolean($selectedTerminalId),
-		localBridgePresent: deskLocalBridgePresent,
-		projectKind: deskActiveProjectKind
+		bridgePresent: deskLocalBridgePresent,
+		activeFolder: deskActiveFolder
 	});
-	$: deskLocationReadOnly = deskLocation === null && deskActiveProjectKind === 'local';
+	$: deskActiveProjectKind = deskLoc.projectKind;
+	$: deskLocation = deskLoc.location;
+	$: deskLocationReadOnly = deskLoc.readOnly;
 	$: deskWorkspaceBadge = {
-		kind: deskLocation ?? (deskLocationReadOnly ? 'local' : null),
-		name: workspaceBadgeFromFolder(deskActiveFolder).name,
-		readOnly: deskLocationReadOnly
+		kind: deskLoc.badgeKind,
+		name: deskLoc.name,
+		readOnly: deskLoc.readOnly
 	};
 
 	const ensureWebDeskCloudDefault = () => {
-		if (!isDeskSurface() || deskLocalBridgePresent || $selectedTerminalId) return;
-		const cloudId = systemCloudWorkspaceId($terminalServers);
-		if (cloudId) selectedTerminalId.set(cloudId);
+		const { selectTerminalId } = webDeskCloudDefaultIntent({
+			isDeskSurface: isDeskSurface(),
+			bridgePresent: deskLocalBridgePresent,
+			selectedTerminalId: $selectedTerminalId,
+			systemCloudWorkspaceId: systemCloudWorkspaceId($terminalServers)
+		});
+		if (selectTerminalId) selectedTerminalId.set(selectTerminalId);
 	};
 	$: ensureWebDeskCloudDefault();
 
@@ -1978,19 +1987,21 @@
 	// when cloud projects land (Tier 1.5); this removes the surprise in the meantime.
 	let lastLocalDefaultedFolderId: string | null = null;
 	const applyLocalLocationDefault = (folder, bridgePresent) => {
-		if (!bridgePresent || !isDeskSurface()) return;
-		const fid = folder?.id ?? null;
-		if (!fid || fid === lastLocalDefaultedFolderId) return;
-		if (workspaceBadgeFromFolder(folder).kind !== 'local') return;
-		lastLocalDefaultedFolderId = fid;
-		if ($selectedTerminalId) {
-			selectedTerminalId.set(null);
-			if (($settings?.terminalServers ?? []).some((s) => s?.enabled)) {
-				settings.set({
-					...$settings,
-					terminalServers: ($settings.terminalServers ?? []).map((s) => ({ ...s, enabled: false }))
-				});
-			}
+		if (!isDeskSurface()) return;
+		const intent = localLocationDefaultIntent({
+			activeFolder: folder,
+			bridgePresent,
+			selectedTerminalId: $selectedTerminalId,
+			lastDefaultedFolderId: lastLocalDefaultedFolderId,
+			hasEnabledTerminalServers: ($settings?.terminalServers ?? []).some((s) => s?.enabled)
+		});
+		lastLocalDefaultedFolderId = intent.defaultedFolderId;
+		if (intent.clearTerminal) selectedTerminalId.set(null);
+		if (intent.disableTerminalServers) {
+			settings.set({
+				...$settings,
+				terminalServers: ($settings.terminalServers ?? []).map((s) => ({ ...s, enabled: false }))
+			});
 		}
 	};
 	$: applyLocalLocationDefault(deskActiveFolder, deskLocalBridgePresent);
