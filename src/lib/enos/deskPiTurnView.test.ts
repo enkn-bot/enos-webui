@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'vitest';
 
-import { createDeskOpencodeTurnView } from './deskOpencodeTurnView';
+import { createDeskPiTurnView } from './deskPiTurnView';
 
-describe('deskOpencodeTurnView', () => {
+describe('deskPiTurnView', () => {
 	test('opens reasoning status then closes it when content arrives', () => {
 		let now = 1_000;
-		const view = createDeskOpencodeTurnView({ now: () => now });
+		const view = createDeskPiTurnView({ now: () => now });
 
 		const thinking = view.onUpdate({ reasoning: 'checking files', content: '' });
 		expect(thinking.statusChanged).toBe(true);
@@ -25,7 +25,7 @@ describe('deskOpencodeTurnView', () => {
 	});
 
 	test('tracks tool start and outcome statuses', () => {
-		const view = createDeskOpencodeTurnView({ now: () => 1_000 });
+		const view = createDeskPiTurnView({ now: () => 1_000 });
 
 		const start = view.onTool({
 			kind: 'tool_start',
@@ -46,7 +46,7 @@ describe('deskOpencodeTurnView', () => {
 	});
 
 	test('finalizes content with fallback and marks every status done', () => {
-		const view = createDeskOpencodeTurnView({ now: () => 1_000 });
+		const view = createDeskPiTurnView({ now: () => 1_000 });
 		view.onUpdate({ reasoning: 'thinking', content: '' });
 
 		const final = view.finalMessage({

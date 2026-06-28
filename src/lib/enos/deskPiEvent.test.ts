@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizePiEvent } from './deskOpencode';
+import { normalizePiEvent } from './deskPiTransport';
 
 const textDelta = { type: 'message_update', assistantMessageEvent: {
   type: 'text_delta', contentIndex: 1, delta: 'Done',

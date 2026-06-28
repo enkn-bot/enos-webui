@@ -119,15 +119,15 @@
 	import Image from '../common/Image.svelte';
 	import { getBanners } from '$lib/apis/configs';
 	import {
-		canUseEnosLocalOpencode,
+		canUseEnosLocalPi,
 		getEnosDesktopBridge
 	} from '$lib/enos/desktopBridge';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
 	import { buildProjectActionContext } from '$lib/enos/projectActions';
 	import { runDeskAgentLoop } from '$lib/enos/deskAgentLoop';
 	import { composeDeskMessageContent } from '$lib/enos/deskReasoning';
-	import { bridgeTransport, runOpencodeDeskTurn, normalizePiEvent } from '$lib/enos/deskOpencode';
-	import { createDeskOpencodeTurnView } from '$lib/enos/deskOpencodeTurnView';
+	import { desktopPiTransport, runDeskPiTurn } from '$lib/enos/deskPiTransport';
+	import { createDeskPiTurnView } from '$lib/enos/deskPiTurnView';
 	import { DESK_FILE_TOOLS, describeDeskTool, executeDeskFileTool } from '$lib/enos/deskFileTools';
 	import {
 		buildDeskAgentSystemPrompt,
@@ -151,7 +151,7 @@
 		redirectUnavailableDeskProjectIntent
 	} from '$lib/enos/deskProjectLifecycle';
 	import { applyDeskProjectFileRuntime } from '$lib/enos/deskProjectRuntime';
-	import { maybeGenerateOpencodeChatTitle } from '$lib/enos/opencodeTitle';
+	import { maybeGenerateDeskChatTitle } from '$lib/enos/deskTitle';
 	import { normalizeChatTitleEventData } from '$lib/enos/chatTitleEvents';
 
 	export let chatIdProp = '';
@@ -2190,14 +2190,12 @@
 		await chats.set(await getChatList(localStorage.token, $currentChatPage));
 	};
 
-	// B — cloud desk chat runs on OpenCode (opencode serve in the cloud workspace, via
-	// the authed /api/ws/oc proxy). This is the WEB path (no Electron bridge): a cloud
-	// workspace is selected → real agentic file/code work, reusing the desk renderers.
-	const handleCloudOpencodeChat = async (userPrompt, wsId) => {
+	// Cloud desk chat runs through the Pi relay in the selected cloud workspace.
+	const handleCloudPiChat = async (userPrompt, wsId) => {
 		const responseMessageId = await createLocalProjectActionMessage(userPrompt, '', {
 			done: false
 		});
-		const turnView = createDeskOpencodeTurnView();
+		const turnView = createDeskPiTurnView();
 		const flush = (statusHistory = turnView.statusHistory()) => {
 			const m = history.messages[responseMessageId];
 			if (!m) return;
@@ -2221,11 +2219,9 @@
 			''
 		);
 		try {
-			const r = await runOpencodeDeskTurn(
+			const r = await runDeskPiTurn(
 				{
 					base: `${WEBUI_BASE_URL}/api/ws/oc2/${wsId}`,
-					engine: 'pi',
-					normalize: normalizePiEvent,
 					headers: { Authorization: `Bearer ${localStorage.token}` },
 					message: userPrompt,
 					agent: 'build',
@@ -2257,7 +2253,7 @@
 				history = history;
 				await saveChatHandler($chatId, history);
 				const titleModelId = done.model ?? selectedModels.find((id) => id) ?? 'enos.mind';
-				void maybeGenerateOpencodeChatTitle({
+				void maybeGenerateDeskChatTitle({
 					token: localStorage.token,
 					chatId: $chatId,
 					folderId: $selectedFolder?.id ?? null,
@@ -2286,14 +2282,12 @@
 		return true;
 	};
 
-	// B — local desk chat can also run through the Electron-hosted opencode serve.
-	// This mirrors the cloud OpenCode renderer path while keeping runDeskAgentLoop
-	// as the fallback for older desktop builds.
-	const handleLocalOpencodeChat = async (userPrompt, folderId, opencode, deskEngine) => {
+	// Local desk chat can also run through the Electron-hosted Pi RPC bridge.
+	const handleLocalPiChat = async (userPrompt, folderId, pi) => {
 		const responseMessageId = await createLocalProjectActionMessage(userPrompt, '', {
 			done: false
 		});
-		const turnView = createDeskOpencodeTurnView();
+		const turnView = createDeskPiTurnView();
 		const flush = (statusHistory = turnView.statusHistory()) => {
 			const m = history.messages[responseMessageId];
 			if (!m) return;
@@ -2309,14 +2303,12 @@
 			history = history;
 		};
 		try {
-			const r = await runOpencodeDeskTurn(
+			const r = await runDeskPiTurn(
 				{
 					message: userPrompt,
 					agent: 'build',
-					model: { providerID: 'local', modelID: 'opencode' },
-					transport: bridgeTransport(opencode, folderId),
-						normalize:
-							deskEngine === 'pi' ? normalizePiEvent : undefined
+					model: { providerID: 'local', modelID: 'pi' },
+					transport: desktopPiTransport(pi, folderId)
 				},
 				{
 					onUpdate: ({ content, reasoning }) => {
@@ -2343,7 +2335,7 @@
 				history = history;
 				await saveChatHandler($chatId, history);
 				const titleModelId = done.model ?? selectedModels.find((id) => id) ?? 'enos.mind';
-				void maybeGenerateOpencodeChatTitle({
+				void maybeGenerateDeskChatTitle({
 					token: localStorage.token,
 					chatId: $chatId,
 					folderId,
@@ -2399,14 +2391,14 @@
 			// "New project" name; the user renames it, and each chat keeps its own
 			// generated title. Deliberate creation (FolderModal) is where a project is named.
 
-			// Cloud workspace selected → OpenCode (web path, no bridge needed). Must come
+			// Cloud workspace selected → Pi relay (web path, no bridge needed). Must come
 			// BEFORE the bridge gate, or cloud-web chat falls through to the plain pipe
 			// (no tools → it can only TALK about creating files, never actually do it).
 			const cloudWsId =
 				typeof $selectedTerminalId === 'string' && $selectedTerminalId.startsWith('ws-')
 					? $selectedTerminalId
 					: null;
-			if (cloudWsId) return await handleCloudOpencodeChat(userPrompt, cloudWsId);
+			if (cloudWsId) return await handleCloudPiChat(userPrompt, cloudWsId);
 
 			await hydrateProjectFolderFromChat(chat);
 			await restoreLastDeskProjectFolder();
@@ -2420,13 +2412,8 @@
 			} catch (error) {
 				console.warn('Unable to load ENOS Desk capabilities', error);
 			}
-			if (bridge.opencode && canUseEnosLocalOpencode(desktopCapabilities)) {
-				return await handleLocalOpencodeChat(
-					userPrompt,
-					folderId,
-					bridge.opencode,
-					desktopCapabilities?.deskEngine
-				);
+			if (bridge.pi && canUseEnosLocalPi(desktopCapabilities)) {
+				return await handleLocalPiChat(userPrompt, folderId, bridge.pi);
 			}
 			const projectFolder =
 				activeProjectFolder() ?? deskActiveFolder ?? knownProjectFolderById(folderId);
@@ -2574,7 +2561,7 @@
 				await saveChatHandler($chatId, history);
 
 				const titleModelId = done.model ?? selectedModels.find((id) => id) ?? 'enos.mind';
-				void maybeGenerateOpencodeChatTitle({
+				void maybeGenerateDeskChatTitle({
 					token: localStorage.token,
 					chatId: $chatId,
 					folderId,

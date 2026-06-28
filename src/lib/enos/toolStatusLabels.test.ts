@@ -4,7 +4,7 @@ import {
 	formatToolStartStatus,
 	formatToolEndStatus,
 	formatToolOutcome,
-	extractOpencodeOutcome,
+	extractPiToolOutcome,
 	compactToolContext,
 	type ToolInfo
 } from './toolStatusLabels';
@@ -93,24 +93,24 @@ describe('tool status labels', () => {
 		});
 	});
 
-	describe('extractOpencodeOutcome', () => {
+	describe('extractPiToolOutcome', () => {
 		test('returns state title when present', () => {
-			expect(extractOpencodeOutcome({ title: 'Edited src/parser.ts' })).toBe(
+			expect(extractPiToolOutcome({ title: 'Edited src/parser.ts' })).toBe(
 				'Edited src/parser.ts'
 			);
 		});
 
 		test('returns empty when state title absent or undefined', () => {
-			expect(extractOpencodeOutcome({ title: undefined, status: 'completed' })).toBe('');
+			expect(extractPiToolOutcome({ title: undefined, status: 'completed' })).toBe('');
 		});
 
 		test('returns empty for empty state object', () => {
-			expect(extractOpencodeOutcome({})).toBe('');
+			expect(extractPiToolOutcome({})).toBe('');
 		});
 
 		test('returns empty for null or undefined state', () => {
-			expect(extractOpencodeOutcome(null)).toBe('');
-			expect(extractOpencodeOutcome(undefined)).toBe('');
+			expect(extractPiToolOutcome(null)).toBe('');
+			expect(extractPiToolOutcome(undefined)).toBe('');
 		});
 	});
 

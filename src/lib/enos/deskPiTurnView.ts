@@ -1,18 +1,18 @@
 import { composeDeskMessageContent } from './deskReasoning';
 import { formatToolOutcome, formatToolStartStatus } from './toolStatusLabels';
 
-export type DeskOpencodeStatus = {
+export type DeskPiStatus = {
 	action: string;
 	description: string;
 	done: boolean;
 };
 
-export type DeskOpencodeTurnUpdate = {
+export type DeskPiTurnUpdate = {
 	content: string;
 	reasoning: string;
 };
 
-export type DeskOpencodeToolEvent = {
+export type DeskPiToolEvent = {
 	kind: 'tool_start' | 'tool_end';
 	tool: string;
 	ok?: boolean;
@@ -20,15 +20,15 @@ export type DeskOpencodeToolEvent = {
 	detail?: string;
 };
 
-const cloneStatuses = (statuses: DeskOpencodeStatus[]): DeskOpencodeStatus[] =>
+const cloneStatuses = (statuses: DeskPiStatus[]): DeskPiStatus[] =>
 	statuses.map((status) => ({ ...status }));
 
 const durationSeconds = (startedAt: number, now: () => number): number =>
 	startedAt ? (now() - startedAt) / 1000 : 0;
 
-export const createDeskOpencodeTurnView = (args: { now?: () => number } = {}) => {
+export const createDeskPiTurnView = (args: { now?: () => number } = {}) => {
 	const now = args.now ?? (() => Date.now());
-	const statusHistory: DeskOpencodeStatus[] = [];
+	const statusHistory: DeskPiStatus[] = [];
 	let liveContent = '';
 	let liveReasoning = '';
 	let reasoningStartMs = 0;
@@ -42,7 +42,7 @@ export const createDeskOpencodeTurnView = (args: { now?: () => number } = {}) =>
 	return {
 		statusHistory: () => cloneStatuses(statusHistory),
 
-		onUpdate(update: DeskOpencodeTurnUpdate) {
+		onUpdate(update: DeskPiTurnUpdate) {
 			let statusChanged = false;
 			liveContent = update.content;
 			liveReasoning = update.reasoning;
@@ -71,7 +71,7 @@ export const createDeskOpencodeTurnView = (args: { now?: () => number } = {}) =>
 			};
 		},
 
-		onTool(event: DeskOpencodeToolEvent) {
+		onTool(event: DeskPiToolEvent) {
 			if (event.kind === 'tool_start') {
 				const thinkingStatus = statusHistory.find(
 					(status) => status.action === 'reasoning' && !status.done

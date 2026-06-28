@@ -18,10 +18,7 @@ export type EnosDesktopCapabilities = {
 	localProjectGitClone: boolean;
 	localProjectCloudUpload?: boolean;
 	githubOAuth?: boolean;
-	opencodeServe?: boolean;
-	// Active local Desk-B coding engine. 'pi' (Pi RPC) or 'opencode' (default/legacy).
-	// Selects the event normalizer in the desk turn runner; channels are identical.
-	deskEngine?: 'pi' | 'opencode';
+	piRpc?: boolean;
 };
 
 export type EnosDesktopWorkspace = {
@@ -176,19 +173,19 @@ export type EnosDesktopProjectGitDiff = {
 	truncated?: boolean;
 };
 
-export type EnosDesktopOpencodeEvent =
+export type EnosDesktopPiEvent =
 	| { streamId: string; event: unknown }
 	| { streamId: string; done: true }
 	| { streamId: string; error: unknown };
 
-export type EnosDesktopOpencodeBridge = {
+export type EnosDesktopPiBridge = {
 	start: (folderId: string) => Promise<{ port: number; sessionId: string }>;
 	prompt: (
 		folderId: string,
 		prompt: string,
 		agent?: string
 	) => Promise<{ streamId: string }>;
-	events: (onEvent: (event: EnosDesktopOpencodeEvent) => void) => () => void;
+	events: (onEvent: (event: EnosDesktopPiEvent) => void) => () => void;
 	stop: (folderId: string) => Promise<void>;
 };
 
@@ -297,7 +294,7 @@ export type EnosDesktopBridge = {
 		streamId: string,
 		onChunk: (delta: string) => void
 	) => Promise<DeskCompletion>;
-	opencode?: EnosDesktopOpencodeBridge;
+	pi?: EnosDesktopPiBridge;
 };
 
 declare global {
@@ -351,5 +348,5 @@ export const canUseEnosLocalProjectCloudUpload = (
 	capabilities?: EnosDesktopCapabilities | null
 ) => Boolean(canUseEnosLocalProjectFiles(capabilities) && capabilities?.localProjectCloudUpload);
 
-export const canUseEnosLocalOpencode = (capabilities?: EnosDesktopCapabilities | null) =>
-	Boolean(capabilities?.opencodeServe);
+export const canUseEnosLocalPi = (capabilities?: EnosDesktopCapabilities | null) =>
+	Boolean(capabilities?.piRpc);

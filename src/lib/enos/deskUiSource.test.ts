@@ -275,17 +275,17 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(chat).toMatch(/restoreLastDeskProjectFolder[\s\S]*isProjectAvailableInDeskRuntime/);
 	});
 
-	test('cloud desk chat routes to OpenCode BEFORE the bridge gate (web path), local keeps the loop', () => {
+	test('cloud desk chat routes to Pi BEFORE the bridge gate (web path), local keeps the loop', () => {
 		const chat = read('src/lib/components/chat/Chat.svelte');
 		// The cloud-workspace check must run before the `!hasDesktopBridge ... return false`
 		// gate — else cloud-web chat falls through to the plain pipe (no tools, hallucinates).
-		const cloudIdx = chat.indexOf('handleCloudOpencodeChat(userPrompt, cloudWsId)');
+		const cloudIdx = chat.indexOf('handleCloudPiChat(userPrompt, cloudWsId)');
 		const gateIdx = chat.indexOf('if (!hasDesktopBridge || !folderId) return false;');
 		expect(cloudIdx).toBeGreaterThan(-1);
 		expect(gateIdx).toBeGreaterThan(-1);
 		expect(cloudIdx).toBeLessThan(gateIdx); // cloud handled before the bridge bail
-		expect(chat).toContain('runOpencodeDeskTurn');
-		expect(chat).toContain('/api/ws/oc2/'); // Pi relay (OpenCode proxy /oc retired 2026-06-26)
+		expect(chat).toContain('runDeskPiTurn');
+		expect(chat).toContain('/api/ws/oc2/');
 		// Local (Electron) path still uses the desk agent loop — no regression.
 		expect(chat).toContain('runDeskAgentLoop({');
 	});
@@ -622,16 +622,15 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(modal).toContain('if (submitted === false) return;');
 	});
 
-	test('Desk cloud session errors use ENOS Cloud language without OpenCode leakage', () => {
+	test('Desk cloud errors use ENOS Cloud language without retired engine leakage', () => {
 		const chat = read('src/lib/components/chat/Chat.svelte');
-		const opencode = read('src/lib/enos/deskOpencode.ts');
+		const pi = read('src/lib/enos/deskPiTransport.ts');
 
 		expect(chat).toContain('ENOS Cloud error:');
 		expect(chat).not.toContain('OpenCode error:');
 		expect(chat).not.toContain('(No response from OpenCode.)');
-		expect(opencode).toContain('ENOS Cloud error');
-		expect(opencode).toContain('ENOS Cloud could not create a session');
-		expect(opencode).not.toContain('opencode: could not create session');
+		expect(pi).toContain('ENOS Cloud error');
+		expect(pi).not.toContain('could not create a session');
 	});
 
 	test('deleting the active desk project resets the visible chat pane to the welcome state', () => {
@@ -748,13 +747,13 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(statusItem).toContain('WebSearchResults');
 	});
 
-	test('OpenCode Desk paths share background title generation', () => {
+	test('Desk Pi paths share background title generation', () => {
 		const chat = read('src/lib/components/chat/Chat.svelte');
 
 		expect(chat).toContain(
-			"import { maybeGenerateOpencodeChatTitle } from '$lib/enos/opencodeTitle';"
+			"import { maybeGenerateDeskChatTitle } from '$lib/enos/deskTitle';"
 		);
-		expect(chat.match(/void maybeGenerateOpencodeChatTitle/g)?.length).toBeGreaterThanOrEqual(2);
+		expect(chat.match(/void maybeGenerateDeskChatTitle/g)?.length).toBeGreaterThanOrEqual(2);
 		expect(chat).toContain('notifyFolderChatsChanged');
 		expect(chat).not.toContain("console.error('[enos desk title]'");
 	});
