@@ -4,7 +4,6 @@
 	import { getContext } from 'svelte';
 
 	import ProfileImage from '../Messages/ProfileImage.svelte';
-	import UserAvatar from '$lib/components/enos/UserAvatar.svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import Heart from '$lib/components/icons/Heart.svelte';
 
@@ -24,8 +23,8 @@
 	>
 		{#if data.message.role === 'user'}
 			<div class="flex w-full">
-				<UserAvatar
-					name={data?.user?.name}
+				<ProfileImage
+					src={data?.user?.profile_image_url}
 					className={'size-5 -translate-y-[1px] flex-shrink-0'}
 				/>
 				<div class="ml-2">
