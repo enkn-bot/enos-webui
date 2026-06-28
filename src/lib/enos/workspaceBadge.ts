@@ -65,9 +65,16 @@ export const deskCurrentLocation = (args: {
 export const deskBadgeKind = (args: {
 	location: WorkspaceLocation | null;
 	projectKind: WorkspaceKind | null;
+	bridgePresent?: boolean;
 }): WorkspaceKind | null => {
 	if (args.location) return args.location;
 	if (args.projectKind === 'local') return 'local';
+	// Desktop is local-first: with no active location and no bound project, the
+	// environment badge defaults to Local (your machine) rather than blank, so a
+	// fresh ENOS Desk launch reads as Local and invites local work instead of
+	// "no environment". Presentation only — deskCurrentLocation stays null until a
+	// folder is bound, so the Files panel never claims a phantom local workspace.
+	if (args.bridgePresent) return 'local';
 	return null;
 };
 

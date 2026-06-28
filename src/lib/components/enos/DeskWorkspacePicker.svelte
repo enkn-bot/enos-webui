@@ -36,7 +36,7 @@
 	import Modal from '$lib/components/common/Modal.svelte';
 	import Check from '$lib/components/icons/Check.svelte';
 	import Cloud from '$lib/components/icons/Cloud.svelte';
-	import Folder from '$lib/components/icons/Folder.svelte';
+	import Computer from '$lib/components/icons/Computer.svelte';
 	import Plus from '$lib/components/icons/Plus.svelte';
 	import XMark from '$lib/components/icons/XMark.svelte';
 
@@ -66,7 +66,7 @@
 	$: isLocalActive = currentLocation === 'local';
 	// Single source of truth for the trigger chip: the SAME reactive currentLocation
 	// the menu uses, so the trigger label/icon can never disagree with the checkmark.
-	$: triggerKind = deskBadgeKind({ location: currentLocation, projectKind: boundBadge.kind });
+	$: triggerKind = deskBadgeKind({ location: currentLocation, projectKind: boundBadge.kind, bridgePresent: hasDesktopBridge });
 	// F3/Q7 explainer: what the current location MEANS (where files live, privacy,
 	// reach). Kind = the live location when known, else the bound origin.
 	$: explainerKind = currentLocation ?? boundBadge.kind;
@@ -432,7 +432,7 @@
 					on:click={selectLocal}
 				>
 					<div class="flex flex-1 gap-2 items-center truncate">
-						<Folder className="size-4 shrink-0" strokeWidth="2" />
+						<Computer className="size-4 shrink-0" strokeWidth="2" />
 						<span class="truncate">{$i18n.t('Local')}</span>
 					</div>
 					{#if isLocalActive}

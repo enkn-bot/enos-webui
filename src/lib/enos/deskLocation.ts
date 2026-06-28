@@ -31,7 +31,7 @@ export const deskLocationState = (args: {
 	return {
 		location,
 		projectKind: badge.kind,
-		badgeKind: deskBadgeKind({ location, projectKind: badge.kind }),
+		badgeKind: deskBadgeKind({ location, projectKind: badge.kind, bridgePresent: args.bridgePresent }),
 		readOnly,
 		name: badge.name
 	};

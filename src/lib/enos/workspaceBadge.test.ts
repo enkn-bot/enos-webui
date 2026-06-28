@@ -165,4 +165,21 @@ describe('deskBadgeKind (single source for the env trigger label/icon)', () => {
 		expect(deskBadgeKind({ location: null, projectKind: 'github' })).toBeNull();
 		expect(deskBadgeKind({ location: null, projectKind: null })).toBeNull();
 	});
+
+	test('desktop (bridge present) with no active location/project → local (local-first default)', () => {
+		expect(deskBadgeKind({ location: null, projectKind: null, bridgePresent: true })).toBe('local');
+		expect(deskBadgeKind({ location: null, projectKind: 'cloud', bridgePresent: true })).toBe(
+			'local'
+		);
+	});
+
+	test('an active cloud location still wins over the desktop local-first default', () => {
+		expect(deskBadgeKind({ location: 'cloud', projectKind: null, bridgePresent: true })).toBe(
+			'cloud'
+		);
+	});
+
+	test('web (no bridge) keeps the blank/no-project state — no local-first default', () => {
+		expect(deskBadgeKind({ location: null, projectKind: null, bridgePresent: false })).toBeNull();
+	});
 });

@@ -28,9 +28,15 @@ describe('deskLocationState (single source for desk location facts)', () => {
 		).toEqual({ location: null, projectKind: 'local', badgeKind: 'local', readOnly: true, name: 'repo-a' });
 	});
 
-	test('no folder, no cloud → all null/empty', () => {
+	test('desktop (bridge), no folder, no cloud → local-first badge default', () => {
 		expect(
 			deskLocationState({ cloudWorkspaceActive: false, bridgePresent: true, activeFolder: null })
+		).toEqual({ location: null, projectKind: null, badgeKind: 'local', readOnly: false, name: '' });
+	});
+
+	test('web (no bridge), no folder, no cloud → all null/empty', () => {
+		expect(
+			deskLocationState({ cloudWorkspaceActive: false, bridgePresent: false, activeFolder: null })
 		).toEqual({ location: null, projectKind: null, badgeKind: null, readOnly: false, name: '' });
 	});
 });
