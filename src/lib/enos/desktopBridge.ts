@@ -295,6 +295,18 @@ export type EnosDesktopBridge = {
 		onChunk: (delta: string) => void
 	) => Promise<DeskCompletion>;
 	pi?: EnosDesktopPiBridge;
+	/**
+	 * Local PTY shell bridge — present only in newer Electron builds; callers
+	 * must feature-detect. Renderer owns the sessionId.
+	 */
+	localTerminal?: {
+		start: (sessionId: string, folderId: string | null, cols: number, rows: number) => Promise<string>;
+		write: (sessionId: string, data: string) => Promise<void>;
+		resize: (sessionId: string, cols: number, rows: number) => Promise<void>;
+		kill: (sessionId: string) => Promise<void>;
+		onData: (cb: (payload: { sessionId: string; data: string }) => void) => () => void;
+		onExit: (cb: (payload: { sessionId: string; code?: number; error?: string }) => void) => () => void;
+	};
 };
 
 declare global {

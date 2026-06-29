@@ -7,6 +7,7 @@
 
 	import { terminalServers, settings, selectedTerminalId, user } from '$lib/stores';
 	import { WEBUI_API_BASE_URL } from '$lib/constants';
+	import { resolveTerminalBackground } from '$lib/enos/terminalTheme';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 
 	const i18n = getContext('i18n');
@@ -177,7 +178,7 @@
 			fontFamily:
 				"'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, Monaco, 'Courier New', monospace",
 			theme: {
-				background: '#000000',
+				background: resolveTerminalBackground(),
 				foreground: '#c0c0c0',
 				cursor: '#ffffff',
 				cursorAccent: '#000000',

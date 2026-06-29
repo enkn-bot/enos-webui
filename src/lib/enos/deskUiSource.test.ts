@@ -895,4 +895,26 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(fileNav).toContain('{#if terminalEnabled && !hideTerminalPanel}');
 		expect(chatControls).toContain('hideTerminalPanel={isDeskSurface}');
 	});
+
+	test('terminals share a non-black background and LocalTerminal is IPC-driven', () => {
+		const theme = read('src/lib/enos/terminalTheme.ts');
+		const xterm = read('src/lib/components/chat/XTerminal.svelte');
+		const local = read('src/lib/components/enos/LocalTerminal.svelte');
+
+		// Shared background resolved from the pane token, not hardcoded black.
+		expect(theme).toContain('export const resolveTerminalBackground');
+		expect(theme).toContain('--color-gray-850');
+
+		// XTerminal no longer hardcodes pure black; uses the shared resolver.
+		expect(xterm).toContain("import { resolveTerminalBackground } from '$lib/enos/terminalTheme';");
+		expect(xterm).toContain('background: resolveTerminalBackground()');
+		expect(xterm).not.toContain("background: '#000000'");
+
+		// LocalTerminal is fed by the desktop bridge (IPC), not a WebSocket.
+		expect(local).toContain("import { resolveTerminalBackground } from '$lib/enos/terminalTheme';");
+		expect(local).toContain('getEnosDesktopBridge');
+		expect(local).toContain('.localTerminal');
+		expect(local).toContain('crypto.randomUUID()');
+		expect(local).not.toContain('new WebSocket');
+	});
 });
