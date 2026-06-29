@@ -23,8 +23,8 @@
 	export let connecting = false;
 	let resizeObserver: ResizeObserver | null = null;
 	let pingInterval: ReturnType<typeof setInterval> | null = null;
-	let termBg = resolveTerminalTheme().background;
-	let themeObserver: MutationObserver | null = null;
+	const termBg = resolveTerminalTheme().background;
+	let themeObserver: MutationObserver | null = null; // reserved; terminal is always dark
 
 	// Resolve the active terminal server's info for the WebSocket URL
 	const getTerminalInfo = (): { serverId: string; baseUrl: string } | null => {

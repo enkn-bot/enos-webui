@@ -231,19 +231,13 @@
 	<!-- Body -->
 	<div class="flex-1 min-h-0 relative">
 		{#if showPicker || !activeTab}
-			<div class="h-full flex flex-col items-center justify-center gap-2 px-6">
-				<div class="w-full max-w-xs flex flex-col gap-2">
-					<button
-						type="button"
-						class="flex items-center gap-3 rounded-xl bg-gray-100 dark:bg-gray-850 px-4 py-3 text-left hover:bg-gray-200/70 dark:hover:bg-gray-800"
-						on:click={() => open('terminal')}
-					>
-						<span class="text-sm font-medium">{$i18n.t('Terminal')}</span>
-					</button>
+			<div class="h-full flex flex-col items-center justify-center gap-3 px-6">
+				<p class="w-full max-w-xs text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest">{$i18n.t('Open')}</p>
+				<div class="w-full max-w-xs flex flex-col gap-1">
 					{#if hasBrowser}
 						<button
 							type="button"
-							class="flex items-center gap-3 rounded-xl bg-gray-100 dark:bg-gray-850 px-4 py-3 text-left hover:bg-gray-200/70 dark:hover:bg-gray-800"
+							class="flex items-center gap-3 rounded-xl px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
 							on:click={() => open('browser')}
 						>
 							<span class="text-sm font-medium">{$i18n.t('Browser')}</span>
@@ -251,10 +245,17 @@
 					{/if}
 					<button
 						type="button"
-						class="flex items-center gap-3 rounded-xl bg-gray-100 dark:bg-gray-850 px-4 py-3 text-left hover:bg-gray-200/70 dark:hover:bg-gray-800"
+						class="flex items-center gap-3 rounded-xl px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
 						on:click={() => open('files')}
 					>
 						<span class="text-sm font-medium">{$i18n.t('Files')}</span>
+					</button>
+					<button
+						type="button"
+						class="flex items-center gap-3 rounded-xl px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+						on:click={() => open('terminal')}
+					>
+						<span class="text-sm font-medium">{$i18n.t('Terminal')}</span>
 					</button>
 				</div>
 			</div>

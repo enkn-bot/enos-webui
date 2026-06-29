@@ -1,29 +1,10 @@
 // Terminal appearance shared by XTerminal (cloud/configured) and LocalTerminal
-// (local shell). A terminal should read like the rest of the surface: light
-// background + dark text in light mode, dark background + light text in dark
-// mode — not a fixed black box. We also use the app's loaded mono face
-// (`JetBrainsMono`, exposed via --font-mono); the previous `'JetBrains Mono'`
-// (with a space) did not match the @font-face and silently fell back.
-
-const isDark = (): boolean =>
-	typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
-
-// Resolve a CSS custom property to its computed value (so xterm, which measures
-// on a canvas, gets a concrete color/font string rather than an unresolved var).
-const resolveVar = (cssVar: string, fallback: string): string => {
-	if (typeof document === 'undefined') return fallback;
-	try {
-		const probe = document.createElement('div');
-		probe.style.display = 'none';
-		probe.style.color = `var(${cssVar})`;
-		document.body.appendChild(probe);
-		const value = getComputedStyle(probe).color;
-		probe.remove();
-		return value || fallback;
-	} catch {
-		return fallback;
-	}
-};
+// (local shell). The terminal always uses a dark theme regardless of the app's
+// light/dark mode — the Pi TUI renders with true-color ANSI codes calibrated for
+// dark backgrounds, and this is the standard for coding terminals (VS Code, JetBrains).
+// The chat surface adapts to light/dark; the terminal pane stays dark.
+// We also use the app's loaded mono face (`JetBrainsMono`, exposed via --font-mono);
+// the previous `'JetBrains Mono'` (with a space) did not match the @font-face.
 
 export const resolveTerminalFont = (): string => {
 	if (typeof document === 'undefined') {
@@ -63,36 +44,5 @@ const DARK_THEME = {
 	brightWhite: '#ffffff'
 };
 
-const LIGHT_THEME = {
-	foreground: '#383a42',
-	cursor: '#383a42',
-	cursorAccent: '#ffffff',
-	selectionBackground: '#e5e5e6',
-	selectionForeground: '#383a42',
-	black: '#383a42',
-	red: '#e45649',
-	green: '#50a14f',
-	yellow: '#c18401',
-	blue: '#4078f2',
-	magenta: '#a626a4',
-	cyan: '#0184bc',
-	white: '#a0a1a7',
-	brightBlack: '#a0a1a7',
-	brightRed: '#e45649',
-	brightGreen: '#50a14f',
-	brightYellow: '#c18401',
-	brightBlue: '#4078f2',
-	brightMagenta: '#a626a4',
-	brightCyan: '#0184bc',
-	brightWhite: '#383a42'
-};
-
-// Full xterm theme that follows the app's light/dark mode. In dark mode the
-// background matches the pane surface (--color-gray-850); in light mode it is a
-// clean white so dark text reads naturally.
-export const resolveTerminalTheme = () => {
-	if (isDark()) {
-		return { background: resolveVar('--color-gray-850', '#1f1f1f'), ...DARK_THEME };
-	}
-	return { background: '#ffffff', ...LIGHT_THEME };
-};
+// Terminal always dark — Pi TUI true-color codes assume a dark background.
+export const resolveTerminalTheme = () => ({ background: '#1e1e1e', ...DARK_THEME });
