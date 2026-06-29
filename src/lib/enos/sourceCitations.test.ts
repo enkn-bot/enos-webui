@@ -58,7 +58,39 @@ describe('ENOS source citations', () => {
 		expect(citations[0].source.name).toBe('Who Are You - Wikipedia');
 		expect(citations[0].source.url).toBe('https://en.wikipedia.org/wiki/Who_Are_You');
 		expect(citations[0].document).toEqual(['Album page passage.', 'Personnel passage.']);
+		expect(citations[0].metadata).toEqual([
+			{ title: 'Who Are You - Wikipedia', source: 'https://en.wikipedia.org/wiki/Who_Are_You' },
+			{ title: 'Who Are You - Wikipedia', source: 'https://en.wikipedia.org/wiki/Who_Are_You' }
+		]);
 		expect(citations[0].distances).toEqual([0.91, 0.77]);
+	});
+
+	test('skips empty and non-record source entries', () => {
+		const sources = [
+			null,
+			'bad',
+			[],
+			{},
+			{
+				source: { name: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/Who_Are_You' },
+				document: ['Album page passage.'],
+				metadata: [{ title: 'Who Are You - Wikipedia' }],
+				distances: [0.91]
+			}
+		];
+
+		expect(buildEnosCitations(sources)).toEqual([
+			{
+				id: 'https://en.wikipedia.org/wiki/Who_Are_You',
+				source: {
+					name: 'Who Are You - Wikipedia',
+					url: 'https://en.wikipedia.org/wiki/Who_Are_You'
+				},
+				document: ['Album page passage.'],
+				metadata: [{ title: 'Who Are You - Wikipedia' }],
+				distances: [0.91]
+			}
+		]);
 	});
 
 	test('removes raw non-URL source URLs when no citation URL is available', () => {
