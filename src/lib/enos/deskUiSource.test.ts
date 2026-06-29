@@ -838,4 +838,18 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(main).toContain("{'meta': {'surface': metadata['surface']}}");
 		expect(main).toContain("if metadata.get('surface')");
 	});
+
+	test('Desk browser tab uses an isolated webview and Electron enables webviewTag', () => {
+		const browserView = read('src/lib/components/enos/BrowserView.svelte');
+		const electronMain = read('../enos-desktop/src/main.mjs');
+
+		// Component reuses the shared URL normalizer and renders an isolated webview.
+		expect(browserView).toContain("import { normalizeUrl } from '$lib/enos/browserUrl';");
+		expect(browserView).toContain('<webview');
+		expect(browserView).toContain('partition="persist:enos-browser"');
+		expect(browserView).toContain("{$i18n.t('Start browsing')}");
+
+		// Electron main window opts into <webview> support (additive).
+		expect(electronMain).toMatch(/webPreferences:\s*\{[\s\S]*webviewTag:\s*true/);
+	});
 });
