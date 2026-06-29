@@ -12,16 +12,14 @@
 		sourceNumber: number;
 		clickId: string | number;
 	};
-	const defaultSourcePreviews: SourcePreview[] = [];
-	const sourcePreviewsExportGuardrail = 'export let sourcePreviews = [];';
 
 	export let id;
 	export let token: CitationToken = {};
 	export let sourceIds: string[] = [];
-	export let sourcePreviews = defaultSourcePreviews;
+	export let sourcePreviews: SourcePreview[] = [];
 	export let onClick: Function = () => {};
 
-	const typedSourcePreviews = () => sourcePreviews as SourcePreview[];
+	const typedSourcePreviews = () => sourcePreviews;
 
 	const citationReferences = (): CitationReference[] => {
 		return (token.ids ?? []).map((sourceNumber, index) => ({

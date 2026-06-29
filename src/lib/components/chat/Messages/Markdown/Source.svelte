@@ -7,15 +7,13 @@
 	import type { EnosCitationRecord } from '$lib/enos/sourceCitations';
 
 	type PreviewSource = EnosCitationRecord & { sourceId?: string | number };
-	const defaultPreviewSources: PreviewSource[] = [];
-	const previewSourcesExportGuardrail = 'export let previewSources = [];';
 
 	const i18n: Writable<any> = getContext('i18n');
 
 	export let id;
 	export let title: string = 'N/A';
 	export let extraCount = 0;
-	export let previewSources = defaultPreviewSources;
+	export let previewSources: PreviewSource[] = [];
 	export let onClick: Function = () => {};
 
 	let openPreview = false;
@@ -48,7 +46,7 @@
 	}
 
 	const decodedTitle = () => formattedTitle(decodeString(title));
-	const typedPreviewSources = () => previewSources as PreviewSource[];
+	const typedPreviewSources = () => previewSources;
 	const hasPreviewSources = () => typedPreviewSources().length > 0;
 	const sourceUrl = (preview: PreviewSource) =>
 		typeof preview?.source?.url === 'string' ? preview.source.url : '';
@@ -73,9 +71,25 @@
 		image.src = '/favicon.png';
 	};
 
-	const openSourceLink = (preview: PreviewSource) => {
+	const openModalFallback = (preview: PreviewSource) => {
+		const sourceId = preview.sourceId ?? id;
 		openPreview = false;
-		onClick(preview.sourceId ?? id);
+		onClick(sourceId);
+	};
+
+	const openExternalSource = (preview: PreviewSource) => {
+		const url = sourceUrl(preview);
+		if (!url) {
+			openModalFallback(preview);
+			return;
+		}
+
+		openPreview = false;
+		window.open(url, '_blank', 'noopener,noreferrer');
+	};
+
+	const openSourceLink = (preview: PreviewSource) => {
+		openExternalSource(preview);
 	};
 
 	const togglePreview = () => {
@@ -116,23 +130,23 @@
 					side="bottom"
 					sideOffset={8}
 				>
-					<div class="flex items-center gap-2 px-2 pb-2 pt-1">
-						<div class="flex -space-x-1">
-							{#each typedPreviewSources().slice(0, 3) as preview}
-								<img
-									src={faviconSrc(preview)}
-									alt=""
-									class="size-4 rounded-full border border-white bg-white dark:border-gray-850 dark:bg-gray-900"
-									on:error={handleFaviconError}
-								/>
-							{/each}
+					{#if typedPreviewSources().length > 1}
+						<div class="flex items-center gap-2 px-2 pb-2 pt-1">
+							<div class="flex -space-x-1">
+								{#each typedPreviewSources().slice(0, 3) as preview}
+									<img
+										src={faviconSrc(preview)}
+										alt=""
+										class="size-4 rounded-full border border-white bg-white dark:border-gray-850 dark:bg-gray-900"
+										on:error={handleFaviconError}
+									/>
+								{/each}
+							</div>
+							<div class="text-xs font-medium text-gray-700 dark:text-gray-200">
+								{`${typedPreviewSources().length} sources`}
+							</div>
 						</div>
-						<div class="text-xs font-medium text-gray-700 dark:text-gray-200">
-							{typedPreviewSources().length === 1
-								? '1 source'
-								: `${typedPreviewSources().length} sources`}
-						</div>
-					</div>
+					{/if}
 
 					<div class="flex flex-col gap-1">
 						{#each typedPreviewSources() as preview}
@@ -164,16 +178,17 @@
 									{/if}
 								</button>
 								{#if hasExternalUrl(preview)}
-									<a
-										href={sourceUrl(preview)}
-										target="_blank"
-										rel="noopener noreferrer"
+									<button
+										type="button"
 										class="flex size-6 shrink-0 items-center justify-center rounded-md text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
 										aria-label={$i18n.t('Open source in new tab')}
-										on:click={(event) => event.stopPropagation()}
+										on:click={(event) => {
+											event.stopPropagation();
+											openExternalSource(preview);
+										}}
 									>
 										↗
-									</a>
+									</button>
 								{/if}
 							</div>
 						{/each}

@@ -970,7 +970,7 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(colonFenceBlock).toMatch(
 			/<MarkdownTokens[\s\S]*\{sourceIds\}[\s\S]*\{sourcePreviews\}/
 		);
-		expect(sourceToken).toContain('export let sourcePreviews = [];');
+		expect(sourceToken).toMatch(/export let sourcePreviews(?::\s*SourcePreview\[\])?\s*=\s*\[\];/);
 	});
 
 	test('inline source pills render anchored previews without changing modal fallback', () => {
@@ -978,12 +978,15 @@ describe('ENOS Desk UI source guardrails', () => {
 		const sourceToken = read('src/lib/components/chat/Messages/Markdown/SourceToken.svelte');
 
 		expect(source).toContain("import { LinkPreview } from 'bits-ui';");
-		expect(source).toContain('export let previewSources = [];');
+		expect(source).toMatch(/export let previewSources(?::\s*PreviewSource\[\])?\s*=\s*\[\];/);
 		expect(source).toContain('openSourceLink');
-		expect(source).toContain('onClick(preview.sourceId ?? id)');
+		expect(source).toContain('openExternalSource');
+		expect(source).toContain("window.open(url, '_blank', 'noopener,noreferrer')");
+		expect(source).not.toContain('onClick(preview.sourceId ?? id)');
+		expect(source).toContain('{#if typedPreviewSources().length > 1}');
 		expect(source).toContain('LinkPreview.Content');
 		expect(source).toContain('sideOffset={8}');
-		expect(sourceToken).toContain('export let sourcePreviews = [];');
+		expect(sourceToken).toMatch(/export let sourcePreviews(?::\s*SourcePreview\[\])?\s*=\s*\[\];/);
 		expect(sourceToken).toContain('previewSourcesForToken');
 		expect(sourceToken).toContain(
 			'clickId: token.citationIdentifiers?.[index] ?? sourceNumber - 1'
