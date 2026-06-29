@@ -61,6 +61,21 @@ describe('ENOS source citations', () => {
 		expect(citations[0].distances).toEqual([0.91, 0.77]);
 	});
 
+	test('removes raw non-URL source URLs when no citation URL is available', () => {
+		const sources = [
+			{
+				source: { name: 'enos_web/news_search', url: 'enos_web/news_search' },
+				document: ['No link.'],
+				metadata: [{ title: 'Readable result', source: 'enos_web/news_search' }]
+			}
+		];
+
+		const [citation] = buildEnosCitations(sources);
+
+		expect(citation.source).toEqual({ name: 'Readable result' });
+		expect(citation.source).not.toHaveProperty('url');
+	});
+
 	test('returns a compact whitespace-normalized snippet', () => {
 		expect(getPreviewSnippet(' Line one.\n\nLine two has more detail. ', 18)).toBe(
 			'Line one. Line two...'

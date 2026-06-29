@@ -48,8 +48,10 @@ export const buildEnosCitations = (
 			const id = getEnosCitationId(rawSource.source, metadata);
 			const label = getEnosCitationLabel(rawSource.source, metadata);
 			const url = getEnosCitationUrl(rawSource.source, metadata);
+			const sourceFields = isRecord(rawSource.source) ? { ...rawSource.source } : {};
+			delete sourceFields.url;
 			const normalizedSource = {
-				...(isRecord(rawSource.source) ? rawSource.source : {}),
+				...sourceFields,
 				name: label,
 				...(url ? { url } : {})
 			};
