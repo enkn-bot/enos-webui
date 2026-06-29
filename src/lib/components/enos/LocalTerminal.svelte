@@ -19,7 +19,7 @@
 	let sessionId: string | null = null;
 	let offData: (() => void) | null = null;
 	let offExit: (() => void) | null = null;
-	const termBg = resolveTerminalTheme().background;
+	let termBg = resolveTerminalTheme().background;
 	let themeObserver: MutationObserver | null = null; // reserved; terminal is always dark
 
 	const localTerminal = () => getEnosDesktopBridge()?.localTerminal ?? null;
