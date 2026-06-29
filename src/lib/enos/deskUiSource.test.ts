@@ -917,4 +917,15 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(local).toContain('crypto.randomUUID()');
 		expect(local).not.toContain('new WebSocket');
 	});
+
+	test('dock terminal tab uses LocalTerminal for local projects, XTerminal otherwise', () => {
+		const dock = read('src/lib/components/enos/DeskDock.svelte');
+
+		expect(dock).toContain("import LocalTerminal from './LocalTerminal.svelte';");
+		expect(dock).toContain("import { selectedFolder } from '$lib/stores';");
+		// Local-project detection from the active folder's context source.
+		expect(dock).toContain("project_context_source?.kind === 'local'");
+		// Terminal arm branches local → LocalTerminal, else → XTerminal.
+		expect(dock).toMatch(/tab\.type === 'terminal'[\s\S]*isLocalProject[\s\S]*<LocalTerminal[\s\S]*<XTerminal/);
+	});
 });

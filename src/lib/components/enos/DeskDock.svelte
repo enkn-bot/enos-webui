@@ -15,9 +15,11 @@
 	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 
 	import XTerminal from '$lib/components/chat/XTerminal.svelte';
+	import LocalTerminal from './LocalTerminal.svelte';
 	import BrowserView from './BrowserView.svelte';
 	import XMark from '$lib/components/icons/XMark.svelte';
 	import Plus from '$lib/components/icons/Plus.svelte';
+	import { selectedFolder } from '$lib/stores';
 
 	const i18n = getContext('i18n');
 
@@ -29,6 +31,11 @@
 	let lastFolderId: string | null | undefined = undefined;
 
 	$: hasBrowser = Boolean(getEnosDesktopBridge());
+
+	// Local projects get a real local shell (LocalTerminal); cloud/configured
+	// projects keep the WebSocket-based XTerminal.
+	$: isLocalProject =
+		hasBrowser && $selectedFolder?.data?.project_context_source?.kind === 'local';
 
 	// Load persisted state when the active project changes. Loose chats
 	// (folderId null) keep an in-memory dock that is never persisted.
@@ -150,7 +157,11 @@
 				class="absolute inset-0 {tab.id === state.activeId && !showPicker ? '' : 'hidden'}"
 			>
 				{#if tab.type === 'terminal'}
-					<XTerminal {chatId} />
+					{#if isLocalProject}
+						<LocalTerminal folderId={$selectedFolder?.id ?? null} />
+					{:else}
+						<XTerminal {chatId} />
+					{/if}
 				{:else if tab.type === 'browser'}
 					{#if hasBrowser}
 						<BrowserView url={tab.url ?? null} onUrlChange={(u) => onBrowserUrl(tab.id, u)} />
