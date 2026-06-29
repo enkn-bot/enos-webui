@@ -2346,7 +2346,7 @@
 				const final = turnView.finalMessage({
 					reasoning: r.reasoning,
 					content: r.content,
-					fallbackContent: '(No response from ENOS Cloud.)'
+					fallbackContent: '(No response from Pi.)'
 				});
 				done.content = final.messageContent;
 				done.statusHistory = final.statusHistory;
