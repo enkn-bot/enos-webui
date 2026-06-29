@@ -185,7 +185,7 @@
 <div class="flex flex-col h-full min-h-0">
 	<!-- Tab strip -->
 	<div class="flex items-center gap-1 px-2 pt-2 pb-2 shrink-0">
-		<div class="flex gap-1 min-w-0 overflow-x-auto scrollbar-hidden">
+		<div class="flex gap-1 min-w-0 scrollbar-hidden" style:overflow-x={dragId ? 'clip' : 'auto'}>
 			{#each state.tabs as tab (tab.id)}
 				<div
 					use:registerTabEl={tab.id}

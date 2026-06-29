@@ -1878,6 +1878,7 @@
 					<Folder
 						id="sidebar-folders"
 						bind:open={showFolders}
+						alwaysOpen={true}
 						className="px-2 mt-0.5"
 						name={$i18n.t('Projects')}
 						chevron={false}
@@ -1989,6 +1990,7 @@
 				{#if showDeskChats}
 					<Folder
 						id="sidebar-chats"
+						alwaysOpen={true}
 						className="px-2 mt-0.5"
 						name={$i18n.t('Chats')}
 						chevron={false}
@@ -2212,11 +2214,6 @@
 										/>
 									{/each}
 
-									{#if sidebarChats.length === 0 && sidebarPinnedChats.length === 0}
-										<div class="w-full pl-2.5 pr-4 py-1.5 text-xs text-gray-400 dark:text-gray-600">
-											{$i18n.t('No chats yet — start a conversation.')}
-										</div>
-									{/if}
 									{#if $scrollPaginationEnabled && !allChatsLoaded}
 										<Loader
 											on:visible={(e) => {
@@ -2244,6 +2241,15 @@
 							</div>
 						</div>
 					</Folder>
+					{#if sidebarChats.length === 0 && sidebarPinnedChats.length === 0}
+						<button
+							type="button"
+							class="w-full pl-[1.125rem] pr-4 py-1.5 text-left text-xs text-gray-400 transition hover:text-gray-600 dark:text-gray-600 dark:hover:text-gray-400"
+							on:click={startNewChatHandler}
+						>
+							{$i18n.t('Ask anything')}
+						</button>
+					{/if}
 				{/if}
 			</div>
 

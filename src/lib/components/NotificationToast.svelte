@@ -12,11 +12,13 @@
 	export let onClick: Function = () => {};
 	export let title: string = 'HI';
 	export let content: string;
+	export let action: { label: string; onClick: () => Promise<void> | void } | null = null;
 
 	let startX = 0,
 		startY = 0;
 	let moved = false;
 	let closeButtonElement: HTMLButtonElement;
+	let actionButtonElement: HTMLButtonElement;
 	const DRAG_THRESHOLD_PX = 6;
 
 	const clickHandler = () => {
@@ -27,6 +29,12 @@
 	const closeHandler = () => {
 		dispatch('closeToast');
 	};
+
+	async function handleAction(e: MouseEvent) {
+		e.stopPropagation();
+		dispatch('closeToast');
+		await action?.onClick();
+	}
 
 	function onPointerDown(e: PointerEvent) {
 		startX = e.clientX;
@@ -49,10 +57,16 @@
 		// Release capture if taken
 		(e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
 
-		// Skip if clicking the close button
+		// Skip if clicking the close or action button
 		if (
 			closeButtonElement &&
 			(e.target === closeButtonElement || closeButtonElement.contains(e.target as Node))
+		) {
+			return;
+		}
+		if (
+			actionButtonElement &&
+			(e.target === actionButtonElement || actionButtonElement.contains(e.target as Node))
 		) {
 			return;
 		}
@@ -113,7 +127,7 @@
 		<img src="{WEBUI_BASE_URL}/static/favicon.png" alt="favicon" class="size-6 rounded-full" />
 	</div>
 
-	<div>
+	<div class="flex-1 min-w-0">
 		{#if title}
 			<div class=" text-[13px] font-medium mb-0.5 line-clamp-1">{title}</div>
 		{/if}
@@ -122,4 +136,17 @@
 			{@html DOMPurify.sanitize(marked(DOMPurify.sanitize(content, { ALLOWED_TAGS: [] })))}
 		</div>
 	</div>
+
+	{#if action}
+		<div class="shrink-0 self-center">
+			<button
+				bind:this={actionButtonElement}
+				class="text-xs font-medium px-3 py-1.5 rounded-full bg-gray-900 text-white dark:bg-white dark:text-gray-900 hover:opacity-80 transition-opacity"
+				on:pointerdown|stopPropagation
+				on:click={handleAction}
+			>
+				{action.label}
+			</button>
+		</div>
+	{/if}
 </div>

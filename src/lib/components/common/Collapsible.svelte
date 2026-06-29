@@ -60,7 +60,7 @@
 	const collapsibleId = uuidv4();
 </script>
 
-<div {id} class={className}>
+<div {id} class={className} data-collapsible-type={attributes?.type ?? null}>
 	{#if title !== null}
 		<!-- svelte-ignore a11y-no-static-element-interactions -->
 		<!-- svelte-ignore a11y-click-events-have-key-events -->

@@ -5,7 +5,7 @@
 	import StatusItem from './StatusHistory/StatusItem.svelte';
 	import equal from 'fast-deep-equal';
 	import { enosOrbColorForModel } from '$lib/enos/modelTier';
-	import { selectDisplayStatus } from '$lib/enos/cognitionVocabulary';
+	import { selectDisplayStatus, normalizeAction } from '$lib/enos/cognitionVocabulary';
 	export let statusHistory = [];
 	export let expand = false;
 	export let compactDesk = false;
@@ -36,11 +36,20 @@
 	let history = [];
 	let status = null;
 
+	const THINKING_ACTIONS = new Set(['thinking', 'reasoning']);
+
 	// Persistence rule: while streaming, show the latest live status; once the answer is
 	// present, collapse to the last MEANINGFUL outcome and drop a trailing transient
 	// ("Done"/"Composing") — a plain answer with no outcome shows nothing.
+	// Extra: once a thinking/reasoning step has done=true, suppress the strip immediately —
+	// the reasoning collapsible block already shows "Thought for Xs" and we must not
+	// duplicate it. We can't wait for answerPresent here because reasoning finishes
+	// before the answer text starts streaming (that gap is exactly the double display).
 	$: if (history && history.length > 0) {
-		status = selectDisplayStatus(history, answerPresent);
+		const raw = selectDisplayStatus(history, answerPresent);
+		const isFinishedThinking =
+			raw != null && THINKING_ACTIONS.has(raw?.action ?? '') && raw?.done === true;
+		status = isFinishedThinking ? null : raw;
 	} else {
 		status = null;
 	}
@@ -48,21 +57,62 @@
 	$: if (!equal(statusHistory, history)) {
 		history = statusHistory;
 	}
+
+	// Collapse consecutive entries with the same normalized action into one (keep last).
+	// Handles: thinking ticks ("Thinking… 1s/3s/…"), repeated "Done" pipeline events,
+	// and any other same-verb repetition the backend emits between meaningful steps.
+	$: displayHistory = (() => {
+		const out = [];
+		for (let i = 0; i < history.length; i++) {
+			const currentNorm = normalizeAction(history[i]?.action);
+			const nextNorm = normalizeAction(history[i + 1]?.action);
+			if (currentNorm === nextNorm) continue;
+			out.push(history[i]);
+		}
+		return out;
+	})();
+
+	// Desk's always-visible operational feed: the colored mind dot rides the LAST step
+	// while it is still streaming (done !== true), then goes neutral once that step (and
+	// the turn) completes. Derived from the trail itself rather than the collapsed
+	// `status`, so the dot tracks the true tail of the feed.
+	$: feedInProgress =
+		displayHistory.length > 0 && displayHistory[displayHistory.length - 1]?.done !== true;
 </script>
 
 {#if history && history.length > 0 && status}
 	{#if status?.hidden !== true}
 		{#if compactDesk}
+			<!-- Desk = supervision: an always-visible operational feed. Every step shows on
+			     its own line with a leading dot; the mind-color dot rides the active step
+			     and the rest stay neutral (done/inactive). No expand/collapse — the
+			     sequence (Read → Edited → Ran) IS the value on a coding surface. -->
 			<div class="text-sm flex flex-col w-full">
-				<div class="flex items-start gap-2">
-					{#if inProgress && mindColor}
-						<span
-							class="relative inline-flex size-1.5 rounded-full flex-shrink-0 mt-0.5 enos-mind-dot"
-							style="background-color: {mindColor};"
-						></span>
-					{/if}
-					<StatusItem {status} {compactDesk} />
-				</div>
+				{#each displayHistory as historyItem, idx}
+					{@const isLast = idx === displayHistory.length - 1}
+					{@const isActiveDot = feedInProgress && !!mindColor && isLast}
+					<div class="flex items-stretch gap-2">
+						<div class=" ">
+							<div class="pt-2 px-1 mb-1">
+								<span class="relative flex size-1.5 rounded-full justify-center items-center">
+									<span
+										class="relative inline-flex size-1.5 rounded-full {isActiveDot
+											? 'enos-mind-dot'
+											: 'bg-gray-400 dark:bg-gray-600'}"
+										style={isActiveDot ? `background-color: ${mindColor}` : ''}
+									></span>
+								</span>
+							</div>
+							{#if !isLast}
+								<div
+									class="w-[0.5px] ml-[6.5px] h-[calc(100%-12px)] bg-gray-200 dark:bg-gray-800"
+								></div>
+							{/if}
+						</div>
+
+						<StatusItem status={historyItem} {compactDesk} />
+					</div>
+				{/each}
 			</div>
 		{:else}
 			<div class="text-sm flex flex-col w-full">
@@ -74,39 +124,33 @@
 						showHistory = !showHistory;
 					}}
 				>
-					<div class="flex items-start gap-2">
-						{#if inProgress && mindColor}
-							<span
-								class="relative inline-flex size-1.5 rounded-full flex-shrink-0 mt-0.5 enos-mind-dot"
-								style="background-color: {mindColor};"
-							></span>
-						{/if}
-						<StatusItem {status} />
-					</div>
+					<StatusItem {status} />
 				</button>
 
 				{#if showHistory}
 					<div class="flex flex-row">
-						{#if history.length > 1}
+						{#if displayHistory.length > 1}
 							<div class="w-full">
-								{#each history as status, idx}
+								{#each displayHistory as historyItem, idx}
+									{@const isActiveDot = inProgress && !!mindColor && idx === displayHistory.length - 1}
 									<div class="flex items-stretch gap-2 mb-1">
 										<div class=" ">
 											<div class="pt-3 px-1 mb-1.5">
 												<span class="relative flex size-1.5 rounded-full justify-center items-center">
 													<span
-														class="relative inline-flex size-1.5 rounded-full bg-gray-500 dark:bg-gray-400"
+														class="relative inline-flex size-1.5 rounded-full {isActiveDot ? 'enos-mind-dot' : 'bg-gray-500 dark:bg-gray-400'}"
+														style={isActiveDot ? `background-color: ${mindColor}` : ''}
 													></span>
 												</span>
 											</div>
-											{#if idx !== history.length - 1}
+											{#if idx !== displayHistory.length - 1}
 												<div
 													class="w-[0.5px] ml-[6.5px] h-[calc(100%-14px)] bg-gray-300 dark:bg-gray-700"
 												></div>
 											{/if}
 										</div>
 
-										<StatusItem {status} done={true} />
+										<StatusItem status={historyItem} done={true} />
 									</div>
 								{/each}
 							</div>

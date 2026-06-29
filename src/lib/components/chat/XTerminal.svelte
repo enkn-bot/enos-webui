@@ -23,6 +23,8 @@
 	export let connecting = false;
 	let resizeObserver: ResizeObserver | null = null;
 	let pingInterval: ReturnType<typeof setInterval> | null = null;
+	let termBg = resolveTerminalTheme().background;
+	let themeObserver: MutationObserver | null = null;
 
 	// Resolve the active terminal server's info for the WebSocket URL
 	const getTerminalInfo = (): { serverId: string; baseUrl: string } | null => {
@@ -229,6 +231,18 @@
 		});
 		resizeObserver.observe(terminalEl);
 
+		// Re-apply theme when the app switches between light and dark mode
+		themeObserver?.disconnect();
+		themeObserver = new MutationObserver(() => {
+			const theme = resolveTerminalTheme();
+			termBg = theme.background;
+			if (term) term.options.theme = theme;
+		});
+		themeObserver.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ['class']
+		});
+
 		// Connection is handled by the reactive block below (which fires
 		// when `term` is set here), so we intentionally do NOT call
 		// connect() to avoid creating a duplicate WebSocket whose onclose
@@ -252,12 +266,13 @@
 	onDestroy(() => {
 		disconnect();
 		resizeObserver?.disconnect();
+		themeObserver?.disconnect();
 		term?.dispose();
 		term = null;
 		fitAddon = null;
 	});
 </script>
 
-<div class="h-full min-h-0 relative">
+<div class="h-full min-h-0 relative" style="background: {termBg}">
 	<div bind:this={terminalEl} class="absolute inset-0 px-0.5" class:pointer-events-none={overlay} />
 </div>

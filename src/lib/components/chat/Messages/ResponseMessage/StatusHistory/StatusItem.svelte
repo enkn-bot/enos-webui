@@ -4,6 +4,7 @@
 	import WebSearchResults from '../WebSearchResults.svelte';
 	import Search from '$lib/components/icons/Search.svelte';
 	import { formatDeskStatusLabel } from '$lib/enos/deskStatus';
+	import { cognitionLabel } from '$lib/enos/cognitionVocabulary';
 
 	export let status = null;
 	export let done = false;
@@ -117,7 +118,7 @@
 					{/each}
 				</div>
 			</div>
-		{:else if status?.action === 'reasoning'}
+		{:else if status?.action === 'reasoning' || status?.action === 'thinking'}
 	<div class="flex flex-col justify-center -space-y-0.5">
 		<div
 			class="{(done || status?.done) === false
@@ -126,6 +127,10 @@
 		>
 			{#if (done || status?.done) === false}
 				Thinking
+			{:else if status?.duration && Number(status.duration) >= 1}
+				Thought for {Number(status.duration) < 60
+					? `${Math.round(Number(status.duration))}s`
+					: `${Math.floor(Number(status.duration) / 60)}m ${Math.round(Number(status.duration) % 60)}s`}
 			{:else}
 				Thought
 			{/if}
@@ -160,20 +165,7 @@
 						? 'shimmer'
 						: ''} text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
 				>
-					<!-- $i18n.t(`Searching "{{searchQuery}}"`) -->
-					{#if status?.description?.includes('{{searchQuery}}')}
-						{$i18n.t(status?.description, {
-							searchQuery: status?.query
-						})}
-					{:else if status?.description === 'No search query generated'}
-						{$i18n.t('No search query generated')}
-					{:else if status?.description === 'Generating search query'}
-						{$i18n.t('Generating search query')}
-					{:else if status?.description === 'Searching the web'}
-						{$i18n.t('Searching the web')}
-					{:else}
-						{status?.description}
-					{/if}
+					{cognitionLabel(status?.action, (done || status?.done) === true)}
 				</div>
 			</div>
 		{/if}

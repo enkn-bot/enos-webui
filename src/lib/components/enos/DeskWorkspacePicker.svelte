@@ -19,10 +19,18 @@
 	import { getTerminalServers } from '$lib/apis/terminal';
 	import { createCloudWorkspace, uploadLocalProjectToCloud } from '$lib/apis/workspace';
 	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
-	import { bindLocalWorkspaceToFolder } from '$lib/enos/bindLocalWorkspace';
+	import {
+		chooseLocalWorkspaceForFolder,
+		restoreLocalWorkspaceToFolder
+	} from '$lib/enos/bindLocalWorkspace';
 	import { cloudProjectContextSource } from '$lib/enos/cloudUpload';
 	import { resolveCloudProjectRoot } from '$lib/enos/cloudFiles';
 	import { mergeCloudWorkspaceTerminalEntries } from '$lib/enos/cloudWorkspaceTerminal';
+	import {
+		cloudHomeFromSource,
+		localHomeFromSource,
+		projectSourceFromCloudHome
+	} from '$lib/enos/projectHomes';
 	import {
 		workspaceBadgeFromFolder,
 		deskCurrentLocation,
@@ -66,7 +74,11 @@
 	$: isLocalActive = currentLocation === 'local';
 	// Single source of truth for the trigger chip: the SAME reactive currentLocation
 	// the menu uses, so the trigger label/icon can never disagree with the checkmark.
-	$: triggerKind = deskBadgeKind({ location: currentLocation, projectKind: boundBadge.kind, bridgePresent: hasDesktopBridge });
+	$: triggerKind = deskBadgeKind({
+		location: currentLocation,
+		projectKind: boundBadge.kind,
+		bridgePresent: hasDesktopBridge
+	});
 	// F3/Q7 explainer: what the current location MEANS (where files live, privacy,
 	// reach). Kind = the live location when known, else the bound origin.
 	$: explainerKind = currentLocation ?? boundBadge.kind;
@@ -181,24 +193,33 @@
 			const archive = await bridge.exportProjectArchive(activeFolderId);
 			const imported = await uploadLocalProjectToCloud(localStorage.token, archive);
 			const servers = await getTerminalServers(localStorage.token);
-			const cloudSource = cloudProjectContextSource(archive, imported);
+			const currentSelectedFolder = $selectedFolder as any;
+			const folder: any =
+				currentSelectedFolder?.id === activeFolderId
+					? currentSelectedFolder
+					: { id: activeFolderId, data: {} };
+			const cloudSource = cloudProjectContextSource(
+				archive,
+				imported,
+				folder?.data?.project_context_source,
+				ws?.id
+			);
 
-			terminalServers.update((existing) =>
-				mergeCloudWorkspaceTerminalEntries(existing, servers, localStorage.token)
+			terminalServers.update(
+				(existing) =>
+					mergeCloudWorkspaceTerminalEntries(existing, servers, localStorage.token) as any
 			);
 			if (ws?.id) selectedTerminalId.set(ws.id);
 			showFileNavDir.set(resolveCloudProjectRoot(cloudSource) ?? '/home/user/');
 			showControls.set(true);
 
-			const folder =
-				$selectedFolder?.id === activeFolderId ? $selectedFolder : { id: activeFolderId, data: {} };
 			const data = {
 				...(folder?.data ?? {}),
 				project_context_source: cloudSource,
 				project_context_updated_at: new Date().toISOString()
 			};
 			const updated = await updateFolderById(localStorage.token, activeFolderId, { data });
-			if ($selectedFolder?.id === activeFolderId) {
+			if (($selectedFolder as any)?.id === activeFolderId) {
 				selectedFolder.set({
 					...folder,
 					...(updated ?? {}),
@@ -215,26 +236,19 @@
 
 	const needsEnvironmentSwitchConfirm = (target: 'local' | 'cloud') => {
 		if (webDeskCloudLocked) return false;
-		return (
-			(target === 'cloud' && currentLocation === 'local') ||
-			(target === 'local' && currentLocation === 'cloud')
-		);
+		return target === 'cloud' && currentLocation === 'local';
 	};
 
-	// F4: moving local→cloud is adopting a HOME, not "uploading files". The triad
+	// F4: adding local→cloud is adopting a HOME, not "uploading files". The triad
 	// (comes-along / stays-here / private-to) kills the deletion fear — it's a COPY.
 	// REACTIVE (not a function): the dialog title/message must recompute when
-	// pendingSwitchTarget flips — a plain `() =>` call isn't tracked by Svelte, so the
-	// title rendered STALE (showed "Work locally?" while switching TO cloud).
-	$: environmentSwitchTitle =
-		pendingSwitchTarget === 'cloud' ? 'Give this project a home in ENOS Cloud' : 'Work locally?';
+	// pendingSwitchTarget flips — a plain `() =>` call isn't tracked by Svelte.
+	$: environmentSwitchTitle = 'Give this project a home in ENOS Cloud';
 
 	$: environmentSwitchMessage =
-		pendingSwitchTarget === 'cloud'
-			? 'A copy runs on ENOS’s always-on machine — reachable from any device. ' +
-				'Comes along: this project’s files + history. Stays here: the original, on this Mac. ' +
-				'Private to: your workspace only.'
-			: 'Choose or bind a folder on this device. ENOS Cloud files stay in ENOS Cloud until a local copy is added.';
+		'A copy runs on ENOS’s always-on machine — reachable from any device. ' +
+		'Comes along: this project’s files + history. Stays here: the original, on this Mac. ' +
+		'Private to: your workspace only.';
 
 	const clearPendingSwitch = () => {
 		pendingSwitchTarget = null;
@@ -265,16 +279,28 @@
 		await runWithEnvironmentConfirmation('local', async () => {
 			if (activeFolderId) {
 				show = false;
-				notifyDesktopBridgeActive();
-				await deactivateCloudWorkspace();
-				const updated = await bindLocalWorkspaceToFolder(
+				const localHome = localHomeFromSource(activeFolder?.data?.project_context_source);
+				let updated = await restoreLocalWorkspaceToFolder(
 					localStorage.token,
 					activeFolderId,
 					activeFolder
 				);
+				if (!updated) {
+					if (localHome?.rootDisplay) {
+						toast.warning($i18n.t(`Local folder not found: ${localHome.rootDisplay}`));
+					}
+					updated = await chooseLocalWorkspaceForFolder(
+						localStorage.token,
+						activeFolderId,
+						activeFolder
+					);
+				}
 				if (updated) {
+					notifyDesktopBridgeActive();
+					await deactivateCloudWorkspace();
 					await selectedFolder.set(updated);
 					showLocalFileFolderId.set(activeFolderId);
+					showFileNavDir.set(null);
 					showFileNavPath.set('.');
 					toast.info($i18n.t('Working on this Mac'));
 				}
@@ -308,6 +334,48 @@
 		if (nextId) toast.info($i18n.t('Working in ENOS Cloud'));
 	};
 
+	const activateLinkedCloudHome = async (fallbackTerminalId: string | null) => {
+		if (!activeFolderId) return false;
+		const currentSelectedFolder = $selectedFolder as any;
+		const folder: any =
+			currentSelectedFolder?.id === activeFolderId
+				? currentSelectedFolder
+				: { id: activeFolderId, data: {} };
+		const previousSource = folder?.data?.project_context_source;
+		const linkedCloudHome = cloudHomeFromSource(previousSource);
+		if (!linkedCloudHome) return false;
+
+		const workspaceId = linkedCloudHome.workspaceId ?? fallbackTerminalId ?? null;
+		const cloudSource = projectSourceFromCloudHome(
+			{
+				...linkedCloudHome,
+				...(workspaceId ? { workspaceId } : {})
+			},
+			previousSource
+		);
+		const data = {
+			...(folder?.data ?? {}),
+			project_context_source: cloudSource,
+			project_context_updated_at: new Date().toISOString()
+		};
+		const updated = await updateFolderById(localStorage.token, activeFolderId, { data });
+		if (($selectedFolder as any)?.id === activeFolderId) {
+			selectedFolder.set({
+				...folder,
+				...(updated ?? {}),
+				id: activeFolderId,
+				data
+			});
+		}
+		if (workspaceId) selectedTerminalId.set(workspaceId);
+		showFileNavDir.set(resolveCloudProjectRoot(cloudSource) ?? '/home/user/');
+		showLocalFileFolderId.set(null);
+		showControls.set(true);
+		show = false;
+		toast.info($i18n.t('Working in ENOS Cloud'));
+		return true;
+	};
+
 	const selectSystem = async (terminal: (typeof systemTerminals)[0]) => {
 		const terminalId = terminal?.id ?? null;
 		if (!terminalId) return;
@@ -318,6 +386,7 @@
 				? null
 				: terminalId;
 		if (nextId && currentLocation === 'local' && isLocalBound) {
+			if (await activateLinkedCloudHome(terminalId)) return;
 			await runWithEnvironmentConfirmation('cloud', async () => {
 				try {
 					await copyLocalProjectIntoCloudWorkspace();
@@ -338,6 +407,10 @@
 	const createCloud = async () => {
 		if (creatingCloud) return false;
 		if (currentLocation === 'local' && isLocalBound) {
+			if (await activateLinkedCloudHome(firstSystemTerminal?.id ?? null)) {
+				showCreateCloudEnvironmentModal = false;
+				return false;
+			}
 			await runWithEnvironmentConfirmation('cloud', async () => {
 				try {
 					await copyLocalProjectIntoCloudWorkspace();
@@ -354,8 +427,9 @@
 		try {
 			const ws = await createCloudWorkspace(localStorage.token);
 			const servers = await getTerminalServers(localStorage.token);
-			terminalServers.update((existing) =>
-				mergeCloudWorkspaceTerminalEntries(existing, servers, localStorage.token)
+			terminalServers.update(
+				(existing) =>
+					mergeCloudWorkspaceTerminalEntries(existing, servers, localStorage.token) as any
 			);
 			if (ws?.id) {
 				selectedTerminalId.set(ws.id);
@@ -499,7 +573,9 @@
 		}}
 	>
 		<div class="flex items-start justify-between gap-4">
-			<div class="text-xl font-semibold tracking-normal">{$i18n.t('New ENOS Cloud environment')}</div>
+			<div class="text-xl font-semibold tracking-normal">
+				{$i18n.t('New ENOS Cloud environment')}
+			</div>
 			<button
 				type="button"
 				class="rounded-full p-1 text-gray-700 transition hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-850"
@@ -578,7 +654,9 @@
 			</div>
 		</div>
 
-		<div class="mt-6 flex justify-end gap-2 border-t border-gray-100 pt-4 text-sm font-medium dark:border-gray-800">
+		<div
+			class="mt-6 flex justify-end gap-2 border-t border-gray-100 pt-4 text-sm font-medium dark:border-gray-800"
+		>
 			<button
 				type="button"
 				class="rounded-full px-4 py-2 transition hover:bg-gray-100 dark:hover:bg-gray-850"
@@ -602,7 +680,7 @@
 <ConfirmDialog
 	bind:show={showEnvironmentSwitchConfirm}
 	title={$i18n.t(environmentSwitchTitle)}
-	confirmLabel={$i18n.t(pendingSwitchTarget === 'cloud' ? 'Give it a home in Cloud' : 'Continue')}
+	confirmLabel={$i18n.t('Give it a home in Cloud')}
 	onConfirm={confirmPendingSwitch}
 	on:cancel={clearPendingSwitch}
 >

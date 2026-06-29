@@ -19,6 +19,8 @@
 	let sessionId: string | null = null;
 	let offData: (() => void) | null = null;
 	let offExit: (() => void) | null = null;
+	let termBg = resolveTerminalTheme().background;
+	let themeObserver: MutationObserver | null = null;
 
 	const localTerminal = () => getEnosDesktopBridge()?.localTerminal ?? null;
 
@@ -87,6 +89,18 @@
 
 		resizeObserver = new ResizeObserver(() => requestAnimationFrame(safeFit));
 		resizeObserver.observe(terminalEl);
+
+		// Re-apply theme when the app switches between light and dark mode
+		themeObserver = new MutationObserver(() => {
+			const theme = resolveTerminalTheme();
+			termBg = theme.background;
+			if (term) term.options.theme = theme;
+		});
+		themeObserver.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ['class']
+		});
+
 		term.focus();
 	});
 
@@ -96,12 +110,13 @@
 		const lt = localTerminal();
 		if (lt && sessionId) lt.kill(sessionId);
 		resizeObserver?.disconnect();
+		themeObserver?.disconnect();
 		term?.dispose();
 		term = null;
 		fitAddon = null;
 	});
 </script>
 
-<div class="h-full min-h-0 relative" style="background: {resolveTerminalTheme().background}">
+<div class="h-full min-h-0 relative" style="background: {termBg}">
 	<div bind:this={terminalEl} class="absolute inset-0 px-0.5" class:pointer-events-none={overlay} />
 </div>

@@ -29,4 +29,37 @@ describe('local project cloud upload helpers', () => {
 			importedBytes: 1234
 		});
 	});
+
+	test('preserves the known local home when adding a cloud home', () => {
+		expect(
+			cloudProjectContextSource(
+				{ rootName: 'Codex', bytes: 1234 },
+				{ imported_bytes: 1234, dest: '/home/user/Codex' },
+				{
+					kind: 'local',
+					rootName: 'Codex',
+					rootDisplay: '/Users/ernestnyarko/Projects/Codex'
+				},
+				'ws-123'
+			)
+		).toEqual({
+			kind: 'cloud',
+			rootName: 'Codex',
+			cloudPath: '/home/user/Codex',
+			workspaceId: 'ws-123',
+			importedBytes: 1234,
+			linkedHomes: {
+				local: {
+					rootName: 'Codex',
+					rootDisplay: '/Users/ernestnyarko/Projects/Codex'
+				},
+				cloud: {
+					rootName: 'Codex',
+					cloudPath: '/home/user/Codex',
+					workspaceId: 'ws-123',
+					importedBytes: 1234
+				}
+			}
+		});
+	});
 });

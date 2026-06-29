@@ -44,6 +44,7 @@ const VERBS: Record<string, Verb> = {
 // Raw status `action` (OWUI + Pi) -> canonical verb key. Anything unmapped falls
 // back to a heuristic in `normalizeAction`, then to 'working'.
 const ACTION_ALIASES: Record<string, string> = {
+	thinking: 'thinking',
 	web_search: 'searching',
 	web_search_queries_generated: 'searching',
 	queries_generated: 'searching',
@@ -63,7 +64,24 @@ const ACTION_ALIASES: Record<string, string> = {
 	run: 'executing',
 	execute: 'executing',
 	code_interpreter: 'executing',
-	test: 'testing'
+	test: 'testing',
+	// Git operations
+	git_status: 'reading',
+	git_log: 'reading',
+	git_diff: 'reading',
+	git_blame: 'reading',
+	git_commit: 'writing',
+	git_push: 'executing',
+	git_pull: 'executing',
+	// File operations
+	create_file: 'writing',
+	move_file: 'editing',
+	delete_file: 'editing',
+	copy_file: 'reading',
+	// Misc Pi tools
+	glob: 'reading',
+	grep: 'reading',
+	find: 'reading'
 };
 
 /** Map a raw status action token to a canonical cognition verb key. */

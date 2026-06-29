@@ -11,6 +11,7 @@
 	import Plus from '../icons/Plus.svelte';
 
 	export let open = true;
+	export let alwaysOpen = false;
 
 	export let id = '';
 	export let name = '';
@@ -107,9 +108,11 @@
 	};
 
 	onMount(() => {
-		const state = localStorage.getItem(`${id}-folder-state`);
-		if (state !== null) {
-			open = state === 'true';
+		if (!alwaysOpen) {
+			const state = localStorage.getItem(`${id}-folder-state`);
+			if (state !== null) {
+				open = state === 'true';
+			}
 		}
 
 		loaded = true;

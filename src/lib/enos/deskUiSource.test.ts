@@ -366,8 +366,11 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(picker).not.toContain(
 			'Local files stay on this device until you copy the project to cloud.'
 		);
-		expect(picker).toContain('Work locally?');
-		expect(picker).toContain('ENOS Cloud files stay in ENOS Cloud until a local copy is added.');
+		expect(picker).not.toContain('Work locally?');
+		expect(picker).not.toContain(
+			'ENOS Cloud files stay in ENOS Cloud until a local copy is added.'
+		);
+		expect(picker).toContain('Local folder not found');
 		expect(picker).not.toContain('$selectedTerminalId === terminal.id ? null : terminal.id');
 
 		expect(chat).toContain('ensureWebDeskCloudDefault');
@@ -601,7 +604,9 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(picker).toContain("import { resolveCloudProjectRoot } from '$lib/enos/cloudFiles';");
 		expect(picker).toContain('mergeCloudWorkspaceTerminalEntries');
 		expect(chatControls).toContain('mergeCloudWorkspaceTerminalEntries');
-		expect(picker).toContain('const cloudSource = cloudProjectContextSource(archive, imported);');
+		expect(picker).toContain('const cloudSource = cloudProjectContextSource(');
+		expect(picker).toContain('folder?.data?.project_context_source');
+		expect(picker).toContain('ws?.id');
 		expect(picker).toContain(
 			"showFileNavDir.set(resolveCloudProjectRoot(cloudSource) ?? '/home/user/')"
 		);
@@ -695,7 +700,6 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(handler).toContain('getChatList');
 	});
 
-
 	test('local project can be copied into the active cloud workspace from Files', () => {
 		const chatControls = read('src/lib/components/chat/ChatControls.svelte');
 		const localFileNav = read('src/lib/components/chat/LocalFileNav.svelte');
@@ -757,9 +761,7 @@ describe('ENOS Desk UI source guardrails', () => {
 	test('Desk Pi paths share background title generation', () => {
 		const chat = read('src/lib/components/chat/Chat.svelte');
 
-		expect(chat).toContain(
-			"import { maybeGenerateDeskChatTitle } from '$lib/enos/deskTitle';"
-		);
+		expect(chat).toContain("import { maybeGenerateDeskChatTitle } from '$lib/enos/deskTitle';");
 		expect(chat.match(/void maybeGenerateDeskChatTitle/g)?.length).toBeGreaterThanOrEqual(2);
 		expect(chat).toContain('notifyFolderChatsChanged');
 		expect(chat).not.toContain("console.error('[enos desk title]'");
@@ -935,7 +937,9 @@ describe('ENOS Desk UI source guardrails', () => {
 		// Local-project detection from the active folder's context source.
 		expect(dock).toContain("project_context_source?.kind === 'local'");
 		// Terminal arm branches local → LocalTerminal, else → XTerminal.
-		expect(dock).toMatch(/tab\.type === 'terminal'[\s\S]*isLocalProject[\s\S]*<LocalTerminal[\s\S]*<XTerminal/);
+		expect(dock).toMatch(
+			/tab\.type === 'terminal'[\s\S]*isLocalProject[\s\S]*<LocalTerminal[\s\S]*<XTerminal/
+		);
 	});
 
 	test('inline source previews pass normalized citations through markdown renderers', () => {

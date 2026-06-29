@@ -1074,16 +1074,20 @@
 			frontendUpdated = isUpdated;
 			if (isUpdated && !updatePromptShown) {
 				updatePromptShown = true;
-				toast.info($i18n.t('A new version of ENOS is available.'), {
-					description: $i18n.t('Reload to get the latest.'),
-					duration: Number.POSITIVE_INFINITY,
-					action: {
-						label: $i18n.t('Reload'),
-						onClick: async () => {
-							await unregisterServiceWorkers();
-							location.reload();
+				toast.custom(NotificationToast, {
+					componentProps: {
+						title: $i18n.t('A new version of ENOS is available.'),
+						content: $i18n.t('Reload to get the latest.'),
+						action: {
+							label: $i18n.t('Reload'),
+							onClick: async () => {
+								await unregisterServiceWorkers();
+								location.reload();
+							}
 						}
-					}
+					},
+					duration: Number.POSITIVE_INFINITY,
+					unstyled: true
 				});
 			}
 		});

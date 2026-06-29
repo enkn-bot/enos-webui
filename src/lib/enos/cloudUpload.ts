@@ -1,3 +1,9 @@
+import {
+	hasLinkedHomes,
+	linkedHomesFromSource,
+	type CloudProjectHome
+} from '$lib/enos/projectHomes';
+
 export type EnosDesktopProjectArchive = {
 	action: 'exportProjectArchive';
 	format: 'tar';
@@ -34,10 +40,25 @@ export const decodeProjectArchive = (archive: EnosDesktopProjectArchive): Uint8A
 
 export const cloudProjectContextSource = (
 	archive: Pick<EnosDesktopProjectArchive, 'rootName' | 'bytes'>,
-	imported: CloudImportResult
-) => ({
-	kind: 'cloud',
-	rootName: archive.rootName?.trim() || 'ENOS Cloud project',
-	cloudPath: imported.dest || '/home/user',
-	importedBytes: imported.imported_bytes ?? archive.bytes
-});
+	imported: CloudImportResult,
+	previousSource?: Record<string, unknown> | null,
+	workspaceId?: string | null
+) => {
+	const rootName = archive.rootName?.trim() || 'ENOS Cloud project';
+	const cloudHome: CloudProjectHome = {
+		rootName,
+		cloudPath: imported.dest || '/home/user',
+		...(workspaceId ? { workspaceId } : {}),
+		importedBytes: imported.imported_bytes ?? archive.bytes
+	};
+	const linkedHomes = linkedHomesFromSource(previousSource, { cloud: cloudHome });
+
+	return {
+		kind: 'cloud',
+		rootName,
+		cloudPath: cloudHome.cloudPath,
+		...(workspaceId ? { workspaceId } : {}),
+		importedBytes: cloudHome.importedBytes,
+		...(previousSource && hasLinkedHomes(linkedHomes) ? { linkedHomes } : {})
+	};
+};
