@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import {
 	cognitionLabel,
+	isStepSettled,
 	normalizeAction,
 	persistenceClass,
 	selectDisplayStatus,
@@ -93,6 +94,35 @@ describe('cognition vocabulary', () => {
 		test('empty/absent history is null', () => {
 			expect(selectDisplayStatus([], true)).toBeNull();
 			expect(selectDisplayStatus(null, false)).toBeNull();
+		});
+	});
+
+	// In a sequential narration feed only the TAIL can be in progress. The backend
+	// does not reliably flip done=true on superseded entries (web_search is skipped
+	// by the dead-air fix), so the feed must settle steps from the outside. This is
+	// the single rule both surfaces share (Chat timeline + Desk operational feed).
+	describe('feed-settled rule (only the tail can be in progress)', () => {
+		test('the turn being answered settles every step', () => {
+			// 2-step feed, both flags still false, but the answer is present.
+			expect(isStepSettled({ done: false }, 0, 2, true)).toBe(true);
+			expect(isStepSettled({ done: false }, 1, 2, true)).toBe(true);
+		});
+
+		test('a superseded step (not the tail) is settled even while streaming', () => {
+			// "Checking web" at idx 0 of 2 while still streaming → a later step exists.
+			expect(isStepSettled({ action: 'web_search', done: false }, 0, 2, false)).toBe(true);
+		});
+
+		test('the live tail stays in progress while streaming', () => {
+			expect(isStepSettled({ done: false }, 1, 2, false)).toBe(false);
+		});
+
+		test('an explicitly-done tail is settled', () => {
+			expect(isStepSettled({ done: true }, 1, 2, false)).toBe(true);
+		});
+
+		test('a lone streaming step is in progress', () => {
+			expect(isStepSettled({ done: false }, 0, 1, false)).toBe(false);
 		});
 	});
 });

@@ -19,7 +19,7 @@
 					? 'shimmer'
 					: ''} text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
 			>
-				{formatDeskStatusLabel(status)}
+				{formatDeskStatusLabel(status, (done || status?.done) === true)}
 			</div>
 		</div>
 	</div>

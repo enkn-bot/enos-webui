@@ -144,6 +144,29 @@ export const shouldPersistStatus = (
  *   If the turn had no outcome worth keeping (a plain answer), returns null → the caller
  *   renders nothing (no leftover "Done" strip on a simple reply).
  */
+/**
+ * In a sequential narration feed, only the TAIL step can still be in progress.
+ * A step is settled (finished) when:
+ *   - the whole turn is answered (`answerPresent`) — nothing is in progress; or
+ *   - the step is explicitly `done`; or
+ *   - a later step exists (this one was superseded, so it has finished).
+ *
+ * This is the single rule both surfaces share (Chat timeline + Desk feed). It
+ * exists because the backend does not reliably flip `done=true` on superseded
+ * entries — the dead-air fix explicitly skips `web_search` — so a stale step would
+ * otherwise shimmer in present tense forever ("Checking web" after the answer).
+ */
+export const isStepSettled = (
+	item: { done?: boolean } | null | undefined,
+	index: number,
+	total: number,
+	answerPresent: boolean
+): boolean => {
+	if (answerPresent) return true;
+	if (item?.done === true) return true;
+	return index < total - 1;
+};
+
 export const selectDisplayStatus = (
 	history: StatusEntry[] | null | undefined,
 	answerPresent: boolean

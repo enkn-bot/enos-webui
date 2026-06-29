@@ -5,7 +5,7 @@
 	import StatusItem from './StatusHistory/StatusItem.svelte';
 	import equal from 'fast-deep-equal';
 	import { enosOrbColorForModel } from '$lib/enos/modelTier';
-	import { selectDisplayStatus, normalizeAction } from '$lib/enos/cognitionVocabulary';
+	import { selectDisplayStatus, normalizeAction, isStepSettled } from '$lib/enos/cognitionVocabulary';
 	export let statusHistory = [];
 	export let expand = false;
 	export let compactDesk = false;
@@ -25,7 +25,6 @@
 		resolvedModelId = modelId;
 	}
 	$: mindColor = enosOrbColorForModel(resolvedModelId);
-	$: inProgress = status?.done !== true;
 
 	$: if (expand) {
 		showHistory = true;
@@ -72,12 +71,16 @@
 		return out;
 	})();
 
-	// Desk's always-visible operational feed: the colored mind dot rides the LAST step
-	// while it is still streaming (done !== true), then goes neutral once that step (and
-	// the turn) completes. Derived from the trail itself rather than the collapsed
-	// `status`, so the dot tracks the true tail of the feed.
-	$: feedInProgress =
-		displayHistory.length > 0 && displayHistory[displayHistory.length - 1]?.done !== true;
+	// Effective settle state per step. In a sequential feed only the tail can be in
+	// progress; once the turn is answered nothing is. `isStepSettled` is the single
+	// surface-agnostic rule (see cognitionVocabulary) so a step whose backend `done`
+	// was never flipped (web_search) cannot shimmer in present tense forever.
+	$: stepSettled = displayHistory.map((item, idx) =>
+		isStepSettled(item, idx, displayHistory.length, answerPresent)
+	);
+	// The collapsed Chat header reflects the same rule: settled once answered or its
+	// own outcome is done, so the header never lingers shimmering after the turn.
+	$: headerDone = answerPresent || status?.done === true;
 </script>
 
 {#if history && history.length > 0 && status}
@@ -90,7 +93,8 @@
 			<div class="text-sm flex flex-col w-full">
 				{#each displayHistory as historyItem, idx}
 					{@const isLast = idx === displayHistory.length - 1}
-					{@const isActiveDot = feedInProgress && !!mindColor && isLast}
+					{@const settled = stepSettled[idx]}
+					{@const isActiveDot = !settled && !!mindColor}
 					<div class="flex items-stretch gap-2">
 						<div class=" ">
 							<div class="pt-2 px-1 mb-1">
@@ -110,7 +114,7 @@
 							{/if}
 						</div>
 
-						<StatusItem status={historyItem} {compactDesk} />
+						<StatusItem status={historyItem} done={settled} {compactDesk} />
 					</div>
 				{/each}
 			</div>
@@ -124,7 +128,7 @@
 						showHistory = !showHistory;
 					}}
 				>
-					<StatusItem {status} />
+					<StatusItem {status} done={headerDone} />
 				</button>
 
 				{#if showHistory}
@@ -132,7 +136,9 @@
 						{#if displayHistory.length > 1}
 							<div class="w-full">
 								{#each displayHistory as historyItem, idx}
-									{@const isActiveDot = inProgress && !!mindColor && idx === displayHistory.length - 1}
+									{@const isLast = idx === displayHistory.length - 1}
+									{@const settled = stepSettled[idx]}
+									{@const isActiveDot = !settled && !!mindColor}
 									<div class="flex items-stretch gap-2 mb-1">
 										<div class=" ">
 											<div class="pt-3 px-1 mb-1.5">
@@ -143,14 +149,14 @@
 													></span>
 												</span>
 											</div>
-											{#if idx !== displayHistory.length - 1}
+											{#if !isLast}
 												<div
 													class="w-[0.5px] ml-[6.5px] h-[calc(100%-14px)] bg-gray-300 dark:bg-gray-700"
 												></div>
 											{/if}
 										</div>
 
-										<StatusItem status={historyItem} done={true} />
+										<StatusItem status={historyItem} done={settled} />
 									</div>
 								{/each}
 							</div>

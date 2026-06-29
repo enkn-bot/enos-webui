@@ -40,8 +40,17 @@ const isContextual = (desc: string): boolean => {
 	return true;
 };
 
-export const formatDeskStatusLabel = (status: StatusLike | null | undefined): string => {
-	const done = status?.done === true;
+/**
+ * @param doneOverride When provided, decides tense (past vs present) instead of the
+ *   status's own `done` flag. The feed uses this to settle a step whose backend
+ *   `done` was never flipped (e.g. a superseded web_search) or once the whole turn
+ *   is answered, so a stale step never lingers in present tense ("Checking web").
+ */
+export const formatDeskStatusLabel = (
+	status: StatusLike | null | undefined,
+	doneOverride?: boolean
+): string => {
+	const done = doneOverride ?? status?.done === true;
 	const action = status?.action ?? '';
 	const description = clean(status?.description);
 

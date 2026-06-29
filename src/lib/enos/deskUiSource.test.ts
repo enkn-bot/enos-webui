@@ -754,7 +754,9 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(statusHistory).toContain('{#if compactDesk}');
 		expect(statusHistory).toContain('aria-label={$i18n.t');
 		expect(statusItem).toContain("import { formatDeskStatusLabel } from '$lib/enos/deskStatus';");
-		expect(statusItem).toContain('{formatDeskStatusLabel(status)}');
+		// The Desk label is settled from the outside (effective-done) so a superseded
+		// or post-answer step reads past tense ("Checked web") instead of shimmering.
+		expect(statusItem).toContain('formatDeskStatusLabel(status, (done || status?.done) === true)');
 		expect(statusItem).toContain('WebSearchResults');
 	});
 
