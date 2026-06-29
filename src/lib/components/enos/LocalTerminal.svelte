@@ -20,7 +20,7 @@
 	let offData: (() => void) | null = null;
 	let offExit: (() => void) | null = null;
 	let termBg = resolveTerminalTheme().background;
-	let themeObserver: MutationObserver | null = null; // reserved; terminal is always dark
+	let themeObserver: MutationObserver | null = null;
 
 	const localTerminal = () => getEnosDesktopBridge()?.localTerminal ?? null;
 
