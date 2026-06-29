@@ -877,4 +877,22 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(dock).toContain('getEnosDesktopBridge');
 		expect(dock).toMatch(/\{#if[^}]*hasBrowser[\s\S]*Browser/);
 	});
+
+	test('Desk right-pane renders the DeskDock; web keeps the legacy tab bar', () => {
+		const chatControls = read('src/lib/components/chat/ChatControls.svelte');
+		const fileNav = read('src/lib/components/chat/FileNav.svelte');
+
+		expect(chatControls).toContain("import DeskDock from '$lib/components/enos/DeskDock.svelte';");
+		// Dock mounted on Desk, wired to the active project + chat, with the Files
+		// body provided through the named slot. Rendered in BOTH pane copies.
+		expect(chatControls.match(/<DeskDock\b/g)?.length).toBe(2);
+		expect(chatControls).toContain('folderId={effectiveFileFolderId}');
+		expect(chatControls).toContain('slot="files"');
+
+		// FileNav gains an additive opt-out for its embedded terminal; Desk uses it
+		// because Terminal is now a first-class dock tab.
+		expect(fileNav).toContain('export let hideTerminalPanel = false;');
+		expect(fileNav).toContain('{#if terminalEnabled && !hideTerminalPanel}');
+		expect(chatControls).toContain('hideTerminalPanel={isDeskSurface}');
+	});
 });

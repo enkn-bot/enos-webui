@@ -44,6 +44,7 @@
 	import Embeds from './ChatControls/Embeds.svelte';
 	import FileNav from './FileNav.svelte';
 	import LocalFileNav from './LocalFileNav.svelte';
+	import DeskDock from '$lib/components/enos/DeskDock.svelte';
 	import PyodideFileNav from './PyodideFileNav.svelte';
 	import Overview from './Overview.svelte';
 	import XMark from '../icons/XMark.svelte';
@@ -532,6 +533,35 @@
 					<Embeds />
 				{:else if $showArtifacts}
 					<Artifacts {history} />
+				{:else if isDeskSurface}
+					<!-- Desk: Codex-style tabbed dock -->
+					<DeskDock folderId={effectiveFileFolderId} {chatId}>
+						<svelte:fragment slot="files">
+							{#if showProjectFileNav}
+								<LocalFileNav
+									folderId={effectiveFileFolderId}
+									onAttach={handleTerminalAttach}
+									onProjectDigest={handleProjectDigest}
+									onCopyToCloud={handleCopyLocalProjectToCloud}
+								/>
+							{:else if showActiveTerminalFileNav}
+								<FileNav
+									onAttach={handleTerminalAttach}
+									{chatId}
+									cloudWorkspace={isDeskSurface}
+									cloudWorkspaceName={selectedTerminalName}
+									cloudProjectRoot={selectedCloudProjectRoot}
+									hideTerminalPanel={isDeskSurface}
+								/>
+							{:else}
+								<div class="h-full flex items-center justify-center px-6 text-center">
+									<div class="max-w-xs text-sm text-gray-500 dark:text-gray-400">
+										{$i18n.t('Select a project to browse its files.')}
+									</div>
+								</div>
+							{/if}
+						</svelte:fragment>
+					</DeskDock>
 				{:else}
 					<!-- Shared surface tabs -->
 					<div class="flex flex-col h-full min-h-0">
@@ -668,6 +698,35 @@
 						<Embeds overlay={dragged} />
 					{:else if $showArtifacts}
 						<Artifacts {history} overlay={dragged} />
+					{:else if isDeskSurface}
+						<!-- Desk: Codex-style tabbed dock -->
+						<DeskDock folderId={effectiveFileFolderId} {chatId}>
+							<svelte:fragment slot="files">
+								{#if showProjectFileNav}
+									<LocalFileNav
+										folderId={effectiveFileFolderId}
+										onAttach={handleTerminalAttach}
+										onProjectDigest={handleProjectDigest}
+										onCopyToCloud={handleCopyLocalProjectToCloud}
+									/>
+								{:else if showActiveTerminalFileNav}
+									<FileNav
+										onAttach={handleTerminalAttach}
+										{chatId}
+										cloudWorkspace={isDeskSurface}
+										cloudWorkspaceName={selectedTerminalName}
+										cloudProjectRoot={selectedCloudProjectRoot}
+										hideTerminalPanel={isDeskSurface}
+									/>
+								{:else}
+									<div class="h-full flex items-center justify-center px-6 text-center">
+										<div class="max-w-xs text-sm text-gray-500 dark:text-gray-400">
+											{$i18n.t('Select a project to browse its files.')}
+										</div>
+									</div>
+								{/if}
+							</svelte:fragment>
+						</DeskDock>
 					{:else}
 						<!-- Shared surface tabs -->
 						<div class="flex flex-col h-full min-h-0">

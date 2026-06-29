@@ -60,6 +60,9 @@
 	export let cloudWorkspace = false;
 	export let cloudWorkspaceName: string | null = null;
 	export let cloudProjectRoot: string | null = null;
+	// Additive opt-out: when true, the embedded terminal accordion is not
+	// rendered. Desk sets this because Terminal is a first-class dock tab.
+	export let hideTerminalPanel = false;
 
 	// ── Terminal panel state ────────────────────────────────────────────
 	let terminalExpanded = false;
@@ -1497,7 +1500,7 @@
 		{/if}
 
 		<!-- Terminal bottom panel -->
-		{#if terminalEnabled}
+		{#if terminalEnabled && !hideTerminalPanel}
 			<div class="shrink-0 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-850">
 				{#if terminalExpanded}
 					<!-- Drag handle (at top of panel) -->
