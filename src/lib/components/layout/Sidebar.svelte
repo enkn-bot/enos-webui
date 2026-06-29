@@ -152,7 +152,7 @@
 	let showPinnedModels = false;
 	let showPinnedNotes = false;
 	let showChannels = false;
-	let showFolders = false;
+	let showFolders = true;
 
 	let folders = {};
 	let allKnownFolders = [];
@@ -575,6 +575,20 @@
 		if (!name) {
 			toast.error($i18n.t('Folder name cannot be empty.'));
 			return false;
+		}
+
+		// Upsert: if a top-level project with this name already exists, navigate to it
+		// instead of creating a duplicate. Matches Codex's "choose or create" flow.
+		if (isDeskSurface && (parent_id ?? null) === null) {
+			const existing = allKnownFolders.find(
+				(f) =>
+					String(f.name ?? '').trim().toLowerCase() === name.toLowerCase() &&
+					(f.parent_id ?? null) === null
+			);
+			if (existing) {
+				await handleDeskProjectChat(existing);
+				return true;
+			}
 		}
 
 		if (dedupeName) {
@@ -1111,6 +1125,11 @@
 		window.addEventListener('focus', onFocus);
 		window.addEventListener('blur', onBlur);
 
+		window.addEventListener('enos:new-project', () => {
+			showFolders = true;
+			showCreateFolderModal = true;
+		});
+
 		const dropZone = document.getElementById('sidebar');
 		if (dropZone) {
 			dropZone.addEventListener('dragover', onDragOver);
@@ -1235,10 +1254,6 @@
 	};
 
 	const startNewChatHandler = async () => {
-		if (isDeskSurface) {
-			await handleDeskProjectChat();
-			return;
-		}
 		await newChatHandler();
 	};
 
@@ -1922,7 +1937,7 @@
 								showCreateFolderModal = true;
 							}}
 						>
-							{$i18n.t('No projects yet — create one to organize your work.')}
+							{$i18n.t('Start your first project.')}
 						</button>
 					{/if}
 				{/if}
@@ -2197,6 +2212,11 @@
 										/>
 									{/each}
 
+									{#if sidebarChats.length === 0 && sidebarPinnedChats.length === 0}
+										<div class="w-full pl-2.5 pr-4 py-1.5 text-xs text-gray-400 dark:text-gray-600">
+											{$i18n.t('No chats yet — start a conversation.')}
+										</div>
+									{/if}
 									{#if $scrollPaginationEnabled && !allChatsLoaded}
 										<Loader
 											on:visible={(e) => {

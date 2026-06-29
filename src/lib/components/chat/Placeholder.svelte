@@ -12,17 +12,18 @@
 		models as _models,
 		temporaryChatEnabled,
 		selectedFolder,
+		folders,
 		chats,
-		currentChatPage,
-		showDeskFolderPicker
+		currentChatPage
 	} from '$lib/stores';
 	import { composeWelcomeGreeting } from '$lib/enos/greeting';
-	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
 
 	import Suggestions from './Suggestions.svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import EyeSlash from '$lib/components/icons/EyeSlash.svelte';
+	import Folder from '$lib/components/icons/Folder.svelte';
+	import Plus from '$lib/components/icons/Plus.svelte';
 	import MessageInput from './MessageInput.svelte';
 	import FolderPlaceholder from './Placeholder/FolderPlaceholder.svelte';
 	import FolderTitle from './Placeholder/FolderTitle.svelte';
@@ -75,14 +76,30 @@
 
 	$: models = selectedModels.map((id) => $_models.find((m) => m.id === id));
 
-	// F2: on Desk the empty state IS the welcome — it teaches the runtime model.
 	$: isDesk = isDeskHostname();
-	$: hasBridge = Boolean(getEnosDesktopBridge());
-	// Infra is DEFAULTED by surface and SHOWN, never chosen as a first action:
-	// the app works on this machine first; the web surface runs in ENOS Cloud.
-	$: deskInfraLine = hasBridge
-		? $i18n.t('Working on this Mac · private to you')
-		: $i18n.t('Running in ENOS Cloud · reachable anywhere');
+
+	// Top-level projects only, sorted by most recently updated.
+	$: topFolders = ($folders ?? [])
+		.filter((f: any) => f.parent_id === null)
+		.sort((a: any, b: any) => (b.updated_at ?? 0) - (a.updated_at ?? 0))
+		.slice(0, 5);
+
+	// Chat count per folder from the loaded chat list.
+	$: chatCountByFolder = ($chats ?? []).reduce((acc: Record<string, number>, c: any) => {
+		if (c.folder_id) acc[c.folder_id] = (acc[c.folder_id] ?? 0) + 1;
+		return acc;
+	}, {});
+
+	const relativeTime = (ts: number | string | null | undefined) => {
+		if (!ts) return '';
+		const ms = typeof ts === 'string' ? Date.parse(ts) : ts * 1000;
+		const diffSec = Math.floor((Date.now() - ms) / 1000);
+		if (diffSec < 60) return 'just now';
+		if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+		if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+		if (diffSec < 7 * 86400) return `${Math.floor(diffSec / 86400)}d ago`;
+		return new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+	};
 </script>
 
 <div class="m-auto w-full max-w-6xl px-2 @2xl:px-20 translate-y-6 py-24 text-center">
@@ -122,14 +139,14 @@
 			{:else}
 				<div
 					id="enos-welcome-greeting"
-					class="enos-display mb-6 @md:mb-8 max-w-2xl px-5 text-center text-3xl @md:text-4xl text-gray-900 dark:text-gray-50"
+					class="enos-display mb-3 @md:mb-4 max-w-2xl px-5 text-center text-4xl @md:text-5xl text-gray-900 dark:text-gray-50"
 					in:fade={{ duration: 100 }}
 				>
 					{welcomeGreeting}
 				</div>
 			{/if}
 
-			<div class="text-base font-normal @md:max-w-3xl w-full py-3 {atSelectedModel ? 'mt-2' : ''}">
+			<div class="text-base font-normal @md:max-w-3xl w-full pb-3 {$selectedFolder ? 'mt-8' : (atSelectedModel ? 'mt-2' : '')}">
 				<MessageInput
 					bind:this={messageInput}
 					{history}
@@ -161,33 +178,6 @@
 				/>
 			</div>
 
-			{#if isDesk && !$selectedFolder}
-				<!-- Infra line: SHOWN (defaulted by surface), not a first action. -->
-				<div class="mt-2 text-xs text-gray-400 dark:text-gray-500">{deskInfraLine}</div>
-				<!-- Doorways: quiet links (the input is the hero), surface-specific.
-				     Each points at an EXISTING action — no invented flows. "Bring a repo"
-				     is intentionally omitted until a single repo-bring action exists
-				     (connect→list→clone is a flow, not a one-click affordance — rendering
-				     it now would light a dead affordance). -->
-				<div
-					class="mt-3 flex items-center justify-center gap-3 text-xs text-gray-400 dark:text-gray-500"
-				>
-					<button
-						type="button"
-						class="hover:text-gray-600 dark:hover:text-gray-300 transition"
-						on:click={() => document.getElementById('sidebar-new-chat-button')?.click()}
-						>{$i18n.t('Start fresh')}</button
-					>
-					{#if hasBridge}
-						<span aria-hidden="true">·</span>
-						<button
-							type="button"
-							class="hover:text-gray-600 dark:hover:text-gray-300 transition"
-							on:click={() => showDeskFolderPicker.set(true)}>{$i18n.t('Open a folder')}</button
-						>
-					{/if}
-				</div>
-			{/if}
 		</div>
 	</div>
 
@@ -199,17 +189,61 @@
 			<FolderPlaceholder folder={$selectedFolder} {isDesk} />
 		</div>
 	{:else}
-		<div class="mx-auto max-w-2xl font-primary mt-2" in:fade={{ duration: 200, delay: 200 }}>
-			<div class="mx-5">
-				<Suggestions
-					suggestionPrompts={atSelectedModel?.info?.meta?.suggestion_prompts ??
-						models[selectedModelIdx]?.info?.meta?.suggestion_prompts ??
-						$config?.default_prompt_suggestions ??
-						[]}
-					inputValue={prompt}
-					{onSelect}
-				/>
-			</div>
+		<div class="mx-auto max-w-2xl font-primary mt-6" in:fade={{ duration: 200, delay: 200 }}>
+			{#if isDesk}
+				<div class="mx-5 mb-6">
+					<div class="mb-3 text-xs font-medium text-gray-600 dark:text-gray-400 text-left">
+						{$i18n.t('Projects')}
+					</div>
+					<div class="grid grid-cols-3 gap-2.5">
+						{#each topFolders as folder (folder.id)}
+							<button
+								type="button"
+								class="text-left rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm p-3.5 transition-all duration-150"
+								on:click={() => selectedFolder.set(folder)}
+							>
+								<div class="size-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-2.5">
+									<Folder className="size-3.5 text-gray-500 dark:text-gray-400" />
+								</div>
+								<div class="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{folder.name}</div>
+								<div class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 truncate">
+									{#if chatCountByFolder[folder.id]}
+										{chatCountByFolder[folder.id]} {chatCountByFolder[folder.id] === 1 ? $i18n.t('chat') : $i18n.t('chats')}
+										{#if folder.updated_at}· {relativeTime(folder.updated_at)}{/if}
+									{:else if folder.updated_at}
+										{relativeTime(folder.updated_at)}
+									{:else}
+										{$i18n.t('No chats yet')}
+									{/if}
+								</div>
+							</button>
+						{/each}
+						<button
+							type="button"
+							class="text-left rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm p-3.5 transition-all duration-150"
+							on:click={() => window.dispatchEvent(new CustomEvent('enos:new-project'))}
+						>
+							<div class="size-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-2.5">
+								<Plus className="size-3.5 text-gray-400 dark:text-gray-500" />
+							</div>
+							<div class="text-sm font-medium text-gray-500 dark:text-gray-400">{$i18n.t('New project')}</div>
+							<div class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{$i18n.t('Start fresh')}</div>
+						</button>
+					</div>
+				</div>
+			{/if}
+			{#if !isDesk}
+				<div class="mx-5">
+					<Suggestions
+						suggestionPrompts={atSelectedModel?.info?.meta?.suggestion_prompts ??
+							models[selectedModelIdx]?.info?.meta?.suggestion_prompts ??
+							$config?.default_prompt_suggestions ??
+							[]}
+						inputValue={prompt}
+						{onSelect}
+					/>
+				</div>
+			{/if}
 		</div>
 	{/if}
 </div>
