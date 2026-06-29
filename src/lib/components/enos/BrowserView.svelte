@@ -15,8 +15,6 @@
 	let canGoForward = false;
 	let loading = false;
 
-	$: inputValue = url ?? inputValue;
-
 	const go = () => {
 		const next = normalizeUrl(inputValue);
 		if (!next) return;

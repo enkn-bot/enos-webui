@@ -62,7 +62,14 @@ export const loadDockState = (storage: DockStorage, folderId: string): DeskDockS
 		if (!raw) return emptyDockState();
 		const parsed = JSON.parse(raw) as DeskDockState;
 		if (!parsed || !Array.isArray(parsed.tabs)) return emptyDockState();
-		return parsed;
+		const valid: DeskDockTabType[] = ['terminal', 'browser', 'files'];
+		const tabs = parsed.tabs.filter(
+			(t) => t && typeof t.id === 'string' && valid.includes(t.type)
+		);
+		const activeId = tabs.some((t) => t.id === parsed.activeId)
+			? parsed.activeId
+			: (tabs[tabs.length - 1]?.id ?? null);
+		return { tabs, activeId };
 	} catch {
 		return emptyDockState();
 	}

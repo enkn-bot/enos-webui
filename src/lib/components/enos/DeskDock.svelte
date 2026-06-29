@@ -152,7 +152,13 @@
 				{#if tab.type === 'terminal'}
 					<XTerminal {chatId} />
 				{:else if tab.type === 'browser'}
-					<BrowserView url={tab.url ?? null} onUrlChange={(u) => onBrowserUrl(tab.id, u)} />
+					{#if hasBrowser}
+						<BrowserView url={tab.url ?? null} onUrlChange={(u) => onBrowserUrl(tab.id, u)} />
+					{:else}
+						<div class="h-full flex items-center justify-center px-6 text-center text-sm text-gray-500 dark:text-gray-400">
+							{$i18n.t('The browser is only available in the ENOS desktop app.')}
+						</div>
+					{/if}
 				{:else if tab.type === 'files'}
 					<slot name="files" />
 				{/if}

@@ -100,4 +100,31 @@ describe('tabDock', () => {
 		saveDockState(store, 'A', addTab(emptyDockState(), 'files', idGen));
 		expect(loadDockState(store, 'B')).toEqual({ tabs: [], activeId: null });
 	});
+
+	test('load drops tabs with an unknown type and repairs a dangling activeId', () => {
+		const store = memoryStorage();
+		store.map.set(
+			dockStorageKey('C'),
+			JSON.stringify({
+				tabs: [
+					{ id: 'a', type: 'files' },
+					{ id: 'b', type: 'sidechat' },
+					{ id: 'c', type: 'terminal' }
+				],
+				activeId: 'b'
+			})
+		);
+		const loaded = loadDockState(store, 'C');
+		expect(loaded.tabs.map((t) => t.id)).toEqual(['a', 'c']);
+		expect(loaded.activeId).toBe('c'); // 'b' was dropped → fall back to last
+	});
+
+	test('load keeps a valid activeId untouched', () => {
+		const store = memoryStorage();
+		store.map.set(
+			dockStorageKey('D'),
+			JSON.stringify({ tabs: [{ id: 'x', type: 'files' }], activeId: 'x' })
+		);
+		expect(loadDockState(store, 'D').activeId).toBe('x');
+	});
 });
