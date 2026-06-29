@@ -508,7 +508,7 @@
 
 	let chatInputContainerElement;
 	let chatInputElement;
-	let unsubAnnotation: () => void;
+	let unsubAnnotation: (() => void) | undefined;
 
 	let filesInputElement;
 	let commandsElement;

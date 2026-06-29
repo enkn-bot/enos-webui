@@ -247,7 +247,7 @@
 
 	const handleQuoteInChat = () => {
 		if (!selectedFile || selectedFile.encoding !== 'utf8') return;
-		const ext = selectedFile.path.split('.').pop() ?? '';
+		const ext = selectedFile.path.includes('.') ? (selectedFile.path.split('.').pop() ?? '') : '';
 		const formatted = `**\`${selectedFile.path}\`**\n\`\`\`${ext}\n${editContent}\n\`\`\`\n\n`;
 		pendingAnnotation.set(formatted);
 	};
@@ -746,6 +746,7 @@
 					</button>
 					{#if selectedFile && selectedFile.encoding === 'utf8'}
 						<button
+							type="button"
 							class="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg
                bg-transparent hover:bg-black/5 dark:hover:bg-white/10 transition"
 							on:click={handleQuoteInChat}
