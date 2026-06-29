@@ -11,7 +11,7 @@
 	dayjs.extend(duration);
 	dayjs.extend(relativeTime);
 
-	import { onMount, tick, getContext, createEventDispatcher } from 'svelte';
+	import { onMount, onDestroy, tick, getContext, createEventDispatcher } from 'svelte';
 
 	import { createPicker, getAuthToken } from '$lib/utils/google-drive-picker';
 	import { pickAndDownloadFile } from '$lib/utils/onedrive-file-picker';
@@ -102,6 +102,7 @@
 		type EnosDesktopPermissionProfile
 	} from '$lib/enos/desktopBridge';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
+	import { pendingAnnotation } from '$lib/stores/annotations';
 
 	const i18n = getContext('i18n');
 
@@ -507,6 +508,7 @@
 
 	let chatInputContainerElement;
 	let chatInputElement;
+	let unsubAnnotation: () => void;
 
 	let filesInputElement;
 	let commandsElement;
@@ -1117,6 +1119,20 @@
 				dropzoneElement.removeEventListener('dragleave', onDragLeave);
 			}
 		};
+	});
+
+	onMount(() => {
+		unsubAnnotation = pendingAnnotation.subscribe(async (annotation) => {
+			if (!annotation) return;
+			prompt = annotation + prompt;
+			pendingAnnotation.set('');
+			await tick();
+			chatInputElement?.focus?.();
+		});
+	});
+
+	onDestroy(() => {
+		unsubAnnotation?.();
 	});
 </script>
 

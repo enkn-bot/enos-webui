@@ -17,3 +17,16 @@ test('LocalFileNav: Quote button only shown for utf8 files', () => {
     assert.match(localFileNav, /encoding.*utf8|utf8.*encoding/,
         'Quote button must guard on utf8 encoding');
 });
+
+const messageInput = readFileSync('src/lib/components/chat/MessageInput.svelte', 'utf8');
+
+test('MessageInput: imports pendingAnnotation store', () => {
+    assert.match(messageInput, /pendingAnnotation/, 'Must import pendingAnnotation store');
+});
+
+test('MessageInput: prepends annotation to prompt', () => {
+    assert.match(messageInput, /pendingAnnotation\.subscribe|pendingAnnotation\b.*unsubscribe/,
+        'Must subscribe to pendingAnnotation');
+    assert.match(messageInput, /prompt\s*=\s*.*\+\s*prompt|prompt\s*=\s*annotation.*prompt/,
+        'Must prepend the annotation to the existing prompt');
+});
