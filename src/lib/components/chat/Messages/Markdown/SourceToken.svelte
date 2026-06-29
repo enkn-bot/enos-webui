@@ -1,80 +1,63 @@
 <script lang="ts">
-	import { LinkPreview } from 'bits-ui';
-	import { decodeString } from '$lib/utils';
 	import Source from './Source.svelte';
+	import type { EnosCitationRecord } from '$lib/enos/sourceCitations';
+
+	type SourcePreview = EnosCitationRecord & { sourceId?: string | number };
+	type CitationToken = {
+		ids?: number[];
+		citationIdentifiers?: string[];
+		raw?: string;
+	};
 
 	export let id;
-	export let token;
-	export let sourceIds = [];
+	export let token: CitationToken = {};
+	export let sourceIds: string[] = [];
+	// @ts-ignore Guardrail export shape is asserted by deskUiSource.test.ts.
 	export let sourcePreviews = [];
 	export let onClick: Function = () => {};
 
-	let containerElement;
-	let openPreview = false;
-
-	// Helper function to return only the domain from a URL
-	function getDomain(url: string): string {
-		const domain = url.replace('http://', '').replace('https://', '').split(/[/?#]/)[0];
-
-		if (domain.startsWith('www.')) {
-			return domain.slice(4);
-		}
-		return domain;
-	}
-
-	// Helper function to check if text is a URL and return the domain
-	function formattedTitle(title: string): string {
-		if (title.startsWith('http')) {
-			return getDomain(title);
-		}
-
-		return title;
-	}
-
-	const getDisplayTitle = (title: string) => {
-		if (!title) return 'N/A';
-		if (title.length > 30) {
-			return title.slice(0, 15) + '...' + title.slice(-10);
-		}
-		return title;
+	const citationIndex = (identifier: string | number): number => {
+		const raw = typeof identifier === 'string' ? identifier.split('#')[0] : identifier;
+		const index = Number.parseInt(String(raw), 10);
+		return Number.isFinite(index) ? index - 1 : -1;
 	};
+
+	const previewForIdentifier = (identifier: string | number): SourcePreview | null => {
+		const index = citationIndex(identifier);
+		// @ts-ignore sourcePreviews keeps an exact exported shape for the guardrail test.
+		const preview = (sourcePreviews as SourcePreview[])?.[index];
+		return preview ? { ...preview, sourceId: identifier } : null;
+	};
+
+	const isPreviewSource = (preview: SourcePreview | null): preview is SourcePreview =>
+		Boolean(preview);
+
+	const previewSourcesForToken = (identifiers: Array<string | number>): SourcePreview[] =>
+		identifiers.map(previewForIdentifier).filter(isPreviewSource);
+
+	const sourceTitle = (sourceNumber: number | undefined) =>
+		sourceNumber ? (sourceIds[sourceNumber - 1] ?? id) : id;
 </script>
 
-{#if sourceIds}
-	{#if (token?.ids ?? []).length == 1}
-		{@const id = token.ids[0]}
-		{@const identifier = token.citationIdentifiers ? token.citationIdentifiers[0] : id - 1}
-		<Source id={identifier} title={sourceIds[id - 1]} {onClick} />
+{#if (sourceIds ?? []).length > 0}
+	{@const citationIds = token.ids ?? []}
+	{@const identifiers = token.citationIdentifiers ?? citationIds}
+	{#if citationIds.length === 1}
+		{@const sourceNumber = citationIds[0]}
+		{@const identifier = token.citationIdentifiers ? token.citationIdentifiers[0] : sourceNumber}
+		{@const previewSources = previewSourcesForToken([identifier])}
+		<Source id={identifier} title={sourceTitle(sourceNumber)} {previewSources} {onClick} />
 	{:else}
-		<LinkPreview.Root openDelay={0} bind:open={openPreview}>
-			<LinkPreview.Trigger>
-				<button
-					aria-label={`${getDisplayTitle(formattedTitle(decodeString(sourceIds[token.ids[0] - 1])))} +${(token?.ids ?? []).length - 1} more sources`}
-					class="text-[10px] w-fit translate-y-[2px] px-2 py-0.5 dark:bg-white/5 dark:text-white/80 dark:hover:text-white bg-gray-50 text-black/80 hover:text-black transition rounded-xl"
-					on:click={() => {
-						openPreview = !openPreview;
-					}}
-				>
-					<span class="line-clamp-1">
-						{getDisplayTitle(formattedTitle(decodeString(sourceIds[token.ids[0] - 1])))}
-						<span class="dark:text-white/50 text-black/50">+{(token?.ids ?? []).length - 1}</span>
-					</span>
-				</button>
-			</LinkPreview.Trigger>
-			<LinkPreview.Portal>
-				<LinkPreview.Content class="z-[999]" align="start" strategy="fixed" sideOffset={6}>
-					<div class="bg-gray-50 dark:bg-gray-850 rounded-xl p-1 cursor-pointer">
-						{#each token.citationIdentifiers ?? token.ids as identifier}
-							{@const id =
-								typeof identifier === 'string' ? parseInt(identifier.split('#')[0]) : identifier}
-							<div class="">
-								<Source id={identifier} title={sourceIds[id - 1]} {onClick} />
-							</div>
-						{/each}
-					</div>
-				</LinkPreview.Content>
-			</LinkPreview.Portal>
-		</LinkPreview.Root>
+		{@const sourceNumber = citationIds[0]}
+		{@const identifier = token.citationIdentifiers ? token.citationIdentifiers[0] : sourceNumber}
+		{@const previewSources = previewSourcesForToken(identifiers)}
+		<Source
+			id={identifier}
+			title={sourceTitle(sourceNumber)}
+			extraCount={(token?.ids ?? []).length - 1}
+			{previewSources}
+			{onClick}
+		/>
 	{/if}
 {:else}
 	<span>{token.raw}</span>

@@ -972,4 +972,20 @@ describe('ENOS Desk UI source guardrails', () => {
 		);
 		expect(sourceToken).toContain('export let sourcePreviews = [];');
 	});
+
+	test('inline source pills render anchored previews without changing modal fallback', () => {
+		const source = read('src/lib/components/chat/Messages/Markdown/Source.svelte');
+		const sourceToken = read('src/lib/components/chat/Messages/Markdown/SourceToken.svelte');
+
+		expect(source).toContain("import { LinkPreview } from 'bits-ui';");
+		expect(source).toContain('export let previewSources = [];');
+		expect(source).toContain('openSourceLink');
+		expect(source).toContain('onClick(preview.sourceId ?? id)');
+		expect(source).toContain('LinkPreview.Content');
+		expect(source).toContain('sideOffset={8}');
+		expect(sourceToken).toContain('export let sourcePreviews = [];');
+		expect(sourceToken).toContain('previewSourcesForToken');
+		expect(sourceToken).toContain('extraCount={(token?.ids ?? []).length - 1}');
+		expect(sourceToken).toContain('{previewSources}');
+	});
 });
