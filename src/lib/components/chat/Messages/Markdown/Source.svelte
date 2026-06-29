@@ -151,36 +151,36 @@
 					<div class="flex flex-col gap-1">
 						{#each typedPreviewSources() as preview}
 							{@const snippet = previewSnippet(preview)}
-							<div
-								class="flex items-start gap-2 rounded-lg px-2 py-2 hover:bg-gray-50 dark:hover:bg-white/5"
-							>
-								<img
-									src={faviconSrc(preview)}
-									alt=""
-									class="mt-0.5 size-5 shrink-0 rounded bg-white dark:bg-gray-900"
-									on:error={handleFaviconError}
-								/>
+							<div class="flex items-stretch gap-1">
 								<button
 									type="button"
-									class="min-w-0 flex-1 text-left"
+									class="flex min-w-0 flex-1 items-start gap-2 rounded-lg px-2 py-2 text-left hover:bg-gray-50 dark:hover:bg-white/5"
 									on:click={() => openSourceLink(preview)}
 								>
-									<div class="line-clamp-2 text-xs font-medium text-gray-900 dark:text-white">
-										{previewTitle(preview)}
-									</div>
-									<div class="mt-0.5 line-clamp-1 text-[11px] text-gray-500 dark:text-gray-400">
-										{previewLabel(preview)}
-									</div>
-									{#if snippet}
-										<div class="mt-1 line-clamp-2 text-[11px] text-gray-600 dark:text-gray-300">
-											{snippet}
+									<img
+										src={faviconSrc(preview)}
+										alt=""
+										class="mt-0.5 size-5 shrink-0 rounded bg-white dark:bg-gray-900"
+										on:error={handleFaviconError}
+									/>
+									<div class="min-w-0 flex-1">
+										<div class="line-clamp-2 text-xs font-medium text-gray-900 dark:text-white">
+											{previewTitle(preview)}
 										</div>
-									{/if}
+										<div class="mt-0.5 line-clamp-1 text-[11px] text-gray-500 dark:text-gray-400">
+											{previewLabel(preview)}
+										</div>
+										{#if snippet}
+											<div class="mt-1 line-clamp-2 text-[11px] text-gray-600 dark:text-gray-300">
+												{snippet}
+											</div>
+										{/if}
+									</div>
 								</button>
 								{#if hasExternalUrl(preview)}
 									<button
 										type="button"
-										class="flex size-6 shrink-0 items-center justify-center rounded-md text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+										class="mt-2 flex size-6 shrink-0 items-center justify-center rounded-md text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
 										aria-label={$i18n.t('Open source in new tab')}
 										on:click={(event) => {
 											event.stopPropagation();

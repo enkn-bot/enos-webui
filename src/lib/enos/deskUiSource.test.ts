@@ -983,6 +983,9 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(source).toContain('openExternalSource');
 		expect(source).toContain("window.open(url, '_blank', 'noopener,noreferrer')");
 		expect(source).not.toContain('onClick(preview.sourceId ?? id)');
+		expect(source).toMatch(
+			/<button[\s\S]*on:click=\{\(\) => openSourceLink\(preview\)\}[\s\S]*<img[\s\S]*\{previewTitle\(preview\)\}/
+		);
 		expect(source).toContain('{#if typedPreviewSources().length > 1}');
 		expect(source).toContain('LinkPreview.Content');
 		expect(source).toContain('sideOffset={8}');
