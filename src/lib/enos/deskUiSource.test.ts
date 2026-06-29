@@ -852,4 +852,29 @@ describe('ENOS Desk UI source guardrails', () => {
 		// Electron main window opts into <webview> support (additive).
 		expect(electronMain).toMatch(/webPreferences:\s*\{[\s\S]*webviewTag:\s*true/);
 	});
+
+	test('Desk dock manages tabs via tabDock and gates the browser entry to Electron', () => {
+		const dock = read('src/lib/components/enos/DeskDock.svelte');
+
+		// Uses the pure state model + persistence helpers.
+		expect(dock).toContain("from '$lib/enos/tabDock';");
+		expect(dock).toContain('addTab(');
+		expect(dock).toContain('closeTab(');
+		expect(dock).toContain('loadDockState(');
+		expect(dock).toContain('saveDockState(');
+
+		// Renders the three tab bodies by reusing base leaves + the new browser view.
+		expect(dock).toContain("import XTerminal from '$lib/components/chat/XTerminal.svelte';");
+		expect(dock).toContain("import BrowserView from './BrowserView.svelte';");
+		expect(dock).toContain('<slot name="files" />');
+
+		// Picker entries.
+		expect(dock).toContain("{$i18n.t('Terminal')}");
+		expect(dock).toContain("{$i18n.t('Browser')}");
+		expect(dock).toContain("{$i18n.t('Files')}");
+
+		// Browser entry is Electron-only.
+		expect(dock).toContain('getEnosDesktopBridge');
+		expect(dock).toMatch(/\{#if[^}]*hasBrowser[\s\S]*Browser/);
+	});
 });
