@@ -5,6 +5,7 @@ import {
 	filterBySurface,
 	filterChatsBySurface,
 	filterProjectsForDeskRuntime,
+	isChatCompletionNotificationOnSurface,
 	isProjectAvailableInDeskRuntime,
 	resolveChatSurface
 } from './surfaceScope';
@@ -263,5 +264,55 @@ describe('deskFolderIdSet + resolveChatSurface (notification surface-scoping, Bu
 		const desk = deskFolderIdSet(folders);
 		expect(resolveChatSurface({ id: 'c4' }, desk)).toBe('chat');
 		expect(resolveChatSurface({ id: 'c5', meta: { surface: 'desk' } }, desk)).toBe('desk');
+	});
+});
+
+describe('isChatCompletionNotificationOnSurface', () => {
+	const folders = {
+		fDesk: { id: 'fDesk', meta: { surface: 'desk' } },
+		fChat: { id: 'fChat', meta: { surface: 'chat' } }
+	};
+	const desk = deskFolderIdSet(folders);
+
+	test('does not notify when the completed chat cannot be resolved', () => {
+		expect(isChatCompletionNotificationOnSurface(null, 'desk', desk)).toBe(false);
+	});
+
+	test('does not notify for archived chats even when they belong to this surface', () => {
+		expect(
+			isChatCompletionNotificationOnSurface(
+				{ id: 'archived-desk', folder_id: 'fDesk', archived: true },
+				'desk',
+				desk
+			)
+		).toBe(false);
+	});
+
+	test('notifies only for a resolved non-archived chat on this surface', () => {
+		expect(
+			isChatCompletionNotificationOnSurface(
+				{ id: 'desk-chat', folder_id: 'fDesk', archived: false },
+				'desk',
+				desk
+			)
+		).toBe(true);
+		expect(
+			isChatCompletionNotificationOnSurface(
+				{ id: 'chat-surface-chat', folder_id: 'fChat', archived: false },
+				'desk',
+				desk
+			)
+		).toBe(false);
+	});
+
+	test('does not notify a foldered chat when the folder surface is unresolved', () => {
+		expect(
+			isChatCompletionNotificationOnSurface(
+				{ id: 'unknown-folder-chat', folder_id: 'missing-folder', archived: false },
+				'chat',
+				desk,
+				{ knownFolderIds: ['fDesk', 'fChat'] }
+			)
+		).toBe(false);
 	});
 });

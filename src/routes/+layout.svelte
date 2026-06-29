@@ -42,6 +42,7 @@
 		desktopEvent
 	} from '$lib/stores';
 	import { getFileContentById } from '$lib/apis/files';
+	import { getFolderById } from '$lib/apis/folders';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { beforeNavigate } from '$app/navigation';
@@ -59,10 +60,15 @@
 
 	import { executeToolServer, getBackendConfig, getModels, getVersion } from '$lib/apis';
 	import { getSessionUser, updateUserTimezone, userSignOut } from '$lib/apis/auths';
-	import { getAllTags, getChatList } from '$lib/apis/chats';
+	import { getAllTags, getChatById, getChatList } from '$lib/apis/chats';
 	import { chatCompletion } from '$lib/apis/openai';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
-	import { deskFolderIdSet, resolveChatSurface, surfaceFromIsDesk } from '$lib/enos/surfaceScope';
+	import {
+		deskFolderIdSet,
+		folderIdSet,
+		isChatCompletionNotificationOnSurface,
+		surfaceFromIsDesk
+	} from '$lib/enos/surfaceScope';
 	import {
 		addOpenAIConnection,
 		removeOpenAIConnection,
@@ -627,22 +633,54 @@
 		if ((event.chat_id !== $chatId && !$temporaryChatEnabled) || isInBackground) {
 			if (type === 'chat:completion') {
 				const { done, content, title } = data;
+				if (!done) return;
+
 				const displayTitle = title || $i18n.t('New Chat');
 
 				// Surface-scope the notification (Bug 3): the backend broadcasts a
 				// completion to ALL of a user's sockets, so a Desk tab receives Chat-surface
 				// completions and vice versa. Only notify for chats on THIS surface. The
-				// completed chat's surface is its folder's surface (resolveChatSurface). If
-				// the chat isn't loaded here yet, fall back to notifying (don't drop a
-				// legitimate same-surface alert over a refresh race).
-				const completedChat = ($chats ?? []).find((c) => c?.id === event.chat_id);
+				// completed chat's surface is its folder's surface. If the visible list does
+				// not include it (refresh race, pagination, or archived chat), fetch the row
+				// before deciding. Unresolved/archived chats stay silent.
+				let completedChat = ($chats ?? []).find((c) => c?.id === event.chat_id);
+				if (!completedChat && event.chat_id && !event.chat_id.startsWith('local:')) {
+					try {
+						completedChat = await getChatById(localStorage.token, event.chat_id);
+					} catch (error) {
+						console.warn('[enos notification surface]', error);
+					}
+				}
+				let notificationDeskFolderIds = deskFolderIdSet($folders);
+				let notificationKnownFolderIds = folderIdSet($folders);
+				const completedFolderId =
+					completedChat?.folder_id == null ? null : String(completedChat.folder_id);
+				if (completedFolderId && !notificationKnownFolderIds.has(completedFolderId)) {
+					try {
+						const completedFolder = await getFolderById(localStorage.token, completedFolderId);
+						if (completedFolder) {
+							notificationDeskFolderIds = deskFolderIdSet(
+								[completedFolder],
+								notificationDeskFolderIds
+							);
+							notificationKnownFolderIds = folderIdSet(
+								[completedFolder],
+								notificationKnownFolderIds
+							);
+						}
+					} catch (error) {
+						console.warn('[enos notification folder surface]', error);
+					}
+				}
 				const currentSurface = surfaceFromIsDesk(isDeskHostname());
-				const completedSurface = completedChat
-					? resolveChatSurface(completedChat, deskFolderIdSet($folders))
-					: currentSurface;
-				const onThisSurface = completedSurface === currentSurface;
+				const onThisSurface = isChatCompletionNotificationOnSurface(
+					completedChat,
+					currentSurface,
+					notificationDeskFolderIds,
+					{ knownFolderIds: notificationKnownFolderIds }
+				);
 
-				if (done && onThisSurface) {
+				if (onThisSurface) {
 					if (
 						($settings?.notificationSound ?? true) &&
 						($settings?.notificationSoundAlways ?? false)

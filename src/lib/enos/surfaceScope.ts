@@ -16,6 +16,10 @@ type SurfaceScopedItem = {
 };
 
 type SurfaceScopedChat = SurfaceScopedItem & { folder_id?: unknown };
+type NotificationScopedChat = SurfaceScopedChat & { archived?: unknown };
+type NotificationSurfaceOptions = {
+	knownFolderIds?: Iterable<string> | Set<string>;
+};
 
 const itemSurface = (item: SurfaceScopedItem): EnosSurface | undefined => {
 	if (item?.meta?.surface === 'desk' || item?.meta?.surface === 'chat') {
@@ -147,6 +151,22 @@ export const deskFolderIdSet = (
 	return set;
 };
 
+export const folderIdSet = (folders: unknown, extraIds: Iterable<string> = []): Set<string> => {
+	const set = new Set<string>();
+	const list = Array.isArray(folders)
+		? folders
+		: folders && typeof folders === 'object'
+			? Object.values(folders as Record<string, unknown>)
+			: [];
+	for (const folder of list as SurfaceScopedItem[]) {
+		if (folder?.id != null) {
+			set.add(String(folder.id));
+		}
+	}
+	for (const id of extraIds) set.add(String(id));
+	return set;
+};
+
 // Resolve ONE chat's surface (folder-authoritative, same rule as
 // filterChatsBySurface). A foldered chat's surface = its folder's surface; a loose
 // chat defaults to 'chat' and honors an explicit meta tag.
@@ -163,6 +183,28 @@ export const resolveChatSurface = (
 		return deskFolders.has(String(folderId)) ? 'desk' : 'chat';
 	}
 	return itemSurface(chat ?? {}) ?? 'chat';
+};
+
+export const isChatCompletionNotificationOnSurface = (
+	chat: NotificationScopedChat | null | undefined,
+	surface: EnosSurface,
+	deskFolderIds: Iterable<string> | Set<string> = [],
+	options: NotificationSurfaceOptions = {}
+): boolean => {
+	if (!chat || chat.archived === true) return false;
+	const deskFolders =
+		deskFolderIds instanceof Set
+			? deskFolderIds
+			: new Set(Array.from(deskFolderIds, (id) => String(id)));
+	const folderId = chat.folder_id == null ? null : String(chat.folder_id);
+	if (folderId && options.knownFolderIds) {
+		const knownFolders =
+			options.knownFolderIds instanceof Set
+				? options.knownFolderIds
+				: new Set(Array.from(options.knownFolderIds, (id) => String(id)));
+		if (!knownFolders.has(folderId) && !deskFolders.has(folderId)) return false;
+	}
+	return resolveChatSurface(chat, deskFolders) === surface;
 };
 
 export const withSurfaceMeta = <T extends SurfaceScopedItem>(
