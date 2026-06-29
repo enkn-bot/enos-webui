@@ -35,11 +35,6 @@
 		term.loadAddon(fitAddon);
 		term.loadAddon(new WebLinksAddon());
 		term.open(terminalEl);
-		// Wait one frame so the container has its layout dimensions before
-		// fitting; then read term.cols/rows after fit so the shell gets the
-		// correct initial size and the cursor renders at the right position.
-		await new Promise<void>((r) => requestAnimationFrame(() => r()));
-		fitAddon?.fit();
 
 		const lt = localTerminal();
 		if (!lt) {
@@ -64,6 +59,12 @@
 			}
 		});
 
+		// IMPORTANT: shell startup must NOT depend on fit() succeeding. Start the
+		// shell with the default geometry first, register the resize handler, then
+		// fit in a non-blocking, exception-safe frame. The fit triggers an onResize
+		// which sends a resize frame to the PTY, so the prompt/cursor render at the
+		// correct width — without ever gating startup on the (occasionally throwing)
+		// fit() call.
 		await lt.start(sessionId, folderId, term.cols, term.rows);
 
 		term.onData((data) => {
@@ -74,7 +75,17 @@
 			if (sessionId) lt.resize(sessionId, cols, rows);
 		});
 
-		resizeObserver = new ResizeObserver(() => requestAnimationFrame(() => fitAddon?.fit()));
+		const safeFit = () => {
+			try {
+				fitAddon?.fit();
+			} catch {
+				// fit can throw if the container has no measurable geometry yet;
+				// never let it abort the terminal session.
+			}
+		};
+		requestAnimationFrame(safeFit);
+
+		resizeObserver = new ResizeObserver(() => requestAnimationFrame(safeFit));
 		resizeObserver.observe(terminalEl);
 		term.focus();
 	});

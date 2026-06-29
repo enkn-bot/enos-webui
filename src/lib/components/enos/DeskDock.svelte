@@ -1,6 +1,7 @@
 <!-- src/lib/components/enos/DeskDock.svelte -->
 <script lang="ts">
 	import { getContext } from 'svelte';
+	import { flip } from 'svelte/animate';
 	import {
 		addTab,
 		activateTab,
@@ -83,34 +84,31 @@
 
 	$: activeTab = state.tabs.find((t) => t.id === state.activeId) ?? null;
 
-	// Drag-to-reorder
+	// Drag-to-reorder. Tabs reorder LIVE as the dragged tab crosses another, and
+	// the displaced tabs slide via animate:flip — so it feels like the tabs make
+	// way for each other rather than swapping on drop. State is persisted once,
+	// on dragend, to avoid thrashing localStorage during the drag.
 	let dragId: string | null = null;
-	let dragOverId: string | null = null;
 
 	const onDragStart = (e: DragEvent, id: string) => {
 		dragId = id;
 		if (e.dataTransfer) {
 			e.dataTransfer.effectAllowed = 'move';
+			// Required for Firefox to initiate the drag; value is unused.
 			e.dataTransfer.setData('text/plain', id);
 		}
 	};
-	const onDragOver = (e: DragEvent, id: string) => {
-		e.preventDefault();
-		if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-		dragOverId = id;
-	};
-	const onDrop = (e: DragEvent, id: string) => {
-		e.preventDefault();
+	const onDragEnter = (id: string) => {
+		// Move the dragged tab into the entered tab's slot immediately. Once
+		// moved, the dragged tab occupies that slot and the displaced tab flips
+		// to its new position, giving the continuous sliding feel.
 		if (dragId && dragId !== id) {
 			state = reorderTabs(state, dragId, id);
-			persist();
 		}
-		dragId = null;
-		dragOverId = null;
 	};
 	const onDragEnd = () => {
+		if (dragId) persist();
 		dragId = null;
-		dragOverId = null;
 	};
 </script>
 
@@ -123,15 +121,16 @@
 					draggable="true"
 					role="tab"
 					aria-selected={tab.id === state.activeId}
+					animate:flip={{ duration: 180 }}
 					on:dragstart={(e) => onDragStart(e, tab.id)}
-					on:dragover={(e) => onDragOver(e, tab.id)}
-					on:drop={(e) => onDrop(e, tab.id)}
+					on:dragenter={() => onDragEnter(tab.id)}
+					on:dragover|preventDefault
 					on:dragend={onDragEnd}
-					class="flex items-center gap-1 pl-2.5 pr-1 py-1 text-sm rounded-lg whitespace-nowrap cursor-grab active:cursor-grabbing
+					class="flex items-center gap-1 pl-2.5 pr-1 py-1 text-sm rounded-lg whitespace-nowrap cursor-grab active:cursor-grabbing transition-opacity
 						{tab.id === state.activeId
 						? 'bg-gray-100 dark:bg-gray-800 font-medium text-gray-900 dark:text-white'
 						: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}
-						{dragOverId === tab.id && dragId !== tab.id ? 'ring-1 ring-inset ring-blue-400 dark:ring-blue-500' : ''}"
+						{dragId === tab.id ? 'opacity-50' : ''}"
 				>
 					<button type="button" on:click={() => select(tab.id)}>
 						{$i18n.t(tabLabel(tab.type))}

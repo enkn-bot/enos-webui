@@ -7,6 +7,7 @@ import {
 	dockStorageKey,
 	emptyDockState,
 	loadDockState,
+	reorderTabs,
 	saveDockState,
 	setTabUrl,
 	type DeskDockState,
@@ -71,6 +72,31 @@ describe('tabDock', () => {
 		let s = addTab(emptyDockState(), 'browser', idGen);
 		s = setTabUrl(s, 'id-1', 'https://example.com');
 		expect(s.tabs[0].url).toBe('https://example.com');
+	});
+
+	const threeTabs = (): DeskDockState => {
+		counter = 0;
+		let s = addTab(emptyDockState(), 'terminal', idGen); // id-1
+		s = addTab(s, 'browser', idGen); // id-2
+		s = addTab(s, 'files', idGen); // id-3
+		return s;
+	};
+
+	test('reorderTabs moves a tab into the target slot, shifting the rest', () => {
+		const s = reorderTabs(threeTabs(), 'id-1', 'id-3');
+		expect(s.tabs.map((t) => t.id)).toEqual(['id-2', 'id-3', 'id-1']);
+	});
+
+	test('reorderTabs moving backward inserts before the target', () => {
+		const s = reorderTabs(threeTabs(), 'id-3', 'id-1');
+		expect(s.tabs.map((t) => t.id)).toEqual(['id-3', 'id-1', 'id-2']);
+	});
+
+	test('reorderTabs preserves activeId and is a no-op for unknown or identical ids', () => {
+		const base = activateTab(threeTabs(), 'id-2');
+		expect(reorderTabs(base, 'id-2', 'id-2')).toBe(base);
+		expect(reorderTabs(base, 'nope', 'id-1')).toBe(base);
+		expect(reorderTabs(base, 'id-1', 'id-3').activeId).toBe('id-2');
 	});
 
 	test('save then load round-trips per folder', () => {
