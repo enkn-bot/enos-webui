@@ -561,6 +561,7 @@
 			{done}
 			{editCodeBlock}
 			{sourceIds}
+			{sourcePreviews}
 			{onTaskClick}
 			{onSourceClick}
 		/>

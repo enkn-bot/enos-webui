@@ -953,6 +953,9 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(markdown).toContain('{sourcePreviews}');
 		expect(markdownTokens).toContain('export let sourcePreviews = [];');
 		expect(markdownTokens).toContain('{sourcePreviews}');
+		expect(markdownTokens).toMatch(
+			/<ColonFenceBlock[\s\S]*\{sourceIds\}[\s\S]*\{sourcePreviews\}/
+		);
 		expect(inlineTokens).toContain('export let sourcePreviews = [];');
 		expect(inlineTokens).toContain('<SourceToken {id} {token} {sourceIds} {sourcePreviews}');
 	});
