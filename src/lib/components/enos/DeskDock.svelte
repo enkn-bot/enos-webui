@@ -84,31 +84,101 @@
 
 	$: activeTab = state.tabs.find((t) => t.id === state.activeId) ?? null;
 
-	// Drag-to-reorder. Tabs reorder LIVE as the dragged tab crosses another, and
-	// the displaced tabs slide via animate:flip — so it feels like the tabs make
-	// way for each other rather than swapping on drop. State is persisted once,
-	// on dragend, to avoid thrashing localStorage during the drag.
-	let dragId: string | null = null;
+	// Pointer-based tab reorder (NOT HTML5 drag-and-drop, which forces a flat
+	// ghost image without the tab's rounded corners). The real tab element
+	// translates with the pointer, keeping its full styling; neighbours slide
+	// out of the way via animate:flip as the pointer crosses their centres. This
+	// is the "tabs make way for each other" feel rather than a swap-on-drop.
+	const GAP_PX = 4; // matches gap-1 (0.25rem) between tabs
 
-	const onDragStart = (e: DragEvent, id: string) => {
-		dragId = id;
-		if (e.dataTransfer) {
-			e.dataTransfer.effectAllowed = 'move';
-			// Required for Firefox to initiate the drag; value is unused.
-			e.dataTransfer.setData('text/plain', id);
+	let tabEls: Record<string, HTMLElement> = {};
+	let dragId: string | null = null;
+	let dragDx = 0; // live translateX of the grabbed tab
+	let dragBaseX = 0; // pointer X that maps to dragDx === 0 (compensated on each swap)
+	let dragStarted = false; // crossed the move threshold → a drag, not a click
+	let dragPointerId = -1;
+	let dragCandidateId: string | null = null;
+	let dragCandidateX = 0;
+
+	const registerTabEl = (node: HTMLElement, id: string) => {
+		tabEls[id] = node;
+		return {
+			update(newId: string) {
+				delete tabEls[id];
+				id = newId;
+				tabEls[id] = node;
+			},
+			destroy() {
+				if (tabEls[id] === node) delete tabEls[id];
+			}
+		};
+	};
+
+	const centerX = (el: HTMLElement) => {
+		const r = el.getBoundingClientRect();
+		return r.left + r.width / 2;
+	};
+
+	// Skip the flip animation for the grabbed tab (we drive it via translateX);
+	// animate everyone else so they slide into the vacated slot.
+	const smartFlip = (node: Element, anim: any, params: any) => {
+		if ((node as HTMLElement).dataset.tabId === dragId) return { duration: 0 };
+		return flip(node as HTMLElement, anim, params);
+	};
+
+	const onTabPointerDown = (e: PointerEvent, id: string) => {
+		if (!e.isPrimary || e.button !== 0) return;
+		dragCandidateId = id;
+		dragCandidateX = e.clientX;
+		dragPointerId = e.pointerId;
+		dragStarted = false;
+		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+	};
+
+	const onTabPointerMove = (e: PointerEvent) => {
+		if (dragCandidateId === null || e.pointerId !== dragPointerId) return;
+		if (!dragStarted) {
+			if (Math.abs(e.clientX - dragCandidateX) < 4) return; // still a click
+			dragStarted = true;
+			dragId = dragCandidateId;
+			dragBaseX = e.clientX;
+		}
+		dragDx = e.clientX - dragBaseX;
+
+		const i = state.tabs.findIndex((t) => t.id === dragId);
+		if (i < 0) return;
+		const right = state.tabs[i + 1];
+		const left = state.tabs[i - 1];
+		if (right && tabEls[right.id] && e.clientX > centerX(tabEls[right.id])) {
+			const shift = tabEls[right.id].getBoundingClientRect().width + GAP_PX;
+			state = reorderTabs(state, dragId!, right.id);
+			dragBaseX += shift; // compensate so the grabbed tab stays under the pointer
+			dragDx = e.clientX - dragBaseX;
+		} else if (left && tabEls[left.id] && e.clientX < centerX(tabEls[left.id])) {
+			const shift = tabEls[left.id].getBoundingClientRect().width + GAP_PX;
+			state = reorderTabs(state, dragId!, left.id);
+			dragBaseX -= shift;
+			dragDx = e.clientX - dragBaseX;
 		}
 	};
-	const onDragEnter = (id: string) => {
-		// Move the dragged tab into the entered tab's slot immediately. Once
-		// moved, the dragged tab occupies that slot and the displaced tab flips
-		// to its new position, giving the continuous sliding feel.
-		if (dragId && dragId !== id) {
-			state = reorderTabs(state, dragId, id);
+
+	const endPointerDrag = (e: PointerEvent) => {
+		if (e.pointerId !== dragPointerId) return;
+		try {
+			(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+		} catch {
+			// capture already released
 		}
-	};
-	const onDragEnd = () => {
-		if (dragId) persist();
+		if (dragStarted && dragId) {
+			persist();
+		} else if (dragCandidateId !== null) {
+			select(dragCandidateId); // a tap, not a drag → activate the tab
+		}
 		dragId = null;
+		dragDx = 0;
+		dragStarted = false;
+		dragCandidateId = null;
+		dragPointerId = -1;
 	};
 </script>
 
@@ -118,27 +188,29 @@
 		<div class="flex gap-1 min-w-0 overflow-x-auto scrollbar-hidden">
 			{#each state.tabs as tab (tab.id)}
 				<div
-					draggable="true"
+					use:registerTabEl={tab.id}
+					data-tab-id={tab.id}
 					role="tab"
 					aria-selected={tab.id === state.activeId}
-					animate:flip={{ duration: 180 }}
-					on:dragstart={(e) => onDragStart(e, tab.id)}
-					on:dragenter={() => onDragEnter(tab.id)}
-					on:dragover|preventDefault
-					on:dragend={onDragEnd}
-					class="flex items-center gap-1 pl-2.5 pr-1 py-1 text-sm rounded-lg whitespace-nowrap cursor-grab active:cursor-grabbing transition-opacity
+					animate:smartFlip={{ duration: 180 }}
+					on:pointerdown={(e) => onTabPointerDown(e, tab.id)}
+					on:pointermove={onTabPointerMove}
+					on:pointerup={endPointerDrag}
+					on:pointercancel={endPointerDrag}
+					style={dragId === tab.id
+						? `transform: translateX(${dragDx}px) scale(1.03); z-index: 20; box-shadow: 0 8px 20px rgba(0,0,0,0.18); position: relative;`
+						: ''}
+					class="flex items-center gap-1 pl-2.5 pr-1 py-1 text-sm rounded-lg whitespace-nowrap select-none touch-none cursor-grab active:cursor-grabbing
 						{tab.id === state.activeId
 						? 'bg-gray-100 dark:bg-gray-800 font-medium text-gray-900 dark:text-white'
-						: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}
-						{dragId === tab.id ? 'opacity-50' : ''}"
+						: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
 				>
-					<button type="button" on:click={() => select(tab.id)}>
-						{$i18n.t(tabLabel(tab.type))}
-					</button>
+					<span>{$i18n.t(tabLabel(tab.type))}</span>
 					<button
 						type="button"
 						class="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-						on:click={() => close(tab.id)}
+						on:pointerdown|stopPropagation
+						on:click|stopPropagation={() => close(tab.id)}
 						aria-label={$i18n.t('Close')}
 					>
 						<XMark className="size-3.5" />
