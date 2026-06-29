@@ -960,18 +960,18 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(markdown).toContain('export let sourcePreviews = [];');
 		expect(markdown).toContain('{sourcePreviews}');
 		expect(markdownTokens).toMatch(
-			/export let sourcePreviews(?::\s*EnosCitationRecord\[\])?\s*=\s*\[\];/
+			/export let sourcePreviews:\s*EnosCitationRecord\[\]\s*=\s*\[\];/
 		);
 		expect(markdownTokens).toContain('{sourcePreviews}');
 		expect(markdownTokens).toMatch(
 			/<ColonFenceBlock[\s\S]*\{sourceIds\}[\s\S]*\{sourcePreviews\}/
 		);
 		expect(inlineTokens).toMatch(
-			/export let sourcePreviews(?::\s*EnosCitationRecord\[\])?\s*=\s*\[\];/
+			/export let sourcePreviews:\s*EnosCitationRecord\[\]\s*=\s*\[\];/
 		);
 		expect(inlineTokens).toContain('<SourceToken {id} {token} {sourceIds} {sourcePreviews}');
 		expect(colonFenceBlock).toMatch(
-			/export let sourcePreviews(?::\s*EnosCitationRecord\[\])?\s*=\s*\[\];/
+			/export let sourcePreviews:\s*EnosCitationRecord\[\]\s*=\s*\[\];/
 		);
 		expect(colonFenceBlock).toMatch(
 			/<MarkdownTokens[\s\S]*\{sourceIds\}[\s\S]*\{sourcePreviews\}/
