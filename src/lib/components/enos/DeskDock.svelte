@@ -7,6 +7,7 @@
 		closeTab,
 		emptyDockState,
 		loadDockState,
+		reorderTabs,
 		saveDockState,
 		setTabUrl,
 		type DeskDockState,
@@ -81,6 +82,36 @@
 		type === 'terminal' ? 'Terminal' : type === 'browser' ? 'Browser' : 'Files';
 
 	$: activeTab = state.tabs.find((t) => t.id === state.activeId) ?? null;
+
+	// Drag-to-reorder
+	let dragId: string | null = null;
+	let dragOverId: string | null = null;
+
+	const onDragStart = (e: DragEvent, id: string) => {
+		dragId = id;
+		if (e.dataTransfer) {
+			e.dataTransfer.effectAllowed = 'move';
+			e.dataTransfer.setData('text/plain', id);
+		}
+	};
+	const onDragOver = (e: DragEvent, id: string) => {
+		e.preventDefault();
+		if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+		dragOverId = id;
+	};
+	const onDrop = (e: DragEvent, id: string) => {
+		e.preventDefault();
+		if (dragId && dragId !== id) {
+			state = reorderTabs(state, dragId, id);
+			persist();
+		}
+		dragId = null;
+		dragOverId = null;
+	};
+	const onDragEnd = () => {
+		dragId = null;
+		dragOverId = null;
+	};
 </script>
 
 <div class="flex flex-col h-full min-h-0">
@@ -89,10 +120,18 @@
 		<div class="flex gap-1 min-w-0 overflow-x-auto scrollbar-hidden">
 			{#each state.tabs as tab (tab.id)}
 				<div
-					class="flex items-center gap-1 pl-2.5 pr-1 py-1 text-sm rounded-lg whitespace-nowrap {tab.id ===
-					state.activeId
+					draggable="true"
+					role="tab"
+					aria-selected={tab.id === state.activeId}
+					on:dragstart={(e) => onDragStart(e, tab.id)}
+					on:dragover={(e) => onDragOver(e, tab.id)}
+					on:drop={(e) => onDrop(e, tab.id)}
+					on:dragend={onDragEnd}
+					class="flex items-center gap-1 pl-2.5 pr-1 py-1 text-sm rounded-lg whitespace-nowrap cursor-grab active:cursor-grabbing
+						{tab.id === state.activeId
 						? 'bg-gray-100 dark:bg-gray-800 font-medium text-gray-900 dark:text-white'
-						: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
+						: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}
+						{dragOverId === tab.id && dragId !== tab.id ? 'ring-1 ring-inset ring-blue-400 dark:ring-blue-500' : ''}"
 				>
 					<button type="button" on:click={() => select(tab.id)}>
 						{$i18n.t(tabLabel(tab.type))}

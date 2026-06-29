@@ -49,6 +49,21 @@ export const closeTab = (state: DeskDockState, id: string): DeskDockState => {
 	return { tabs, activeId };
 };
 
+export const reorderTabs = (
+	state: DeskDockState,
+	fromId: string,
+	toId: string
+): DeskDockState => {
+	if (fromId === toId) return state;
+	const tabs = [...state.tabs];
+	const fromIdx = tabs.findIndex((t) => t.id === fromId);
+	const toIdx = tabs.findIndex((t) => t.id === toId);
+	if (fromIdx < 0 || toIdx < 0) return state;
+	const [tab] = tabs.splice(fromIdx, 1);
+	tabs.splice(toIdx, 0, tab);
+	return { ...state, tabs };
+};
+
 export const setTabUrl = (state: DeskDockState, id: string, url: string): DeskDockState => ({
 	...state,
 	tabs: state.tabs.map((t) => (t.id === id ? { ...t, url } : t))

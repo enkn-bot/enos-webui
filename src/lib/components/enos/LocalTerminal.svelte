@@ -35,7 +35,11 @@
 		term.loadAddon(fitAddon);
 		term.loadAddon(new WebLinksAddon());
 		term.open(terminalEl);
-		requestAnimationFrame(() => fitAddon?.fit());
+		// Wait one frame so the container has its layout dimensions before
+		// fitting; then read term.cols/rows after fit so the shell gets the
+		// correct initial size and the cursor renders at the right position.
+		await new Promise<void>((r) => requestAnimationFrame(() => r()));
+		fitAddon?.fit();
 
 		const lt = localTerminal();
 		if (!lt) {

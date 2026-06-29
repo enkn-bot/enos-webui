@@ -305,13 +305,16 @@
 	<div class="flex-1 min-h-0 relative">
 		{#if url}
 			<!-- svelte-ignore a11y-missing-attribute -->
+			<!-- Explicit inline width/height: Electron's <webview> doesn't always
+			     honour percentage widths from CSS classes alone; inline style
+			     guarantees the guest viewport matches the pane. -->
 			<webview
 				bind:this={webviewEl}
 				use:webviewListeners
 				src={url}
 				partition="persist:enos-browser"
 				allowpopups="true"
-				class="absolute inset-0 w-full h-full"
+				style="position:absolute;inset:0;width:100%;height:100%;"
 			></webview>
 		{:else}
 			<div class="h-full flex flex-col items-center justify-center text-center gap-2 px-6">
