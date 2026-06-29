@@ -723,14 +723,16 @@ describe('ENOS Desk UI source guardrails', () => {
 	test('persisted ENOS web sources render real labels instead of raw tool ids', () => {
 		const contentRenderer = read('src/lib/components/chat/Messages/ContentRenderer.svelte');
 		const citations = read('src/lib/components/chat/Messages/Citations.svelte');
+		const sourceCitations = read('src/lib/enos/sourceCitations.ts');
 
 		expect(contentRenderer).toContain("import { getEnosSourceIds } from '$lib/enos/sourceLabels';");
 		expect(contentRenderer).toContain('sourceIds = getEnosSourceIds');
 		expect(contentRenderer).not.toContain('source?.source?.name ?? id');
-		expect(citations).toContain("from '$lib/enos/sourceLabels';");
-		expect(citations).toContain('getEnosCitationLabel');
-		expect(citations).toContain('getEnosCitationUrl');
-		expect(citations).toContain('citation.source.url');
+		expect(sourceCitations).toContain("from './sourceLabels';");
+		expect(sourceCitations).toContain('getEnosCitationLabel');
+		expect(sourceCitations).toContain('getEnosCitationUrl');
+		expect(citations).toContain("import { buildEnosCitations } from '$lib/enos/sourceCitations';");
+		expect(citations).toContain('citations = buildEnosCitations(sources);');
 	});
 
 	test('Desk status narration uses compact ENOS presentation without changing Chat history', () => {

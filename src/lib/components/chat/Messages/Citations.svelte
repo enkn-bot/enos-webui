@@ -1,11 +1,7 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
 	import { embed, showControls, showEmbeds } from '$lib/stores';
-	import {
-		getEnosCitationId,
-		getEnosCitationLabel,
-		getEnosCitationUrl
-	} from '$lib/enos/sourceLabels';
+	import { buildEnosCitations } from '$lib/enos/sourceCitations';
 
 	import CitationModal from './Citations/CitationModal.svelte';
 
@@ -101,44 +97,7 @@
 	}
 
 	$: {
-		citations = sources.reduce((acc, source) => {
-			if (Object.keys(source).length === 0) {
-				return acc;
-			}
-
-			source?.document?.forEach((document, index) => {
-				const metadata = source?.metadata?.[index];
-				const distance = source?.distances?.[index];
-
-				// Within the same citation there could be multiple documents.
-				const id = getEnosCitationId(source?.source, metadata);
-				const label = getEnosCitationLabel(source?.source, metadata);
-				const url = getEnosCitationUrl(source?.source, metadata);
-				let _source = { ...(source?.source ?? {}), name: label };
-
-				if (url) {
-					_source = { ..._source, url };
-				}
-
-				const existingSource = acc.find((item) => item.id === id);
-
-				if (existingSource) {
-					existingSource.document.push(document);
-					existingSource.metadata.push(metadata);
-					if (distance !== undefined) existingSource.distances.push(distance);
-				} else {
-					acc.push({
-						id: id,
-						source: _source,
-						document: [document],
-						metadata: metadata ? [metadata] : [],
-						distances: distance !== undefined ? [distance] : []
-					});
-				}
-			});
-
-			return acc;
-		}, []);
+		citations = buildEnosCitations(sources);
 		console.log('citations', citations);
 
 		showRelevance = calculateShowRelevance(citations);
