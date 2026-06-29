@@ -14,6 +14,7 @@
 	} from '$lib/stores';
 	import FloatingButtons from '../ContentRenderer/FloatingButtons.svelte';
 	import { createMessagesList, replaceOutsideCode } from '$lib/utils';
+	import { buildEnosCitations } from '$lib/enos/sourceCitations';
 	import { getEnosSourceIds } from '$lib/enos/sourceLabels';
 
 	/**
@@ -96,6 +97,11 @@
 
 	let sourceIds = [];
 	$: sourceIds = getEnosSourceIds(sources, model?.info?.meta?.capabilities?.citations !== false);
+	let sourcePreviews = [];
+	$: sourcePreviews = buildEnosCitations(
+		sources,
+		model?.info?.meta?.capabilities?.citations !== false
+	);
 
 	const updateButtonPosition = (event) => {
 		const buttonsContainerElement = document.getElementById(`floating-buttons-${id}`);
@@ -216,6 +222,7 @@
 			{editCodeBlock}
 			{topPadding}
 			{sourceIds}
+			{sourcePreviews}
 			{onSourceClick}
 			{onTaskClick}
 			{onSave}

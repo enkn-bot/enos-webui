@@ -31,6 +31,7 @@
 	export let top = true;
 	export let attributes = {};
 	export let sourceIds = [];
+	export let sourcePreviews = [];
 
 	export let done = true;
 
@@ -149,6 +150,7 @@
 				tokens={token.tokens}
 				{done}
 				{sourceIds}
+				{sourcePreviews}
 				{onSourceClick}
 			/>
 		</svelte:element>
@@ -202,6 +204,7 @@
 												tokens={header.tokens}
 												{done}
 												{sourceIds}
+												{sourcePreviews}
 												{onSourceClick}
 											/>
 										</div>
@@ -228,6 +231,7 @@
 												tokens={cell.tokens}
 												{done}
 												{sourceIds}
+												{sourcePreviews}
 												{onSourceClick}
 											/>
 										</div>
@@ -278,6 +282,7 @@
 					{editCodeBlock}
 					{onTaskClick}
 					{sourceIds}
+					{sourcePreviews}
 					{onSourceClick}
 				/>
 			</blockquote>
@@ -313,6 +318,7 @@
 							{editCodeBlock}
 							{onTaskClick}
 							{sourceIds}
+							{sourcePreviews}
 							{onSourceClick}
 						/>
 					</li>
@@ -348,6 +354,7 @@
 									{editCodeBlock}
 									{onTaskClick}
 									{sourceIds}
+									{sourcePreviews}
 									{onSourceClick}
 								/>
 							</div>
@@ -360,6 +367,7 @@
 								{editCodeBlock}
 								{onTaskClick}
 								{sourceIds}
+								{sourcePreviews}
 								{onSourceClick}
 							/>
 						{/if}
@@ -405,6 +413,7 @@
 									{editCodeBlock}
 									{onTaskClick}
 									{sourceIds}
+									{sourcePreviews}
 									{onSourceClick}
 								/>
 							</div>
@@ -453,6 +462,7 @@
 						{editCodeBlock}
 						{onTaskClick}
 						{sourceIds}
+						{sourcePreviews}
 						{onSourceClick}
 					/>
 				</div>
@@ -491,6 +501,7 @@
 					tokens={token.tokens ?? []}
 					{done}
 					{sourceIds}
+					{sourcePreviews}
 					{onSourceClick}
 				/>
 			</span>
@@ -501,6 +512,7 @@
 					tokens={token.tokens ?? []}
 					{done}
 					{sourceIds}
+					{sourcePreviews}
 					{onSourceClick}
 				/>
 			</p>
@@ -514,6 +526,7 @@
 						tokens={token.tokens}
 						{done}
 						{sourceIds}
+						{sourcePreviews}
 						{onSourceClick}
 					/>
 				{:else}
@@ -526,6 +539,7 @@
 				tokens={token.tokens ?? []}
 				{done}
 				{sourceIds}
+				{sourcePreviews}
 				{onSourceClick}
 			/>
 		{:else}

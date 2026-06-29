@@ -937,4 +937,23 @@ describe('ENOS Desk UI source guardrails', () => {
 		// Terminal arm branches local → LocalTerminal, else → XTerminal.
 		expect(dock).toMatch(/tab\.type === 'terminal'[\s\S]*isLocalProject[\s\S]*<LocalTerminal[\s\S]*<XTerminal/);
 	});
+
+	test('inline source previews pass normalized citations through markdown renderers', () => {
+		const contentRenderer = read('src/lib/components/chat/Messages/ContentRenderer.svelte');
+		const markdown = read('src/lib/components/chat/Messages/Markdown.svelte');
+		const markdownTokens = read('src/lib/components/chat/Messages/Markdown/MarkdownTokens.svelte');
+		const inlineTokens = read('src/lib/components/chat/Messages/Markdown/MarkdownInlineTokens.svelte');
+
+		expect(contentRenderer).toContain(
+			"import { buildEnosCitations } from '$lib/enos/sourceCitations';"
+		);
+		expect(contentRenderer).toContain('sourcePreviews = buildEnosCitations');
+		expect(contentRenderer).toContain('{sourcePreviews}');
+		expect(markdown).toContain('export let sourcePreviews = [];');
+		expect(markdown).toContain('{sourcePreviews}');
+		expect(markdownTokens).toContain('export let sourcePreviews = [];');
+		expect(markdownTokens).toContain('{sourcePreviews}');
+		expect(inlineTokens).toContain('export let sourcePreviews = [];');
+		expect(inlineTokens).toContain('<SourceToken {id} {token} {sourceIds} {sourcePreviews}');
+	});
 });
