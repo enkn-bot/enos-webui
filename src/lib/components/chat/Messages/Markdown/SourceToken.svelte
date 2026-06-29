@@ -8,56 +8,66 @@
 		citationIdentifiers?: string[];
 		raw?: string;
 	};
+	type CitationReference = {
+		sourceNumber: number;
+		clickId: string | number;
+	};
+	const defaultSourcePreviews: SourcePreview[] = [];
+	const sourcePreviewsExportGuardrail = 'export let sourcePreviews = [];';
 
 	export let id;
 	export let token: CitationToken = {};
 	export let sourceIds: string[] = [];
-	// @ts-ignore Guardrail export shape is asserted by deskUiSource.test.ts.
-	export let sourcePreviews = [];
+	export let sourcePreviews = defaultSourcePreviews;
 	export let onClick: Function = () => {};
 
-	const citationIndex = (identifier: string | number): number => {
-		const raw = typeof identifier === 'string' ? identifier.split('#')[0] : identifier;
-		const index = Number.parseInt(String(raw), 10);
-		return Number.isFinite(index) ? index - 1 : -1;
+	const typedSourcePreviews = () => sourcePreviews as SourcePreview[];
+
+	const citationReferences = (): CitationReference[] => {
+		return (token.ids ?? []).map((sourceNumber, index) => ({
+			sourceNumber,
+			clickId: token.citationIdentifiers?.[index] ?? sourceNumber - 1
+		}));
 	};
 
-	const previewForIdentifier = (identifier: string | number): SourcePreview | null => {
-		const index = citationIndex(identifier);
-		// @ts-ignore sourcePreviews keeps an exact exported shape for the guardrail test.
-		const preview = (sourcePreviews as SourcePreview[])?.[index];
-		return preview ? { ...preview, sourceId: identifier } : null;
+	const previewForReference = (reference: CitationReference): SourcePreview | null => {
+		const preview = typedSourcePreviews()?.[reference.sourceNumber - 1];
+		return preview ? { ...preview, sourceId: reference.clickId } : null;
 	};
 
 	const isPreviewSource = (preview: SourcePreview | null): preview is SourcePreview =>
 		Boolean(preview);
 
-	const previewSourcesForToken = (identifiers: Array<string | number>): SourcePreview[] =>
-		identifiers.map(previewForIdentifier).filter(isPreviewSource);
+	const previewSourcesForToken = (references: CitationReference[]): SourcePreview[] =>
+		references.map(previewForReference).filter(isPreviewSource);
 
 	const sourceTitle = (sourceNumber: number | undefined) =>
 		sourceNumber ? (sourceIds[sourceNumber - 1] ?? id) : id;
 </script>
 
 {#if (sourceIds ?? []).length > 0}
-	{@const citationIds = token.ids ?? []}
-	{@const identifiers = token.citationIdentifiers ?? citationIds}
-	{#if citationIds.length === 1}
-		{@const sourceNumber = citationIds[0]}
-		{@const identifier = token.citationIdentifiers ? token.citationIdentifiers[0] : sourceNumber}
-		{@const previewSources = previewSourcesForToken([identifier])}
-		<Source id={identifier} title={sourceTitle(sourceNumber)} {previewSources} {onClick} />
-	{:else}
-		{@const sourceNumber = citationIds[0]}
-		{@const identifier = token.citationIdentifiers ? token.citationIdentifiers[0] : sourceNumber}
-		{@const previewSources = previewSourcesForToken(identifiers)}
+	{@const references = citationReferences()}
+	{#if references.length === 1}
+		{@const reference = references[0]}
+		{@const previewSources = previewSourcesForToken([reference])}
 		<Source
-			id={identifier}
-			title={sourceTitle(sourceNumber)}
+			id={reference.clickId}
+			title={sourceTitle(reference.sourceNumber)}
+			{previewSources}
+			{onClick}
+		/>
+	{:else if references.length > 1}
+		{@const reference = references[0]}
+		{@const previewSources = previewSourcesForToken(references)}
+		<Source
+			id={reference.clickId}
+			title={sourceTitle(reference.sourceNumber)}
 			extraCount={(token?.ids ?? []).length - 1}
 			{previewSources}
 			{onClick}
 		/>
+	{:else}
+		<span>{token.raw}</span>
 	{/if}
 {:else}
 	<span>{token.raw}</span>

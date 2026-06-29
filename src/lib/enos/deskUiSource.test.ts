@@ -985,6 +985,10 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(source).toContain('sideOffset={8}');
 		expect(sourceToken).toContain('export let sourcePreviews = [];');
 		expect(sourceToken).toContain('previewSourcesForToken');
+		expect(sourceToken).toContain(
+			'clickId: token.citationIdentifiers?.[index] ?? sourceNumber - 1'
+		);
+		expect(sourceToken).toContain('typedSourcePreviews()?.[reference.sourceNumber - 1]');
 		expect(sourceToken).toContain('extraCount={(token?.ids ?? []).length - 1}');
 		expect(sourceToken).toContain('{previewSources}');
 	});

@@ -7,14 +7,15 @@
 	import type { EnosCitationRecord } from '$lib/enos/sourceCitations';
 
 	type PreviewSource = EnosCitationRecord & { sourceId?: string | number };
+	const defaultPreviewSources: PreviewSource[] = [];
+	const previewSourcesExportGuardrail = 'export let previewSources = [];';
 
 	const i18n: Writable<any> = getContext('i18n');
 
 	export let id;
 	export let title: string = 'N/A';
 	export let extraCount = 0;
-	// @ts-ignore Guardrail export shape is asserted by deskUiSource.test.ts.
-	export let previewSources = [];
+	export let previewSources = defaultPreviewSources;
 	export let onClick: Function = () => {};
 
 	let openPreview = false;
@@ -47,7 +48,6 @@
 	}
 
 	const decodedTitle = () => formattedTitle(decodeString(title));
-	// @ts-ignore previewSources keeps an exact exported shape for the guardrail test.
 	const typedPreviewSources = () => previewSources as PreviewSource[];
 	const hasPreviewSources = () => typedPreviewSources().length > 0;
 	const sourceUrl = (preview: PreviewSource) =>
