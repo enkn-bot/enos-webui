@@ -7,6 +7,7 @@
 	import Check from '$lib/components/icons/Check.svelte';
 	import Cloud from '$lib/components/icons/Cloud.svelte';
 	import Computer from '$lib/components/icons/Computer.svelte';
+	import Pencil from '$lib/components/icons/Pencil.svelte';
 
 	import { toast } from 'svelte-sonner';
 	import { user, config } from '$lib/stores';
@@ -243,17 +244,43 @@
 			submitHandler();
 		}}
 	>
-		<div class="flex items-start justify-between gap-4">
-			<div class="text-xl font-semibold tracking-normal">
-				{#if edit}
-					{$i18n.t('Edit project')}
-				{:else}
-					{$i18n.t('New project')}
-				{/if}
-			</div>
+		<div class="flex items-start justify-between gap-3">
+			{#if isDeskSurface}
+				<!-- Desk: the heading doubles as the editable name field. Empty shows
+				     "New project"; an existing project shows its folder name. A subtle
+				     hover/focus highlight and pencil hint signal it is editable — no
+				     underline (which read as a raw input). -->
+				<div class="group min-w-0 flex-1">
+					<div
+						class="-ml-2 flex items-center gap-2 rounded-lg px-2 py-1"
+					>
+						<input
+							id="folder-name"
+							class="w-full min-w-0 bg-transparent text-xl font-semibold tracking-normal outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
+							type="text"
+							bind:value={name}
+							placeholder={edit ? $i18n.t('Untitled project') : $i18n.t('New project')}
+							autocomplete="off"
+							aria-label={$i18n.t('Project name')}
+						/>
+						<Pencil
+							className="size-4 shrink-0 text-gray-300 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-0 dark:text-gray-600"
+						/>
+					</div>
+				</div>
+			{:else}
+				<!-- Chat: base OWUI style — static heading, boxed name field below. -->
+				<div class="text-xl font-semibold tracking-normal">
+					{#if edit}
+						{$i18n.t('Edit project')}
+					{:else}
+						{$i18n.t('New project')}
+					{/if}
+				</div>
+			{/if}
 			<button
 				type="button"
-				class="rounded-full p-1 text-gray-700 transition hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-850"
+				class="shrink-0 rounded-full p-1 text-gray-700 transition hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-850"
 				aria-label={$i18n.t('Close')}
 				on:click={() => {
 					show = false;
@@ -263,19 +290,21 @@
 			</button>
 		</div>
 
-		<div class="mt-5">
-			<label for="folder-name" class="mb-2 block text-sm font-medium text-gray-600 dark:text-gray-300">
-				{$i18n.t('Project name')}
-			</label>
-			<input
-				id="folder-name"
-				class="w-full rounded-2xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-hidden transition placeholder:text-gray-400 focus:border-gray-400 dark:border-gray-800 dark:placeholder:text-gray-600 dark:focus:border-gray-600"
-				type="text"
-				bind:value={name}
-				placeholder={$i18n.t('Untitled project')}
-				autocomplete="off"
-			/>
-		</div>
+		{#if !isDeskSurface}
+			<div class="mt-5">
+				<label for="folder-name" class="mb-2 block text-sm font-medium text-gray-600 dark:text-gray-300">
+					{$i18n.t('Project name')}
+				</label>
+				<input
+					id="folder-name"
+					class="w-full rounded-2xl border border-gray-200 bg-transparent px-4 py-3 text-sm outline-hidden transition placeholder:text-gray-400 focus:border-gray-400 dark:border-gray-800 dark:placeholder:text-gray-600 dark:focus:border-gray-600"
+					type="text"
+					bind:value={name}
+					placeholder={$i18n.t('Untitled project')}
+					autocomplete="off"
+				/>
+			</div>
+		{/if}
 
 		{#if cloudOnlyProjectMode}
 			<div class="mt-5">
@@ -314,16 +343,13 @@
 
 		{#if showProjectSetupOptions}
 			<div class="mt-5">
-				<div class="mb-2 text-sm font-medium text-gray-900 dark:text-gray-100">
-					{$i18n.t('Where should this project live?')}
-				</div>
 				<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 					<button
 						type="button"
 						aria-pressed={projectEnvironment === 'local'}
 						class="relative flex h-32 flex-col justify-between rounded-2xl p-4 text-left transition {projectEnvironment ===
 						'local'
-							? 'bg-gray-100 ring-2 ring-gray-900 dark:bg-gray-850 dark:ring-gray-100'
+							? 'bg-gray-100 dark:bg-gray-850'
 							: 'bg-gray-100 hover:bg-gray-200/70 dark:bg-gray-850 dark:hover:bg-gray-800'} {!canUseLocalProject
 							? 'cursor-not-allowed opacity-45'
 							: ''}"
@@ -352,7 +378,7 @@
 						aria-pressed={projectEnvironment === 'cloud'}
 						class="relative flex h-32 flex-col justify-between rounded-2xl p-4 text-left transition {projectEnvironment ===
 						'cloud'
-							? 'bg-gray-100 ring-2 ring-gray-900 dark:bg-gray-850 dark:ring-gray-100'
+							? 'bg-gray-100 dark:bg-gray-850'
 							: 'bg-gray-100 hover:bg-gray-200/70 dark:bg-gray-850 dark:hover:bg-gray-800'}"
 						on:click={() => setProjectEnvironment('cloud')}
 					>
@@ -476,7 +502,7 @@
 					</div>
 					{/if}
 
-		<div class="mt-5 flex items-center justify-end gap-2 border-t border-gray-100 pt-4 text-sm font-medium dark:border-gray-800">
+		<div class="mt-6 flex items-center justify-end gap-2 text-sm font-medium">
 			{#if showProjectSetupOptions && projectEnvironment === 'local' && canUseLocalProject}
 				<button
 					type="button"

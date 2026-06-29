@@ -62,8 +62,8 @@
 
 	const i18n = getContext('i18n');
 
-	const DESK_CONTROL_TAB_ORDER = ['overview', 'files'] satisfies ControlTab[];
-	const DEFAULT_CONTROL_TAB_ORDER = ['controls', 'files', 'overview'] satisfies ControlTab[];
+	const DESK_CONTROL_TAB_ORDER = ['files'] satisfies ControlTab[];
+	const DEFAULT_CONTROL_TAB_ORDER = ['controls', 'files'] satisfies ControlTab[];
 	const controlTabLabel = (tab: ControlTab) =>
 		tab === 'overview' ? 'Overview' : tab === 'files' ? 'Files' : 'Controls';
 
@@ -130,8 +130,10 @@
 			?.name ??
 		null;
 	$: showLocalFileNav = isDeskSurface && canUseEnosLocalProjectFiles(desktopCapabilities);
-	$: showProjectFileNav = showLocalFileNav && Boolean($showLocalFileFolderId);
-	$: showDeskProjectFilesEmpty = showLocalFileNav && !$showLocalFileFolderId;
+	// Fall back to the active project folder when a chat is open inside one.
+	$: effectiveFileFolderId = $showLocalFileFolderId ?? $selectedFolder?.id ?? null;
+	$: showProjectFileNav = showLocalFileNav && Boolean(effectiveFileFolderId);
+	$: showDeskProjectFilesEmpty = showLocalFileNav && !effectiveFileFolderId;
 	$: showFilesTab =
 		showLocalFileNav ||
 		showActiveTerminalFileNav ||
@@ -583,7 +585,7 @@
 								/>
 							{:else if activeTab === 'files' && showProjectFileNav}
 								<LocalFileNav
-									folderId={$showLocalFileFolderId}
+									folderId={effectiveFileFolderId}
 									onAttach={handleTerminalAttach}
 									onProjectDigest={handleProjectDigest}
 									onCopyToCloud={handleCopyLocalProjectToCloud}
@@ -725,7 +727,7 @@
 									/>
 								{:else if activeTab === 'files' && showProjectFileNav}
 									<LocalFileNav
-										folderId={$showLocalFileFolderId}
+										folderId={effectiveFileFolderId}
 										onAttach={handleTerminalAttach}
 										onProjectDigest={handleProjectDigest}
 										onCopyToCloud={handleCopyLocalProjectToCloud}

@@ -124,11 +124,13 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(chatControls.match(/on:click=\{\(\) => selectControlTab\(tab\)\}/g)?.length).toBe(2);
 		// Desk drops the advanced "controls" tab (params/system-prompt) — it's the
 		// least power-user-facing surface. Web keeps it via DEFAULT_CONTROL_TAB_ORDER.
+		// The "overview" (message graph) tab was removed from both orders — felt
+		// gimmicky; can be reinstated by adding 'overview' back to the arrays.
 		expect(chatControls).toContain(
-			"const DESK_CONTROL_TAB_ORDER = ['overview', 'files'] satisfies ControlTab[];"
+			"const DESK_CONTROL_TAB_ORDER = ['files'] satisfies ControlTab[];"
 		);
 		expect(chatControls).toContain(
-			"const DEFAULT_CONTROL_TAB_ORDER = ['controls', 'files', 'overview'] satisfies ControlTab[];"
+			"const DEFAULT_CONTROL_TAB_ORDER = ['controls', 'files'] satisfies ControlTab[];"
 		);
 	});
 
@@ -433,8 +435,11 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(modal).toContain('projectStartMode');
 		expect(modal).toContain('export let cloudOnlyProjectMode = false;');
 		expect(modal).toContain('showProjectSetupOptions = !edit && !cloudOnlyProjectMode');
-		expect(modal).toMatch(/\{#if showProjectSetupOptions\}[\s\S]*Where should this project live\?/);
-		expect(modal).toContain("{$i18n.t('Where should this project live?')}");
+		// The Local/Cloud chooser renders under showProjectSetupOptions. The
+		// "Where should this project live?" heading was removed — the two cards
+		// are self-explanatory, so the block goes straight to the Local card.
+		expect(modal).toMatch(/\{#if showProjectSetupOptions\}[\s\S]*Local project/);
+		expect(modal).not.toContain("{$i18n.t('Where should this project live?')}");
 		// The Local/Cloud location chooser is the primary decision; "use an existing
 		// folder" is a footer action rather than a separate start-mode card section.
 		expect(modal).toContain("{$i18n.t('Local project')}");
@@ -533,7 +538,7 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(modal).toContain('ENOS Cloud space');
 		expect(modal).toContain('cloudWorkspaceOptions.length > 1');
 		expect(modal).toContain('onCloudWorkspaceSelect');
-		expect(modal).toMatch(/\{#if showProjectSetupOptions\}[\s\S]*Where should this project live\?/);
+		expect(modal).toMatch(/\{#if showProjectSetupOptions\}[\s\S]*Local project/);
 		expect(modal).not.toContain('Open in the desktop app to create local projects.');
 	});
 
