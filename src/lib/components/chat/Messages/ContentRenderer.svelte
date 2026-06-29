@@ -97,6 +97,7 @@
 
 	let sourceIds = [];
 	$: sourceIds = getEnosSourceIds(sources, model?.info?.meta?.capabilities?.citations !== false);
+	/** @type {import('$lib/enos/sourceCitations').EnosCitationRecord[]} */
 	let sourcePreviews = [];
 	$: sourcePreviews = buildEnosCitations(
 		sources,

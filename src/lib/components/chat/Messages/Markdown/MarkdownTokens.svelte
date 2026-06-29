@@ -11,6 +11,7 @@
 
 	import { WEBUI_BASE_URL } from '$lib/constants';
 	import { settings } from '$lib/stores';
+	import type { EnosCitationRecord } from '$lib/enos/sourceCitations';
 
 	import CodeBlock from '$lib/components/chat/Messages/CodeBlock.svelte';
 	import MarkdownInlineTokens from '$lib/components/chat/Messages/Markdown/MarkdownInlineTokens.svelte';
@@ -31,7 +32,7 @@
 	export let top = true;
 	export let attributes = {};
 	export let sourceIds = [];
-	export let sourcePreviews = [];
+	export let sourcePreviews: EnosCitationRecord[] = [];
 
 	export let done = true;
 

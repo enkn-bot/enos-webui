@@ -7,6 +7,7 @@
 	import MarkdownTokens from './MarkdownTokens.svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import DocumentDuplicate from '$lib/components/icons/DocumentDuplicate.svelte';
+	import type { EnosCitationRecord } from '$lib/enos/sourceCitations';
 
 	export let id: string = '';
 	export let token: any;
@@ -15,7 +16,7 @@
 	export let done: boolean = true;
 	export let editCodeBlock: boolean = true;
 	export let sourceIds: string[] = [];
-	export let sourcePreviews = [];
+	export let sourcePreviews: EnosCitationRecord[] = [];
 	export let onTaskClick: Function = () => {};
 	export let onSourceClick: Function = () => {};
 

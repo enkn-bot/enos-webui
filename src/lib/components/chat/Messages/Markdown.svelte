@@ -27,6 +27,7 @@
 	export let allowEmbeds = true;
 
 	export let sourceIds = [];
+	/** @type {import('$lib/enos/sourceCitations').EnosCitationRecord[]} */
 	export let sourcePreviews = [];
 
 	export let onSave = () => {};

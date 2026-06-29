@@ -5,6 +5,7 @@
 	import type { Token } from 'marked';
 	import { getContext } from 'svelte';
 	import { goto } from '$app/navigation';
+	import type { EnosCitationRecord } from '$lib/enos/sourceCitations';
 
 	const i18n = getContext('i18n');
 
@@ -25,7 +26,7 @@
 	export let done = true;
 	export let tokens: Token[];
 	export let sourceIds = [];
-	export let sourcePreviews = [];
+	export let sourcePreviews: EnosCitationRecord[] = [];
 	export let onSourceClick: Function = () => {};
 
 	/**
