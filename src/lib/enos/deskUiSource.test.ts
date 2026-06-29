@@ -896,22 +896,29 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(chatControls).toContain('hideTerminalPanel={isDeskSurface}');
 	});
 
-	test('terminals share a non-black background and LocalTerminal is IPC-driven', () => {
+	test('terminals follow light/dark theme + ENOS mono font, and LocalTerminal is IPC-driven', () => {
 		const theme = read('src/lib/enos/terminalTheme.ts');
 		const xterm = read('src/lib/components/chat/XTerminal.svelte');
 		const local = read('src/lib/components/enos/LocalTerminal.svelte');
 
-		// Shared background resolved from the pane token, not hardcoded black.
-		expect(theme).toContain('export const resolveTerminalBackground');
-		expect(theme).toContain('--color-gray-850');
+		// Theme follows light/dark and uses the app's loaded mono face.
+		expect(theme).toContain('export const resolveTerminalTheme');
+		expect(theme).toContain('export const resolveTerminalFont');
+		expect(theme).toContain("classList.contains('dark')");
+		expect(theme).toContain('--color-gray-850'); // dark bg matches the pane
+		expect(theme).toContain("background: '#ffffff'"); // light mode is light, not black
+		expect(theme).toContain('--font-mono');
 
-		// XTerminal no longer hardcodes pure black; uses the shared resolver.
-		expect(xterm).toContain("import { resolveTerminalBackground } from '$lib/enos/terminalTheme';");
-		expect(xterm).toContain('background: resolveTerminalBackground()');
-		expect(xterm).not.toContain("background: '#000000'");
+		// Both terminals consume the shared theme + font; no hardcoded black or
+		// mismatched 'JetBrains Mono' (with a space) that misses the @font-face.
+		for (const src of [xterm, local]) {
+			expect(src).toContain('resolveTerminalTheme()');
+			expect(src).toContain('resolveTerminalFont()');
+			expect(src).not.toContain("background: '#000000'");
+			expect(src).not.toContain("'JetBrains Mono'");
+		}
 
 		// LocalTerminal is fed by the desktop bridge (IPC), not a WebSocket.
-		expect(local).toContain("import { resolveTerminalBackground } from '$lib/enos/terminalTheme';");
 		expect(local).toContain('getEnosDesktopBridge');
 		expect(local).toContain('.localTerminal');
 		expect(local).toContain('crypto.randomUUID()');

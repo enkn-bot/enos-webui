@@ -7,7 +7,7 @@
 	import '@xterm/xterm/css/xterm.css';
 
 	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
-	import { resolveTerminalBackground } from '$lib/enos/terminalTheme';
+	import { resolveTerminalTheme, resolveTerminalFont } from '$lib/enos/terminalTheme';
 
 	export let folderId: string | null = null;
 	export let overlay = false;
@@ -26,9 +26,8 @@
 		term = new Terminal({
 			cursorBlink: true,
 			fontSize: 13,
-			fontFamily:
-				"'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, Monaco, 'Courier New', monospace",
-			theme: { background: resolveTerminalBackground(), foreground: '#c0c0c0', cursor: '#ffffff' },
+			fontFamily: resolveTerminalFont(),
+			theme: resolveTerminalTheme(),
 			allowProposedApi: true,
 			scrollback: 5000
 		});
@@ -88,6 +87,6 @@
 	});
 </script>
 
-<div class="h-full min-h-0 relative" style="background: {resolveTerminalBackground()}">
+<div class="h-full min-h-0 relative" style="background: {resolveTerminalTheme().background}">
 	<div bind:this={terminalEl} class="absolute inset-0 px-0.5" class:pointer-events-none={overlay} />
 </div>

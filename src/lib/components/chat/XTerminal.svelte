@@ -7,7 +7,7 @@
 
 	import { terminalServers, settings, selectedTerminalId, user } from '$lib/stores';
 	import { WEBUI_API_BASE_URL } from '$lib/constants';
-	import { resolveTerminalBackground } from '$lib/enos/terminalTheme';
+	import { resolveTerminalTheme, resolveTerminalFont } from '$lib/enos/terminalTheme';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 
 	const i18n = getContext('i18n');
@@ -175,32 +175,8 @@
 		term = new Terminal({
 			cursorBlink: true,
 			fontSize: 13,
-			fontFamily:
-				"'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, Monaco, 'Courier New', monospace",
-			theme: {
-				background: resolveTerminalBackground(),
-				foreground: '#c0c0c0',
-				cursor: '#ffffff',
-				cursorAccent: '#000000',
-				selectionBackground: '#444444',
-				selectionForeground: '#ffffff',
-				black: '#000000',
-				red: '#cd0000',
-				green: '#00cd00',
-				yellow: '#cdcd00',
-				blue: '#0000ee',
-				magenta: '#cd00cd',
-				cyan: '#00cdcd',
-				white: '#e5e5e5',
-				brightBlack: '#7f7f7f',
-				brightRed: '#ff0000',
-				brightGreen: '#00ff00',
-				brightYellow: '#ffff00',
-				brightBlue: '#5c5cff',
-				brightMagenta: '#ff00ff',
-				brightCyan: '#00ffff',
-				brightWhite: '#ffffff'
-			},
+			fontFamily: resolveTerminalFont(),
+			theme: resolveTerminalTheme(),
 			allowProposedApi: true,
 			scrollback: 5000
 		});
