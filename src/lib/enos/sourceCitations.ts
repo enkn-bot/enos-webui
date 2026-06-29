@@ -10,15 +10,19 @@ export type EnosCitationRecord = {
 		[key: string]: unknown;
 	};
 	document: string[];
-	metadata: any[];
+	metadata: unknown[];
 	distances: number[];
+};
+
+type RawEnosSource = {
+	source?: unknown;
+	document?: unknown;
+	metadata?: unknown;
+	distances?: unknown;
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
 	Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-
-const documentsFor = (source: any): string[] =>
-	Array.isArray(source?.document) ? source.document.filter((item: unknown) => typeof item === 'string') : [];
 
 export const getPreviewSnippet = (content: unknown, maxLength = 180): string => {
 	if (typeof content !== 'string') return '';
@@ -30,7 +34,7 @@ export const getPreviewSnippet = (content: unknown, maxLength = 180): string => 
 };
 
 export const buildEnosCitations = (
-	sources: any[] | null | undefined,
+	sources: unknown[] | null | undefined,
 	citationsEnabled = true
 ): EnosCitationRecord[] => {
 	if (!citationsEnabled) return [];
@@ -40,15 +44,20 @@ export const buildEnosCitations = (
 	for (const rawSource of sources ?? []) {
 		if (!isRecord(rawSource) || Object.keys(rawSource).length === 0) continue;
 
-		const documents = documentsFor(rawSource);
+		const sourceRecord: RawEnosSource = rawSource;
+		const documents = Array.isArray(sourceRecord.document) ? sourceRecord.document : [];
 
 		documents.forEach((document, index) => {
-			const metadata = Array.isArray(rawSource.metadata) ? rawSource.metadata[index] : undefined;
-			const distance = Array.isArray(rawSource.distances) ? rawSource.distances[index] : undefined;
-			const id = getEnosCitationId(rawSource.source, metadata);
-			const label = getEnosCitationLabel(rawSource.source, metadata);
-			const url = getEnosCitationUrl(rawSource.source, metadata);
-			const sourceFields = isRecord(rawSource.source) ? { ...rawSource.source } : {};
+			if (typeof document !== 'string') return;
+
+			const metadata = Array.isArray(sourceRecord.metadata) ? sourceRecord.metadata[index] : undefined;
+			const distance = Array.isArray(sourceRecord.distances) ? sourceRecord.distances[index] : undefined;
+			const source = isRecord(sourceRecord.source) ? sourceRecord.source : null;
+			const citationMetadata = isRecord(metadata) ? metadata : null;
+			const id = getEnosCitationId(source, citationMetadata);
+			const label = getEnosCitationLabel(source, citationMetadata);
+			const url = getEnosCitationUrl(source, citationMetadata);
+			const sourceFields = source ? { ...source } : {};
 			delete sourceFields.url;
 			const normalizedSource = {
 				...sourceFields,

@@ -76,6 +76,44 @@ describe('ENOS source citations', () => {
 		expect(citation.source).not.toHaveProperty('url');
 	});
 
+	test('preserves metadata indexes when skipping non-string documents', () => {
+		const sources = [
+			{
+				source: { name: 'Fallback source' },
+				document: [123, 'valid passage'],
+				metadata: [
+					{
+						title: 'Wrong result',
+						url: 'https://example.com/wrong'
+					},
+					{
+						title: 'Correct result',
+						url: 'https://example.com/correct'
+					}
+				],
+				distances: [0.99, 0.42]
+			}
+		];
+
+		expect(buildEnosCitations(sources)).toEqual([
+			{
+				id: 'https://example.com/correct',
+				source: {
+					name: 'Correct result',
+					url: 'https://example.com/correct'
+				},
+				document: ['valid passage'],
+				metadata: [
+					{
+						title: 'Correct result',
+						url: 'https://example.com/correct'
+					}
+				],
+				distances: [0.42]
+			}
+		]);
+	});
+
 	test('returns a compact whitespace-normalized snippet', () => {
 		expect(getPreviewSnippet(' Line one.\n\nLine two has more detail. ', 18)).toBe(
 			'Line one. Line two...'
