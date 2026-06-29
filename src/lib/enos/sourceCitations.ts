@@ -57,6 +57,9 @@ export const buildEnosCitations = (
 			const id = getEnosCitationId(source, citationMetadata);
 			const label = getEnosCitationLabel(source, citationMetadata);
 			const url = getEnosCitationUrl(source, citationMetadata);
+
+			if (id === 'N/A' && label === 'N/A' && !url) return;
+
 			const sourceFields = source ? { ...source } : {};
 			delete sourceFields.url;
 			const normalizedSource = {

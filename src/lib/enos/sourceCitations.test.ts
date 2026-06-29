@@ -114,6 +114,25 @@ describe('ENOS source citations', () => {
 		]);
 	});
 
+	test('skips malformed citations without usable source identity', () => {
+		const sources = [{ document: ['valid text'], metadata: [{}], source: {} }];
+
+		expect(buildEnosCitations(sources)).toEqual([]);
+	});
+
+	test('returns no citations when citations are disabled', () => {
+		const sources = [
+			{
+				source: { name: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/Who_Are_You' },
+				document: ['Album page passage.'],
+				metadata: [{ title: 'Who Are You - Wikipedia' }],
+				distances: [0.91]
+			}
+		];
+
+		expect(buildEnosCitations(sources, false)).toEqual([]);
+	});
+
 	test('returns a compact whitespace-normalized snippet', () => {
 		expect(getPreviewSnippet(' Line one.\n\nLine two has more detail. ', 18)).toBe(
 			'Line one. Line two...'
