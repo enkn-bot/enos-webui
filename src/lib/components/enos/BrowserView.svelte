@@ -1,6 +1,6 @@
 <!-- src/lib/components/enos/BrowserView.svelte -->
 <script lang="ts">
-	import { getContext, onMount } from 'svelte';
+	import { getContext } from 'svelte';
 	import { normalizeUrl } from '$lib/enos/browserUrl';
 	import GlobeAlt from '$lib/components/icons/GlobeAlt.svelte';
 
@@ -33,12 +33,15 @@
 	const back = () => webviewEl?.goBack?.();
 	const forward = () => webviewEl?.goForward?.();
 
-	onMount(() => {
-		if (!webviewEl) return;
+	// Attach navigation listeners when the <webview> element itself mounts.
+	// The element lives inside {#if url}, so it may appear after the component
+	// has already mounted — a component-level onMount would miss it.
+	const webviewListeners = (node: any) => {
+		webviewEl = node;
 		const onNav = () => {
-			canGoBack = Boolean(webviewEl.canGoBack?.());
-			canGoForward = Boolean(webviewEl.canGoForward?.());
-			const current = webviewEl.getURL?.();
+			canGoBack = Boolean(node.canGoBack?.());
+			canGoForward = Boolean(node.canGoForward?.());
+			const current = node.getURL?.();
 			if (current) {
 				inputValue = current;
 				onUrlChange(current);
@@ -49,17 +52,19 @@
 			loading = false;
 			onNav();
 		};
-		webviewEl.addEventListener('did-navigate', onNav);
-		webviewEl.addEventListener('did-navigate-in-page', onNav);
-		webviewEl.addEventListener('did-start-loading', onStart);
-		webviewEl.addEventListener('did-stop-loading', onStop);
-		return () => {
-			webviewEl.removeEventListener('did-navigate', onNav);
-			webviewEl.removeEventListener('did-navigate-in-page', onNav);
-			webviewEl.removeEventListener('did-start-loading', onStart);
-			webviewEl.removeEventListener('did-stop-loading', onStop);
+		node.addEventListener('did-navigate', onNav);
+		node.addEventListener('did-navigate-in-page', onNav);
+		node.addEventListener('did-start-loading', onStart);
+		node.addEventListener('did-stop-loading', onStop);
+		return {
+			destroy() {
+				node.removeEventListener('did-navigate', onNav);
+				node.removeEventListener('did-navigate-in-page', onNav);
+				node.removeEventListener('did-start-loading', onStart);
+				node.removeEventListener('did-stop-loading', onStop);
+			}
 		};
-	});
+	};
 </script>
 
 <div class="flex flex-col h-full min-h-0">
@@ -112,6 +117,7 @@
 			<!-- svelte-ignore a11y-missing-attribute -->
 			<webview
 				bind:this={webviewEl}
+				use:webviewListeners
 				src={url}
 				partition="persist:enos-browser"
 				allowpopups="true"
