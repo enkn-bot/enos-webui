@@ -672,14 +672,15 @@
 		class="z-10 bg-white dark:bg-gray-850"
 	>
 		{#if $showControls}
-			<div class="flex max-h-full min-h-full">
+			<div class="flex h-full">
 				<div
 					class="w-full {specialPanel && !$showCallOverlay
 						? ' '
-						: 'bg-white dark:shadow-lg dark:bg-gray-850'} z-40 pointer-events-auto {activeTab ===
-					'files'
-						? ''
-						: 'overflow-y-auto'} scrollbar-hidden"
+						: 'bg-white dark:shadow-lg dark:bg-gray-850'} z-40 pointer-events-auto {isDeskSurface
+						? 'h-full overflow-hidden'
+						: activeTab === 'files'
+							? ''
+							: 'overflow-y-auto'} scrollbar-hidden"
 					id="controls-container"
 				>
 					{#if $showCallOverlay}
