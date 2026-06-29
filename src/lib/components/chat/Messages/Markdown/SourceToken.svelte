@@ -6,6 +6,7 @@
 	export let id;
 	export let token;
 	export let sourceIds = [];
+	export let sourcePreviews = [];
 	export let onClick: Function = () => {};
 
 	let containerElement;

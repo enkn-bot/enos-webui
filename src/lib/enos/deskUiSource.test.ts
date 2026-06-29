@@ -943,6 +943,10 @@ describe('ENOS Desk UI source guardrails', () => {
 		const markdown = read('src/lib/components/chat/Messages/Markdown.svelte');
 		const markdownTokens = read('src/lib/components/chat/Messages/Markdown/MarkdownTokens.svelte');
 		const inlineTokens = read('src/lib/components/chat/Messages/Markdown/MarkdownInlineTokens.svelte');
+		const colonFenceBlock = read(
+			'src/lib/components/chat/Messages/Markdown/ColonFenceBlock.svelte'
+		);
+		const sourceToken = read('src/lib/components/chat/Messages/Markdown/SourceToken.svelte');
 
 		expect(contentRenderer).toContain(
 			"import { buildEnosCitations } from '$lib/enos/sourceCitations';"
@@ -958,5 +962,10 @@ describe('ENOS Desk UI source guardrails', () => {
 		);
 		expect(inlineTokens).toContain('export let sourcePreviews = [];');
 		expect(inlineTokens).toContain('<SourceToken {id} {token} {sourceIds} {sourcePreviews}');
+		expect(colonFenceBlock).toContain('export let sourcePreviews = [];');
+		expect(colonFenceBlock).toMatch(
+			/<MarkdownTokens[\s\S]*\{sourceIds\}[\s\S]*\{sourcePreviews\}/
+		);
+		expect(sourceToken).toContain('export let sourcePreviews = [];');
 	});
 });

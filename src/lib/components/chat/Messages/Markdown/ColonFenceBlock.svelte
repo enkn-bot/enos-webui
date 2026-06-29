@@ -15,6 +15,7 @@
 	export let done: boolean = true;
 	export let editCodeBlock: boolean = true;
 	export let sourceIds: string[] = [];
+	export let sourcePreviews = [];
 	export let onTaskClick: Function = () => {};
 	export let onSourceClick: Function = () => {};
 
@@ -76,6 +77,7 @@
 			{done}
 			{editCodeBlock}
 			{sourceIds}
+			{sourcePreviews}
 			{onTaskClick}
 			{onSourceClick}
 		/>
