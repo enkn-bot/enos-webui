@@ -230,12 +230,12 @@
 			>
 				<button
 					aria-label={$i18n.t('Change folder icon')}
-					class=" rounded-full bg-gray-50 dark:bg-gray-800 size-7 flex justify-center items-center"
+					class=" rounded-full bg-transparent size-7 flex justify-center items-center"
 				>
 					{#if folder?.meta?.icon}
-						<Emoji className="size-4" shortCode={folder.meta.icon} />
+						<Emoji className="size-5" shortCode={folder.meta.icon} />
 					{:else}
-						<Folder className="size-4" strokeWidth="2" />
+						<Folder className="size-5" strokeWidth="2" />
 					{/if}
 				</button>
 			</EmojiPicker>
