@@ -19,11 +19,9 @@ describe('serializeAnnotations', () => {
 		expect(serializeAnnotations([], 'hello')).toBe('hello');
 	});
 
-	it('prepends a header with the page url and an entry per annotation', () => {
+	it('prepends a compact ref per annotation and keeps the draft last', () => {
 		const out = serializeAnnotations([mk()], 'make it pop');
-		expect(out).toContain('Annotations on http://localhost:5180/');
-		expect(out).toContain('h1.team-name');
-		expect(out).toContain('Esteemed Kompany');
+		expect(out).toContain('↳ h1.team-name');
 		expect(out).toContain('src/Squad.tsx:42');
 		expect(out.endsWith('make it pop')).toBe(true);
 	});
@@ -33,8 +31,8 @@ describe('serializeAnnotations', () => {
 		expect(out).toContain('make this bigger');
 	});
 
-	it('omits the source label when source is null', () => {
+	it('omits the source when source is null', () => {
 		const out = serializeAnnotations([mk({ source: null })], '');
-		expect(out).not.toContain('src:');
+		expect(out).not.toContain('src/Squad.tsx');
 	});
 });
