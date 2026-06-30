@@ -347,10 +347,10 @@
 					<button
 						type="button"
 						aria-pressed={projectEnvironment === 'local'}
-						class="relative flex h-32 flex-col justify-between rounded-2xl p-4 text-left transition {projectEnvironment ===
+						class="relative flex h-32 flex-col justify-between rounded-2xl border p-4 text-left transition {projectEnvironment ===
 						'local'
-							? 'bg-gray-100 dark:bg-gray-850'
-							: 'bg-gray-100 hover:bg-gray-200/70 dark:bg-gray-850 dark:hover:bg-gray-800'} {!canUseLocalProject
+							? 'border-transparent bg-gray-100 dark:bg-gray-850'
+							: 'border-gray-200 bg-transparent hover:bg-gray-100/60 dark:border-gray-800 dark:hover:bg-gray-850/60'} {!canUseLocalProject
 							? 'cursor-not-allowed opacity-45'
 							: ''}"
 						disabled={!canUseLocalProject}
@@ -376,10 +376,10 @@
 					<button
 						type="button"
 						aria-pressed={projectEnvironment === 'cloud'}
-						class="relative flex h-32 flex-col justify-between rounded-2xl p-4 text-left transition {projectEnvironment ===
+						class="relative flex h-32 flex-col justify-between rounded-2xl border p-4 text-left transition {projectEnvironment ===
 						'cloud'
-							? 'bg-gray-100 dark:bg-gray-850'
-							: 'bg-gray-100 hover:bg-gray-200/70 dark:bg-gray-850 dark:hover:bg-gray-800'}"
+							? 'border-transparent bg-gray-100 dark:bg-gray-850'
+							: 'border-gray-200 bg-transparent hover:bg-gray-100/60 dark:border-gray-800 dark:hover:bg-gray-850/60'}"
 						on:click={() => setProjectEnvironment('cloud')}
 					>
 						<Cloud className="size-5 text-gray-500 dark:text-gray-400" strokeWidth="2" />
@@ -467,16 +467,16 @@
 					</div>
 
 					<hr class=" border-gray-50 dark:border-gray-850/30 my-2.5 w-full" />
+				{/if}
 
+				{#if edit}
 					{#if $user?.role === 'admin' || ($user?.permissions.chat?.system_prompt ?? true)}
 						<div class="my-1">
-							<div class="mb-2 text-xs text-gray-500">{$i18n.t('System Prompt')}</div>
+							<div class="mb-2 text-xs text-gray-500">{$i18n.t('Instructions')}</div>
 							<div>
 								<Textarea
 									className=" text-sm w-full bg-transparent outline-hidden "
-									placeholder={$i18n.t(
-										'Write your model system prompt content here\ne.g.) You are Mario from Super Mario Bros, acting as an assistant.'
-									)}
+									placeholder={$i18n.t("Add instructions to tailor ENOS's responses")}
 									maxSize={200}
 									bind:value={data.system_prompt}
 								/>
@@ -494,13 +494,13 @@
 							<div slot="label">
 								<div class="flex w-full justify-between">
 									<div class=" mb-2 text-xs text-gray-500">
-										{$i18n.t('Project Knowledge')}
+										{$i18n.t('Context')}
 									</div>
 								</div>
 							</div>
 						</Knowledge>
 					</div>
-					{/if}
+				{/if}
 
 		<div class="mt-6 flex items-center justify-end gap-2 text-sm font-medium">
 			{#if showProjectSetupOptions && projectEnvironment === 'local' && canUseLocalProject}
