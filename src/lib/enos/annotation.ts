@@ -12,6 +12,27 @@ export type Annotation = {
 	image?: string; // dataURL element screenshot — chip/card thumbnail only, never sent
 };
 
+// Computed-CSS values that carry no signal — drop them from the model payload.
+const STYLE_DEFAULTS: Record<string, string> = {
+	flexDirection: 'row',
+	justifyContent: 'normal',
+	alignItems: 'normal',
+	gap: 'normal',
+	margin: '0px',
+	padding: '0px',
+	borderRadius: '0px',
+	textAlign: 'start',
+	backgroundColor: 'rgba(0, 0, 0, 0)'
+};
+
+const meaningfulStyles = (styles: Record<string, string>): [string, string][] =>
+	Object.entries(styles).filter(([k, v]) => {
+		if (STYLE_DEFAULTS[k] === v) return false;
+		// Drop borders that aren't visible (0-width or transparent).
+		if (k === 'border' && (/^0px/.test(v) || v.includes('none') || /rgba\([^)]*,\s*0\)\s*$/.test(v))) return false;
+		return true;
+	});
+
 // One actionable line per annotation for the coding agent: element selector,
 // its source file:line when the app is instrumented, and the user's note.
 export const annotationRef = (a: Annotation): string => {
@@ -30,7 +51,7 @@ export const serializeAnnotations = (list: Annotation[], draft: string): string 
 			const lines: string[] = [`[Annotation: ${a.selector}]`];
 			if (a.source) lines.push(`source: ${a.source}`);
 			lines.push(`box: ${a.rect.w}×${a.rect.h} at (${a.rect.x},${a.rect.y})`);
-			const styleEntries = Object.entries(a.styles);
+			const styleEntries = meaningfulStyles(a.styles);
 			if (styleEntries.length > 0) {
 				lines.push(`styles: ${styleEntries.map(([k, v]) => `${k}: ${v};`).join(' ')}`);
 			}

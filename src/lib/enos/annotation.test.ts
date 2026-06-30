@@ -8,7 +8,14 @@ const mk = (over: Partial<Annotation> = {}): Annotation => ({
 	selector: 'h1.team-name',
 	text: 'Esteemed Kompany',
 	html: '<h1 class="team-name">Esteemed Kompany</h1>',
-	styles: { fontSize: '15px', color: 'rgb(30,25,20)', display: 'flex' },
+	styles: {
+		fontSize: '15px',
+		color: 'rgb(30,25,20)',
+		display: 'flex',
+		margin: '0px',
+		gap: 'normal',
+		flexDirection: 'row'
+	},
 	rect: { x: 10, y: 20, w: 528, h: 17 },
 	url: 'http://localhost:5180/',
 	note: '',
@@ -91,5 +98,32 @@ describe('serializeAnnotations', () => {
 		expect(out).toContain('[Annotation: h1.team-name]');
 		expect(out).toContain('[Annotation: p.subtitle]');
 		expect(out).toContain('\n\n');
+	});
+
+	it('keeps signal styles and drops default-valued noise', () => {
+		const out = serializeAnnotations([mk()], '');
+		expect(out).toContain('fontSize: 15px');
+		expect(out).toContain('display: flex');
+		expect(out).not.toContain('margin: 0px');
+		expect(out).not.toContain('gap: normal');
+		expect(out).not.toContain('flexDirection: row');
+	});
+
+	it('omits styles line when all styles are default-valued', () => {
+		const out = serializeAnnotations(
+			[
+				mk({
+					styles: {
+						margin: '0px',
+						padding: '0px',
+						flexDirection: 'row',
+						gap: 'normal',
+						backgroundColor: 'rgba(0, 0, 0, 0)'
+					}
+				})
+			],
+			''
+		);
+		expect(out).not.toContain('styles:');
 	});
 });

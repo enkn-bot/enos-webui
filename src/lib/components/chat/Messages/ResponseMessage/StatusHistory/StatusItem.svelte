@@ -246,7 +246,16 @@
 						? 'shimmer'
 						: ''} text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
 				>
-					{cognitionLabel(status?.action, (done || status?.done) === true)}
+					<!-- Chat narration fallback. The minds pipe emits status as
+					     {description, done} with NO `action` field, so cognitionLabel()
+					     alone collapses every such event to a bare "Working". Prefer the
+					     pipe's own description ("Searching the web…", "Read 12 sources…")
+					     when present — that is the contextual line — and only fall back to
+					     the ENOS verb vocabulary when there is no description. Mirrors the
+					     Desk fallback (formatDeskStatusLabel = description || cognitionLabel). -->
+					{status?.description?.trim()
+						? status.description
+						: cognitionLabel(status?.action, (done || status?.done) === true)}
 				</div>
 			</div>
 		{/if}

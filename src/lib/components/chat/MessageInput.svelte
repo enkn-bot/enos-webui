@@ -1406,6 +1406,31 @@
 												file.url.startsWith('data') || file.url.startsWith('http')
 													? file.url
 													: `${WEBUI_API_BASE_URL}/files/${file.url}${file?.content_type ? '/content' : ''}`}
+											{#if (file.name ?? '').startsWith('annotation-')}
+												<div class="relative group flex items-center">
+													<div class="relative">
+														<img
+															src={fileUrl}
+															alt=""
+															class="size-12 rounded-lg object-cover border border-gray-100 dark:border-gray-800"
+														/>
+														<span
+															class="absolute bottom-0.5 left-0.5 text-[10px] leading-none px-1 py-0.5 rounded bg-black/50 text-white font-medium pointer-events-none"
+														>annotation</span>
+													</div>
+													<button
+														class="absolute -top-1 -right-1 bg-white text-black border border-white rounded-full {($settings?.highContrastMode ?? false) ? '' : 'outline-hidden focus:outline-hidden group-hover:visible invisible transition'}"
+														type="button"
+														aria-label={$i18n.t('Remove file')}
+														on:click={() => {
+															files.splice(fileIdx, 1);
+															files = files;
+														}}
+													>
+														<XMark className="size-4" />
+													</button>
+												</div>
+											{:else}
 											<div class=" relative group">
 												<div class="relative flex items-center">
 													<Image
@@ -1455,6 +1480,7 @@
 														</button>
 												</div>
 											</div>
+											{/if}
 										{:else if isPastedTextFile(file)}
 											<PastedTextCard
 												item={file}
