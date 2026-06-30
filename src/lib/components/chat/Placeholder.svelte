@@ -27,6 +27,7 @@
 	import MessageInput from './MessageInput.svelte';
 	import FolderPlaceholder from './Placeholder/FolderPlaceholder.svelte';
 	import FolderTitle from './Placeholder/FolderTitle.svelte';
+	import DocumentDuplicate from '$lib/components/icons/DocumentDuplicate.svelte';
 
 	const i18n = getContext('i18n');
 
@@ -176,10 +177,53 @@
 				<div class="font-primary min-h-40" in:fade={{ duration: 200, delay: 200 }}>
 					<FolderPlaceholder folder={$selectedFolder} {isDesk} />
 				</div>
+
+				<!-- Narrow: cards stacked below chats (lg+ hides this) -->
+				<div class="lg:hidden flex flex-col gap-3 mt-4">
+					<button
+						type="button"
+						class="text-left rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 hover:border-gray-200 dark:hover:border-gray-700 transition-colors"
+						on:click={() => (showFolderModal = true)}
+					>
+						<div class="flex items-center justify-between mb-1.5">
+							<span class="text-sm font-semibold text-gray-800 dark:text-gray-100">{$i18n.t('Instructions')}</span>
+							<Plus className="size-4 text-gray-400 dark:text-gray-500" />
+						</div>
+						{#if $selectedFolder?.data?.system_prompt}
+							<p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-3">{$selectedFolder.data.system_prompt}</p>
+						{:else}
+							<p class="text-xs text-gray-400 dark:text-gray-500">{$i18n.t("Add instructions to tailor ENOS's responses")}</p>
+						{/if}
+					</button>
+					<button
+						type="button"
+						class="text-left rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 hover:border-gray-200 dark:hover:border-gray-700 transition-colors"
+						on:click={() => (showFolderModal = true)}
+					>
+						<div class="flex items-center justify-between mb-1.5">
+							<span class="text-sm font-semibold text-gray-800 dark:text-gray-100">{$i18n.t('Context')}</span>
+							<Plus className="size-4 text-gray-400 dark:text-gray-500" />
+						</div>
+						{#if $selectedFolder?.data?.files?.length > 0}
+							<p class="text-xs text-gray-500 dark:text-gray-400">
+								{$selectedFolder.data.files.length}
+								{$selectedFolder.data.files.length === 1 ? $i18n.t('file') : $i18n.t('files')}
+							</p>
+						{:else}
+							<div class="rounded-lg bg-gray-50 dark:bg-gray-800/50 p-5 flex flex-col items-center gap-2">
+								<div class="flex items-end gap-0.5 opacity-40">
+									<DocumentDuplicate className="size-8 text-gray-500 dark:text-gray-400 -rotate-6" />
+									<DocumentDuplicate className="size-10 text-gray-500 dark:text-gray-400" />
+								</div>
+								<p class="text-xs text-gray-400 dark:text-gray-500 text-center">{$i18n.t('Add PDFs, documents, or other text to reference in this project.')}</p>
+							</div>
+						{/if}
+					</button>
+				</div>
 			</div>
 
-			<!-- Right sidebar (hidden on narrow screens) -->
-			<div class="w-72 shrink-0 hidden md:flex flex-col gap-3 pt-1">
+			<!-- Wide sidebar (hidden below lg) -->
+			<div class="w-72 shrink-0 hidden lg:flex flex-col gap-3 pt-1">
 				<button
 					type="button"
 					class="text-left rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 hover:border-gray-200 dark:hover:border-gray-700 transition-colors"
@@ -192,7 +236,7 @@
 					{#if $selectedFolder?.data?.system_prompt}
 						<p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-3">{$selectedFolder.data.system_prompt}</p>
 					{:else}
-						<p class="text-xs text-gray-400 dark:text-gray-500">{$i18n.t('Add instructions to tailor responses')}</p>
+						<p class="text-xs text-gray-400 dark:text-gray-500">{$i18n.t("Add instructions to tailor ENOS's responses")}</p>
 					{/if}
 				</button>
 
@@ -211,8 +255,12 @@
 							{$selectedFolder.data.files.length === 1 ? $i18n.t('file') : $i18n.t('files')}
 						</p>
 					{:else}
-						<div class="rounded-lg bg-gray-50 dark:bg-gray-800/50 p-5 text-center">
-							<p class="text-xs text-gray-400 dark:text-gray-500">{$i18n.t('Add documents or files to reference in this project.')}</p>
+						<div class="rounded-lg bg-gray-50 dark:bg-gray-800/50 p-5 flex flex-col items-center gap-2">
+							<div class="flex items-end gap-0.5 opacity-40">
+								<DocumentDuplicate className="size-8 text-gray-500 dark:text-gray-400 -rotate-6" />
+								<DocumentDuplicate className="size-10 text-gray-500 dark:text-gray-400" />
+							</div>
+							<p class="text-xs text-gray-400 dark:text-gray-500 text-center">{$i18n.t('Add PDFs, documents, or other text to reference in this project.')}</p>
 						</div>
 					{/if}
 				</button>
