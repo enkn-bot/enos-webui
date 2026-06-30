@@ -150,6 +150,10 @@
 
 	// Fold any pending browser annotations into the submitted prompt, then clear.
 	const submitWithAnnotations = () => {
+		const shots = $pendingAnnotations
+			.filter((a) => a.image)
+			.map((a) => ({ type: 'image', url: a.image }));
+		if (shots.length) files = [...files, ...shots];
 		const merged = serializeAnnotations($pendingAnnotations, prompt);
 		clearAnnotations();
 		dispatch('submit', merged);
@@ -1332,10 +1336,14 @@
 											class="flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
 											title={a.source ?? a.selector}
 										>
-											<svg viewBox="0 0 16 16" fill="currentColor" class="size-3.5">
-												<path d="M2.5 3A1.5 1.5 0 0 1 4 1.5h8A1.5 1.5 0 0 1 13.5 3v6A1.5 1.5 0 0 1 12 10.5H6.7l-2.9 2.4A.5.5 0 0 1 3 12.5V10.5A1.5 1.5 0 0 1 2.5 9V3Z" />
-											</svg>
-											<span>{a.selector}</span>
+											{#if a.image}
+												<img src={a.image} alt="" class="size-5 rounded object-cover border border-blue-200 dark:border-blue-500/30" />
+											{:else}
+												<svg viewBox="0 0 16 16" fill="currentColor" class="size-3.5">
+													<path d="M2.5 3A1.5 1.5 0 0 1 4 1.5h8A1.5 1.5 0 0 1 13.5 3v6A1.5 1.5 0 0 1 12 10.5H6.7l-2.9 2.4A.5.5 0 0 1 3 12.5V10.5A1.5 1.5 0 0 1 2.5 9V3Z" />
+												</svg>
+											{/if}
+											<span>{a.selector}{a.note ? ` — ${a.note}` : ''}</span>
 											<button
 												type="button"
 												class="p-0.5 rounded hover:bg-blue-100 dark:hover:bg-blue-500/25"

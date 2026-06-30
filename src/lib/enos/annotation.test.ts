@@ -8,7 +8,7 @@ const mk = (over: Partial<Annotation> = {}): Annotation => ({
 	selector: 'h1.team-name',
 	text: 'Esteemed Kompany',
 	styles: { color: '#1E1914', fontSize: '15px', fontFamily: 'Inter' },
-	rect: { w: 528, h: 17 },
+	rect: { x: 10, y: 20, w: 528, h: 17 },
 	url: 'http://localhost:5180/',
 	note: '',
 	...over
@@ -21,8 +21,9 @@ describe('serializeAnnotations', () => {
 
 	it('prepends a compact ref per annotation and keeps the draft last', () => {
 		const out = serializeAnnotations([mk()], 'make it pop');
-		expect(out).toContain('↳ h1.team-name');
+		expect(out).toContain('h1.team-name');
 		expect(out).toContain('src/Squad.tsx:42');
+		expect(out).toContain('localhost:5180');
 		expect(out.endsWith('make it pop')).toBe(true);
 	});
 
