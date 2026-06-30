@@ -401,6 +401,7 @@
 							title={detailToken.summary}
 							open={$settings?.expandDetails ?? false}
 							attributes={detailToken?.attributes}
+							reasoningText={detailToken?.attributes?.type === 'reasoning' ? textContent : ''}
 							messageDone={done}
 							className="w-full space-y-1"
 							dir="auto"
@@ -450,6 +451,7 @@
 				title={token.summary}
 				open={$settings?.expandDetails ?? false}
 				attributes={token?.attributes}
+				reasoningText={token?.attributes?.type === 'reasoning' ? textContent : ''}
 				messageDone={done}
 				className="w-full space-y-1"
 				dir="auto"

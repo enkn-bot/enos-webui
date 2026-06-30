@@ -35,8 +35,14 @@
 	import ChevronUp from '../icons/ChevronUp.svelte';
 	import ChevronDown from '../icons/ChevronDown.svelte';
 	import Spinner from './Spinner.svelte';
+	import { reasoningGist } from '$lib/enos/deskReasoning';
 
 	export let open = false;
+
+	// Raw reasoning body (only used for type === 'reasoning'): lets the summary show
+	// a one-line gist of WHAT the model reasoned instead of a bare "Thought for Xs".
+	export let reasoningText = '';
+	$: gist = attributes?.type === 'reasoning' ? reasoningGist(reasoningText) : '';
 
 	export let className = '';
 	export let buttonClassName =
@@ -88,7 +94,10 @@
 
 				<div class="">
 					{#if attributes?.type === 'reasoning'}
-						{#if (attributes?.done === 'true' || messageDone) && attributes?.duration}
+						{#if gist}
+							<!-- Model's own latest reasoning sentence (gist). Full text on expand. -->
+							{gist}
+						{:else if (attributes?.done === 'true' || messageDone) && attributes?.duration}
 							{#if attributes.duration < 1}
 								{$i18n.t('Thought for less than a second')}
 							{:else if attributes.duration < 60}

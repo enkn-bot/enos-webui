@@ -16,7 +16,12 @@ export type DeskReasoningOpts = { done: boolean; durationS: number };
  * (the model's most recent thought), normalised to one line and length-capped.
  */
 export const reasoningGist = (text: string, maxLen = 140): string => {
-	const t = (text ?? '').replace(/\s+/g, ' ').trim();
+	// Strip leading blockquote markers ("> ") — Chat reasoning bodies are quoted —
+	// then collapse to one line so the last sentence reads cleanly.
+	const t = (text ?? '')
+		.replace(/^\s*>+\s?/gm, '')
+		.replace(/\s+/g, ' ')
+		.trim();
 	if (!t) return '';
 	const parts = t.split(/(?<=[.!?])\s+/).filter(Boolean);
 	let gist = parts[parts.length - 1] ?? t;

@@ -18,6 +18,12 @@ describe('reasoningGist', () => {
 		expect(reasoningGist('First thought.\n\nSecond   thought here')).toBe('Second thought here');
 	});
 
+	test('strips leading blockquote markers (Chat reasoning bodies)', () => {
+		expect(reasoningGist('> First thought.\n> Let me check the cache.')).toBe(
+			'Let me check the cache.'
+		);
+	});
+
 	test('length-caps long single sentences with an ellipsis', () => {
 		const long = 'a'.repeat(200);
 		const out = reasoningGist(long, 50);
