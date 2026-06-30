@@ -148,32 +148,22 @@
 	// one immediately: attach its element screenshot as a native image upload
 	// (same path as paste/drop → renders, sent to vision, cleared on send) and
 	// fold the note/source into the prompt text.
-	const dataUrlToFile = (dataUrl: string, name: string): File => {
-		const [meta, b64] = dataUrl.split(',');
-		const mime = meta.match(/:(.*?);/)?.[1] ?? 'image/png';
-		const bin = atob(b64);
-		const arr = new Uint8Array(bin.length);
-		for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-		return new File([arr], name, { type: mime });
-	};
-
+	// Browser annotations arrive via the pendingAnnotations store. Text-first:
+	// fold each element's "↳ selector (file:line): note" ref into the prompt and
+	// focus the composer so the user can keep typing. No image — the Desk coder
+	// is text-only and acts on the selector + source, not pixels.
 	let unsubAnnotations: (() => void) | undefined;
 	onMount(() => {
-		unsubAnnotations = pendingAnnotations.subscribe((list) => {
+		unsubAnnotations = pendingAnnotations.subscribe(async (list) => {
 			if (!list.length) return;
 			const items = [...list];
 			clearAnnotations(); // clear first → re-entrant call sees [] and returns
 			for (const a of items) {
-				if (a.image) {
-					try {
-						inputFilesHandler([dataUrlToFile(a.image, `annotation-${a.tag}.png`)]);
-					} catch (err) {
-						console.warn('[enos-annotate] attach screenshot failed', err);
-					}
-				}
 				const ref = annotationRef(a);
-				if (ref) prompt = prompt ? `${prompt}\n${ref}` : ref;
+				prompt = prompt ? `${prompt}\n${ref}` : ref;
 			}
+			await tick();
+			chatInputElement?.focus?.();
 		});
 	});
 	onDestroy(() => unsubAnnotations?.());

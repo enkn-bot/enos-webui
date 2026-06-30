@@ -22,12 +22,13 @@ const mi = readFileSync('src/lib/components/chat/MessageInput.svelte', 'utf8');
 test('MessageInput subscribes to pendingAnnotations', () => {
 	assert.match(mi, /pendingAnnotations\.subscribe/);
 });
-test('MessageInput attaches the screenshot via inputFilesHandler', () => {
-	assert.match(mi, /inputFilesHandler\(\[dataUrlToFile/);
-});
 test('MessageInput consumes annotations with clearAnnotations', () => {
 	assert.match(mi, /clearAnnotations\(\)/);
 });
-test('MessageInput folds the note/source ref into the prompt', () => {
+test('MessageInput folds the annotation ref into the prompt', () => {
 	assert.match(mi, /annotationRef\(a\)/);
+	assert.match(mi, /prompt = prompt \?/);
+});
+test('MessageInput does not attach annotation screenshots as files', () => {
+	assert.doesNotMatch(mi, /dataUrlToFile/);
 });

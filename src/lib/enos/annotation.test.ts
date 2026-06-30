@@ -15,15 +15,23 @@ const mk = (over: Partial<Annotation> = {}): Annotation => ({
 });
 
 describe('annotationRef', () => {
-	it('is empty when no note and no source', () => {
-		expect(annotationRef(mk({ note: '', source: null }))).toBe('');
+	it('always carries the selector', () => {
+		expect(annotationRef(mk({ note: '', source: null }))).toBe('↳ h1.team-name');
 	});
 
-	it('includes the note', () => {
-		expect(annotationRef(mk({ note: 'make this bigger', source: null }))).toBe('make this bigger');
+	it('includes source file:line when instrumented', () => {
+		expect(annotationRef(mk({ note: '' }))).toBe('↳ h1.team-name (src/Squad.tsx:42)');
 	});
 
-	it('appends source after the note', () => {
-		expect(annotationRef(mk({ note: 'bigger' }))).toBe('bigger src/Squad.tsx:42');
+	it('appends the note after a colon', () => {
+		expect(annotationRef(mk({ note: 'make this bigger', source: null }))).toBe(
+			'↳ h1.team-name: make this bigger'
+		);
+	});
+
+	it('combines selector, source, and note', () => {
+		expect(annotationRef(mk({ note: 'bigger' }))).toBe(
+			'↳ h1.team-name (src/Squad.tsx:42): bigger'
+		);
 	});
 });
