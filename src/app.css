@@ -95,6 +95,19 @@ code {
 	line-height: 1.15;
 }
 
+/* Single source of truth for the landing-title scale (welcome greeting AND the
+   project landing title), so they are always identical. Viewport-based, not a
+   container query — container queries resolved differently across the two
+   wrapper contexts and made the project title render a step larger. */
+.enos-landing-title {
+	font-size: 2.25rem; /* text-4xl */
+}
+@media (min-width: 768px) {
+	.enos-landing-title {
+		font-size: 3rem; /* text-5xl */
+	}
+}
+
 /* Anthropic Serif emphasis: use the design-system weight 600 instead of browser default 700. */
 :root[data-fonts='anthropic'] .font-secondary strong,
 :root[data-fonts='anthropic'] .markdown-prose strong,

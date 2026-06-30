@@ -199,7 +199,7 @@
 			<div class="w-full flex flex-col justify-center items-center">
 				<div
 					id="enos-welcome-greeting"
-					class="enos-display mb-3 @md:mb-4 max-w-2xl px-5 text-center text-4xl @md:text-5xl text-gray-900 dark:text-gray-50"
+					class="enos-display enos-landing-title mb-3 @md:mb-4 max-w-2xl px-5 text-center text-gray-900 dark:text-gray-50"
 					in:fade={{ duration: 100 }}
 				>
 					{welcomeGreeting}
