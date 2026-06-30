@@ -3,11 +3,11 @@
 
   const MINDS = [
     { id: 'enos.subconscious', label: 'Subconscious', subtitle: 'Quick responses.' },
-    { id: 'enos.mind',         label: 'Conscious',    subtitle: 'Everyday tasks.' },
-    { id: 'enos.deepmind',     label: 'Ego',          subtitle: 'Toughest problems.' },
+    { id: 'enos.conscious',         label: 'Conscious',    subtitle: 'Everyday tasks.' },
+    { id: 'enos.ego',     label: 'Ego',          subtitle: 'Toughest problems.' },
   ] as const;
 
-  export let value: string = 'enos.mind';
+  export let value: string = 'enos.conscious';
   export let onSelect: (id: string) => void = () => {};
 
   let show = false;

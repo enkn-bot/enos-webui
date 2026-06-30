@@ -1885,7 +1885,7 @@
 									{/if}
 
 										<ModelPicker
-											value={selectedModels[0] ?? 'enos.mind'}
+											value={selectedModels[0] ?? 'enos.conscious'}
 											onSelect={(id) => {
 											persistComposerModel(id);
 										}}

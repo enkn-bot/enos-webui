@@ -5,6 +5,11 @@ import { enosOrbAssetForModel, enosOrbColorForModel } from './modelTier';
 describe('ENOS model tier orb mapping', () => {
 	test('maps model tiers to the requested brand tones', () => {
 		expect(enosOrbAssetForModel('enos.subconscious')).toBe('/static/enos_loader_orb_orange.svg');
+		expect(enosOrbAssetForModel('enos.conscious')).toBe('/static/enos_loader_orb_coral.svg');
+		expect(enosOrbAssetForModel('enos.ego')).toBe('/static/enos_loader_orb_teal.svg');
+	});
+
+	test('keeps pre-rename ids (mind/deepmind) as aliases so old chats still tint', () => {
 		expect(enosOrbAssetForModel('enos.mind')).toBe('/static/enos_loader_orb_coral.svg');
 		expect(enosOrbAssetForModel('enos.deepmind')).toBe('/static/enos_loader_orb_teal.svg');
 	});
@@ -13,8 +18,8 @@ describe('ENOS model tier orb mapping', () => {
 		expect(enosOrbAssetForModel('enos.desk.subconscious')).toBe(
 			'/static/enos_loader_orb_orange.svg'
 		);
-		expect(enosOrbAssetForModel('enos.desk.mind')).toBe('/static/enos_loader_orb_coral.svg');
-		expect(enosOrbAssetForModel('enos.desk.deepmind')).toBe('/static/enos_loader_orb_teal.svg');
+		expect(enosOrbAssetForModel('enos.desk.conscious')).toBe('/static/enos_loader_orb_coral.svg');
+		expect(enosOrbAssetForModel('enos.desk.ego')).toBe('/static/enos_loader_orb_teal.svg');
 	});
 
 	test('uses all-orbs for generic or unknown model loading states', () => {
@@ -24,9 +29,9 @@ describe('ENOS model tier orb mapping', () => {
 
 	test('maps a mind to its in-progress indicator color', () => {
 		expect(enosOrbColorForModel('enos.subconscious')).toBe('#f59e0b');
-		expect(enosOrbColorForModel('enos.mind')).toBe('#f87171');
-		expect(enosOrbColorForModel('enos.deepmind')).toBe('#14b8a6');
-		expect(enosOrbColorForModel('enos.desk.deepmind')).toBe('#14b8a6');
+		expect(enosOrbColorForModel('enos.conscious')).toBe('#f87171');
+		expect(enosOrbColorForModel('enos.ego')).toBe('#14b8a6');
+		expect(enosOrbColorForModel('enos.desk.ego')).toBe('#14b8a6');
 	});
 
 	test('stays neutral (null) for unknown/idle states — no false mind attribution', () => {

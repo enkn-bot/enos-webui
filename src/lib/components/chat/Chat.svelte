@@ -1819,7 +1819,7 @@
 		{ done = true } = {}
 	) => {
 		messageInput?.setText('');
-		const modelId = selectedModels.find((id) => id) ?? 'enos.mind';
+		const modelId = selectedModels.find((id) => id) ?? 'enos.conscious';
 		const model = $models.filter((m) => m.id === modelId).at(0);
 		const messages = createMessagesList(history, history.currentId);
 		const parentMessage = messages.length !== 0 ? messages.at(-1) : null;
@@ -2235,7 +2235,7 @@
 		// thinking) and relaunches the rpc proc on change. Model ids are
 		// 'enos.subconscious|mind|deepmind'; strip the prefix. Unknown/empty falls
 		// back server-side to 'mind'.
-		const deskMind = (selectedModels?.[0] || atSelectedModel?.id || 'enos.mind').replace(
+		const deskMind = (selectedModels?.[0] || atSelectedModel?.id || 'enos.conscious').replace(
 			/^enos\./,
 			''
 		);
@@ -2273,7 +2273,7 @@
 				history.messages[responseMessageId] = done;
 				history = history;
 				await saveChatHandler($chatId, history);
-				const titleModelId = done.model ?? selectedModels.find((id) => id) ?? 'enos.mind';
+				const titleModelId = done.model ?? selectedModels.find((id) => id) ?? 'enos.conscious';
 				void maybeGenerateDeskChatTitle({
 					token: localStorage.token,
 					chatId: $chatId,
@@ -2355,7 +2355,7 @@
 				history.messages[responseMessageId] = done;
 				history = history;
 				await saveChatHandler($chatId, history);
-				const titleModelId = done.model ?? selectedModels.find((id) => id) ?? 'enos.mind';
+				const titleModelId = done.model ?? selectedModels.find((id) => id) ?? 'enos.conscious';
 				void maybeGenerateDeskChatTitle({
 					token: localStorage.token,
 					chatId: $chatId,
@@ -2581,7 +2581,7 @@
 				history = history;
 				await saveChatHandler($chatId, history);
 
-				const titleModelId = done.model ?? selectedModels.find((id) => id) ?? 'enos.mind';
+				const titleModelId = done.model ?? selectedModels.find((id) => id) ?? 'enos.conscious';
 				void maybeGenerateDeskChatTitle({
 					token: localStorage.token,
 					chatId: $chatId,
