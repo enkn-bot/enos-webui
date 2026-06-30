@@ -12,16 +12,87 @@
 </script>
 
 {#if compactDesk && !status?.hidden && status?.description !== 'No search query generated'}
+	<!-- Desk feed row: compact operational line, but enriched with the same context
+	     Chat surfaces — reasoning duration, clickable web results, query chips,
+	     source counts — so supervision reflects WHAT happened, not just THAT it did.
+	     Tool steps (enos_desk) keep Desk's controlled verbs ("Read src/main.ts"). -->
 	<div class="status-description flex items-center gap-2 py-0.5 w-full text-left">
-		<div class="flex flex-col justify-center -space-y-0.5">
-			<div
-				class="{(done || status?.done) === false
-					? 'shimmer'
-					: ''} text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
-			>
-				{formatDeskStatusLabel(status, (done || status?.done) === true)}
+		{#if status?.action === 'web_search' && (status?.urls || status?.items)}
+			{@const n = (status?.urls || status?.items).length}
+			<WebSearchResults {status}>
+				<div class="flex flex-col justify-center -space-y-0.5">
+					<div
+						class="{(done || status?.done) === false ? 'shimmer' : ''} text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
+					>
+						{(done || status?.done) === true ? `Read ${n} ${n === 1 ? 'source' : 'sources'}` : 'Checking web'}
+					</div>
+				</div>
+			</WebSearchResults>
+		{:else if status?.action === 'knowledge_search'}
+			<div class="flex flex-col justify-center -space-y-0.5">
+				<div
+					class="{(done || status?.done) === false ? 'shimmer' : ''} text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
+				>
+					{$i18n.t(`Searching Knowledge for "{{searchQuery}}"`, { searchQuery: status.query })}
+				</div>
 			</div>
-		</div>
+		{:else if (status?.action === 'web_search_queries_generated' || status?.action === 'queries_generated') && status?.queries}
+			<div class="flex flex-col justify-center -space-y-0.5">
+				<div
+					class="{(done || status?.done) === false ? 'shimmer' : ''} text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
+				>
+					{(done || status?.done) === true ? 'Searched web' : 'Searching web'}
+				</div>
+				<div class="flex gap-1 flex-wrap mt-2">
+					{#each status.queries as query (query)}
+						<div class="bg-gray-50 dark:bg-gray-850 flex rounded-lg py-1 px-2 items-center gap-1 text-xs">
+							<div><Search className="size-3" /></div>
+							<span class="line-clamp-1">{query}</span>
+						</div>
+					{/each}
+				</div>
+			</div>
+		{:else if status?.action === 'reasoning' || status?.action === 'thinking'}
+			<div class="flex flex-col justify-center -space-y-0.5">
+				<div
+					class="{(done || status?.done) === false ? 'shimmer' : ''} text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
+				>
+					{#if (done || status?.done) === false}
+						Thinking
+					{:else if status?.duration && Number(status.duration) >= 1}
+						Thought for {Number(status.duration) < 60
+							? `${Math.round(Number(status.duration))}s`
+							: `${Math.floor(Number(status.duration) / 60)}m ${Math.round(Number(status.duration) % 60)}s`}
+					{:else}
+						Thought
+					{/if}
+				</div>
+			</div>
+		{:else if status?.action === 'sources_retrieved' && status?.count !== undefined}
+			<div class="flex flex-col justify-center -space-y-0.5">
+				<div
+					class="{(done || status?.done) === false ? 'shimmer' : ''} text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
+				>
+					{#if status.count === 0}
+						{$i18n.t('No sources found')}
+					{:else if status.count === 1}
+						{(done || status?.done) === true ? 'Read 1 source' : 'Reading 1 source'}
+					{:else}
+						{(done || status?.done) === true
+							? `Read ${status.count} sources`
+							: `Reading ${status.count} sources`}
+					{/if}
+				</div>
+			</div>
+		{:else}
+			<div class="flex flex-col justify-center -space-y-0.5">
+				<div
+					class="{(done || status?.done) === false ? 'shimmer' : ''} text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
+				>
+					{formatDeskStatusLabel(status, (done || status?.done) === true)}
+				</div>
+			</div>
+		{/if}
 	</div>
 {:else if !status?.hidden && status?.description !== 'No search query generated'}
 	<!-- enos: suppress the base "No search query generated" status. ENOS runs
