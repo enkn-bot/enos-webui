@@ -63,6 +63,7 @@
 
 	export let dragged = false;
 
+	let showFolderModal = false;
 	let models = [];
 	let selectedModelIdx = 0;
 	const welcomeGreeting = composeWelcomeGreeting(
@@ -102,25 +103,26 @@
 	};
 </script>
 
-<div class="m-auto w-full max-w-6xl px-2 @2xl:px-20 translate-y-6 py-24 text-center">
-	{#if $temporaryChatEnabled}
-		<Tooltip
-			content={$i18n.t("This chat won't appear in history and your messages will not be saved.")}
-			className="w-full flex justify-center mb-0.5"
-			placement="top"
-		>
-			<div class="flex items-center gap-2 text-gray-500 text-base my-2 w-fit">
-				<EyeSlash strokeWidth="2.5" className="size-4" />{$i18n.t('Temporary Chat')}
-			</div>
-		</Tooltip>
-	{/if}
+{#if $selectedFolder}
+	<!-- 2-col project view -->
+	<div class="m-auto w-full max-w-6xl px-4 @2xl:px-12 pt-10 pb-8">
+		{#if $temporaryChatEnabled}
+			<Tooltip
+				content={$i18n.t("This chat won't appear in history and your messages will not be saved.")}
+				className="w-full flex justify-center mb-4"
+				placement="top"
+			>
+				<div class="flex items-center gap-2 text-gray-500 text-base w-fit">
+					<EyeSlash strokeWidth="2.5" className="size-4" />{$i18n.t('Temporary Chat')}
+				</div>
+			</Tooltip>
+		{/if}
 
-	<div
-		class="w-full text-3xl text-gray-800 dark:text-gray-100 text-center flex items-center gap-4 font-primary"
-	>
-		<div class="w-full flex flex-col justify-center items-center">
-			{#if $selectedFolder}
+		<div class="flex gap-8 items-start font-primary">
+			<!-- Left: title + input + chats -->
+			<div class="flex-1 min-w-0 flex flex-col">
 				<FolderTitle
+					bind:showFolderModal
 					folder={$selectedFolder}
 					onUpdate={async (folder) => {
 						await chats.set(await getChatList(localStorage.token, $currentChatPage));
@@ -129,66 +131,155 @@
 					onDelete={async () => {
 						await chats.set(await getChatList(localStorage.token, $currentChatPage));
 						currentChatPage.set(1);
-
 						window.dispatchEvent(
 							new CustomEvent('enos:project-deleted', { detail: { folderId: $selectedFolder?.id } })
 						);
 						selectedFolder.set(null);
 					}}
 				/>
-			{:else}
+				{#if $selectedFolder?.meta?.description}
+					<p class="text-sm text-gray-500 dark:text-gray-400 -mt-1 mb-4">
+						{$selectedFolder.meta.description}
+					</p>
+				{/if}
+				<div class="text-base font-normal w-full pb-3">
+					<MessageInput
+						bind:this={messageInput}
+						{history}
+						bind:selectedModels
+						bind:files
+						bind:prompt
+						bind:autoScroll
+						bind:selectedToolIds
+						bind:selectedSkillIds
+						bind:selectedFilterIds
+						bind:imageGenerationEnabled
+						bind:codeInterpreterEnabled
+						bind:webSearchEnabled
+						bind:atSelectedModel
+						bind:showCommands
+						bind:dragged
+						{pendingOAuthTools}
+						{toolServers}
+						{stopResponse}
+						{createMessagePair}
+						placeholder={isDesk
+							? $i18n.t('What are we building?')
+							: $i18n.t('How can I help you today?')}
+						{onChange}
+						{onUpload}
+						on:submit={(e) => {
+							dispatch('submit', e.detail);
+						}}
+					/>
+				</div>
+				<div class="font-primary min-h-40" in:fade={{ duration: 200, delay: 200 }}>
+					<FolderPlaceholder folder={$selectedFolder} {isDesk} />
+				</div>
+			</div>
+
+			<!-- Right sidebar (hidden on narrow screens) -->
+			<div class="w-72 shrink-0 hidden md:flex flex-col gap-3 pt-1">
+				<button
+					type="button"
+					class="text-left rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 hover:border-gray-200 dark:hover:border-gray-700 transition-colors"
+					on:click={() => (showFolderModal = true)}
+				>
+					<div class="flex items-center justify-between mb-1.5">
+						<span class="text-sm font-semibold text-gray-800 dark:text-gray-100">{$i18n.t('Instructions')}</span>
+						<Plus className="size-4 text-gray-400 dark:text-gray-500" />
+					</div>
+					{#if $selectedFolder?.data?.system_prompt}
+						<p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-3">{$selectedFolder.data.system_prompt}</p>
+					{:else}
+						<p class="text-xs text-gray-400 dark:text-gray-500">{$i18n.t('Add instructions to tailor responses')}</p>
+					{/if}
+				</button>
+
+				<button
+					type="button"
+					class="text-left rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 hover:border-gray-200 dark:hover:border-gray-700 transition-colors"
+					on:click={() => (showFolderModal = true)}
+				>
+					<div class="flex items-center justify-between mb-1.5">
+						<span class="text-sm font-semibold text-gray-800 dark:text-gray-100">{$i18n.t('Context')}</span>
+						<Plus className="size-4 text-gray-400 dark:text-gray-500" />
+					</div>
+					{#if $selectedFolder?.data?.files?.length > 0}
+						<p class="text-xs text-gray-500 dark:text-gray-400">
+							{$selectedFolder.data.files.length}
+							{$selectedFolder.data.files.length === 1 ? $i18n.t('file') : $i18n.t('files')}
+						</p>
+					{:else}
+						<div class="rounded-lg bg-gray-50 dark:bg-gray-800/50 p-5 text-center">
+							<p class="text-xs text-gray-400 dark:text-gray-500">{$i18n.t('Add documents or files to reference in this project.')}</p>
+						</div>
+					{/if}
+				</button>
+			</div>
+		</div>
+	</div>
+{:else}
+	<!-- Greeting view (no folder) -->
+	<div class="m-auto w-full max-w-6xl px-2 @2xl:px-20 translate-y-6 py-24 text-center">
+		{#if $temporaryChatEnabled}
+			<Tooltip
+				content={$i18n.t("This chat won't appear in history and your messages will not be saved.")}
+				className="w-full flex justify-center mb-0.5"
+				placement="top"
+			>
+				<div class="flex items-center gap-2 text-gray-500 text-base my-2 w-fit">
+					<EyeSlash strokeWidth="2.5" className="size-4" />{$i18n.t('Temporary Chat')}
+				</div>
+			</Tooltip>
+		{/if}
+
+		<div
+			class="w-full text-3xl text-gray-800 dark:text-gray-100 text-center flex items-center gap-4 font-primary"
+		>
+			<div class="w-full flex flex-col justify-center items-center">
 				<div
 					id="enos-welcome-greeting"
-					class="enos-display mb-3 @md:mb-4 max-w-2xl px-5 text-center text-5xl @md:text-6xl text-gray-900 dark:text-gray-50"
+					class="enos-display mb-3 @md:mb-4 max-w-2xl px-5 text-center text-4xl @md:text-5xl text-gray-900 dark:text-gray-50"
 					in:fade={{ duration: 100 }}
 				>
 					{welcomeGreeting}
 				</div>
-			{/if}
 
-			<div class="text-base font-normal @md:max-w-3xl w-full pb-3">
-				<MessageInput
-					bind:this={messageInput}
-					{history}
-					bind:selectedModels
-					bind:files
-					bind:prompt
-					bind:autoScroll
-					bind:selectedToolIds
-					bind:selectedSkillIds
-					bind:selectedFilterIds
-					bind:imageGenerationEnabled
-					bind:codeInterpreterEnabled
-					bind:webSearchEnabled
-					bind:atSelectedModel
-					bind:showCommands
-					bind:dragged
-					{pendingOAuthTools}
-					{toolServers}
-					{stopResponse}
-					{createMessagePair}
-					placeholder={isDesk
-						? $i18n.t('What are we building?')
-						: $i18n.t('How can I help you today?')}
-					{onChange}
-					{onUpload}
-					on:submit={(e) => {
-						dispatch('submit', e.detail);
-					}}
-				/>
+				<div class="text-base font-normal @md:max-w-3xl w-full pb-3">
+					<MessageInput
+						bind:this={messageInput}
+						{history}
+						bind:selectedModels
+						bind:files
+						bind:prompt
+						bind:autoScroll
+						bind:selectedToolIds
+						bind:selectedSkillIds
+						bind:selectedFilterIds
+						bind:imageGenerationEnabled
+						bind:codeInterpreterEnabled
+						bind:webSearchEnabled
+						bind:atSelectedModel
+						bind:showCommands
+						bind:dragged
+						{pendingOAuthTools}
+						{toolServers}
+						{stopResponse}
+						{createMessagePair}
+						placeholder={isDesk
+							? $i18n.t('What are we building?')
+							: $i18n.t('How can I help you today?')}
+						{onChange}
+						{onUpload}
+						on:submit={(e) => {
+							dispatch('submit', e.detail);
+						}}
+					/>
+				</div>
 			</div>
-
 		</div>
-	</div>
 
-	{#if $selectedFolder}
-		<div
-			class="mx-auto px-4 md:max-w-3xl md:px-6 font-primary min-h-62"
-			in:fade={{ duration: 200, delay: 200 }}
-		>
-			<FolderPlaceholder folder={$selectedFolder} {isDesk} />
-		</div>
-	{:else}
 		<div class="mx-auto max-w-2xl font-primary mt-6" in:fade={{ duration: 200, delay: 200 }}>
 			{#if isDesk}
 				<div class="mx-5 mb-6">
@@ -245,5 +336,5 @@
 				</div>
 			{/if}
 		</div>
-	{/if}
-</div>
+	</div>
+{/if}

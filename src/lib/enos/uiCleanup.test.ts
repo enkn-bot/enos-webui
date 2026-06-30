@@ -82,10 +82,10 @@ describe('ENOS UI cleanup source ownership', () => {
 
 		// Greeting + project title share one serif display treatment via the token class.
 		expect(placeholder).toContain(
-			'class="enos-display mb-3 @md:mb-4 max-w-2xl px-5 text-center text-5xl @md:text-6xl text-gray-900 dark:text-gray-50"'
+			'class="enos-display mb-3 @md:mb-4 max-w-2xl px-5 text-center text-4xl @md:text-5xl text-gray-900 dark:text-gray-50"'
 		);
 		expect(placeholder).not.toContain("font-family: 'Anthropic Serif'");
-		expect(folderTitle).toContain('enos-display text-5xl @md:text-6xl line-clamp-1');
+		expect(folderTitle).toContain('enos-display text-4xl @md:text-5xl line-clamp-1');
 		expect(placeholder).not.toContain("$selectedFolder ? 'mt-8'");
 		// The class is defined off the secondary (serif) token, not a hardcoded family.
 		expect(appCss).toMatch(/\.enos-display\s*\{[^}]*font-family:\s*var\(--font-secondary\)/);
