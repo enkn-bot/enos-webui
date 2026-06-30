@@ -25,9 +25,9 @@ test('MessageInput subscribes to pendingAnnotations', () => {
 test('MessageInput consumes annotations with clearAnnotations', () => {
 	assert.match(mi, /clearAnnotations\(\)/);
 });
-test('MessageInput folds the annotation ref into the prompt', () => {
-	assert.match(mi, /annotationRef\(a\)/);
-	assert.match(mi, /prompt = prompt \?/);
+test('MessageInput folds the annotation ref into the composer via setText', () => {
+	assert.match(mi, /items\.map\(annotationRef\)/);
+	assert.match(mi, /chatInputElement\?\.setText\?\.\(next\)/);
 });
 test('MessageInput does not attach annotation screenshots as files', () => {
 	assert.doesNotMatch(mi, /dataUrlToFile/);

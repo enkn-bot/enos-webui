@@ -158,10 +158,13 @@
 			if (!list.length) return;
 			const items = [...list];
 			clearAnnotations(); // clear first → re-entrant call sees [] and returns
-			for (const a of items) {
-				const ref = annotationRef(a);
-				prompt = prompt ? `${prompt}\n${ref}` : ref;
-			}
+			const refs = items.map(annotationRef).join('\n');
+			await tick();
+			// The RichTextInput (contenteditable) does not react to plain `prompt`
+			// writes — it must be updated via setText (same as the clear path).
+			const next = prompt ? `${prompt}\n${refs}` : refs;
+			chatInputElement?.setText?.(next);
+			prompt = next;
 			await tick();
 			chatInputElement?.focus?.();
 		});
