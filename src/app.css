@@ -96,16 +96,14 @@ code {
 }
 
 /* Single source of truth for the landing-title scale (welcome greeting AND the
-   project landing title), so they are always identical. Viewport-based, not a
-   container query — container queries resolved differently across the two
-   wrapper contexts and made the project title render a step larger. */
+   project landing title), so they are always identical. Anchored to the welcome
+   greeting's established scale (1.875rem). NOTE: the welcome greeting is ALSO
+   pinned by a legacy `#enos-welcome-greeting` id rule in static/custom.css
+   (specificity beats this class); both are kept at the same value so the two
+   titles match. If you change this, change that id rule to match. */
 .enos-landing-title {
-	font-size: 2.25rem; /* text-4xl */
-}
-@media (min-width: 768px) {
-	.enos-landing-title {
-		font-size: 3rem; /* text-5xl */
-	}
+	font-size: 1.875rem;
+	line-height: 1.25;
 }
 
 /* Anthropic Serif emphasis: use the design-system weight 600 instead of browser default 700. */
