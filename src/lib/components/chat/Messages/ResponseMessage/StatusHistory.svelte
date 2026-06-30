@@ -71,12 +71,22 @@
 		return out;
 	})();
 
+	// A step is only worth a feed row if StatusItem will actually render text for it.
+	// StatusItem renders nothing for hidden steps and for the suppressed
+	// "No search query generated" status (ENOS runs web-search query-gen every turn;
+	// a non-search answer yields that empty step). Without this filter the feed still
+	// drew a leading DOT for those invisible rows — the stray "older system" dot on
+	// loose Desk chats. Filtering here is the single source for both surfaces' feeds.
+	const isRenderableStep = (item) =>
+		!item?.hidden && item?.description !== 'No search query generated';
+	$: feedHistory = displayHistory.filter(isRenderableStep);
+
 	// Effective settle state per step. In a sequential feed only the tail can be in
 	// progress; once the turn is answered nothing is. `isStepSettled` is the single
 	// surface-agnostic rule (see cognitionVocabulary) so a step whose backend `done`
 	// was never flipped (web_search) cannot shimmer in present tense forever.
-	$: stepSettled = displayHistory.map((item, idx) =>
-		isStepSettled(item, idx, displayHistory.length, answerPresent)
+	$: stepSettled = feedHistory.map((item, idx) =>
+		isStepSettled(item, idx, feedHistory.length, answerPresent)
 	);
 	// The collapsed Chat header reflects the same rule: settled once answered or its
 	// own outcome is done, so the header never lingers shimmering after the turn.
@@ -91,8 +101,8 @@
 			     and the rest stay neutral (done/inactive). No expand/collapse — the
 			     sequence (Read → Edited → Ran) IS the value on a coding surface. -->
 			<div class="text-sm flex flex-col w-full">
-				{#each displayHistory as historyItem, idx}
-					{@const isLast = idx === displayHistory.length - 1}
+				{#each feedHistory as historyItem, idx}
+					{@const isLast = idx === feedHistory.length - 1}
 					{@const settled = stepSettled[idx]}
 					{@const isActiveDot = !settled && !!mindColor}
 					<div class="flex items-stretch gap-2">
@@ -133,7 +143,7 @@
 
 				{#if showHistory}
 					<div class="flex flex-row">
-						{#if displayHistory.length > 1}
+						{#if feedHistory.length > 1}
 							<div class="w-full">
 								{#each displayHistory as historyItem, idx}
 									{@const isLast = idx === displayHistory.length - 1}
