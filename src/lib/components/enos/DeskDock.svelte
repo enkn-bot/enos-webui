@@ -30,6 +30,7 @@
 
 	let state: DeskDockState = emptyDockState();
 	let showPicker = false;
+	let showDropdown = false;
 	let lastFolderId: string | null | undefined = undefined;
 
 	$: hasBrowser = Boolean(getEnosDesktopBridge());
@@ -59,6 +60,7 @@
 	const open = (type: DeskDockTabType) => {
 		state = addTab(state, type);
 		showPicker = false;
+		showDropdown = false;
 		persist();
 	};
 
@@ -218,14 +220,26 @@
 				</div>
 			{/each}
 		</div>
-		<button
-			type="button"
-			class="p-1 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-			on:click={() => (showPicker = !showPicker)}
-			aria-label={$i18n.t('New tab')}
-		>
-			<Plus className="size-4" />
-		</button>
+		<div class="relative">
+			<button
+				type="button"
+				class="p-1 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+				on:click={() => { if (state.tabs.length > 0) showDropdown = !showDropdown; }}
+				aria-label={$i18n.t('New tab')}
+			>
+				<Plus className="size-4" />
+			</button>
+			{#if showDropdown}
+				<div class="fixed inset-0 z-10" on:click={() => (showDropdown = false)} role="presentation" />
+				<div class="absolute right-0 top-full mt-1 z-20 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden py-1 min-w-[9rem]">
+					{#if hasBrowser}
+						<button type="button" class="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" on:click={() => open('browser')}>{$i18n.t('Browser')}</button>
+					{/if}
+					<button type="button" class="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" on:click={() => open('files')}>{$i18n.t('Files')}</button>
+					<button type="button" class="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" on:click={() => open('terminal')}>{$i18n.t('Terminal')}</button>
+				</div>
+			{/if}
+		</div>
 	</div>
 
 	<!-- Body -->
