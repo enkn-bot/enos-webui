@@ -77,8 +77,15 @@
 	// a non-search answer yields that empty step). Without this filter the feed still
 	// drew a leading DOT for those invisible rows — the stray "older system" dot on
 	// loose Desk chats. Filtering here is the single source for both surfaces' feeds.
+	//
+	// Reasoning/thinking is OWNED by the `<details type="reasoning">` collapsible (it
+	// shows the same gist + expands to the full text). Keeping it in the feed too made
+	// the gist sentence render TWICE — the duplicate line that broke the premium feel.
+	// So reasoning is excluded from the feed everywhere; the collapsible is its home.
 	const isRenderableStep = (item) =>
-		!item?.hidden && item?.description !== 'No search query generated';
+		!item?.hidden &&
+		item?.description !== 'No search query generated' &&
+		!THINKING_ACTIONS.has(normalizeAction(item?.action ?? ''));
 	$: feedHistory = displayHistory.filter(isRenderableStep);
 
 	// Effective settle state per step. In a sequential feed only the tail can be in
