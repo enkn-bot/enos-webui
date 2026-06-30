@@ -212,7 +212,7 @@
 		</div>
 	</DeleteConfirmDialog>
 
-	<div class="mb-3 px-6 @md:max-w-3xl justify-between w-full flex relative group items-center">
+	<div class="mb-3 @md:mb-4 px-5 @md:max-w-3xl w-full flex relative group items-center justify-center">
 		<div class="text-center flex gap-3.5 items-center">
 			<EmojiPicker
 				onClose={() => {}}
@@ -234,12 +234,12 @@
 				</button>
 			</EmojiPicker>
 
-			<div class="enos-display text-5xl @md:text-6xl line-clamp-1">
+			<div class="enos-display text-4xl @md:text-5xl line-clamp-1">
 				{folder.name}
 			</div>
 		</div>
 
-		<div class="flex items-center translate-x-2.5">
+		<div class="absolute right-0 flex items-center">
 			<FolderMenu
 				align="end"
 				projectMode={true}
