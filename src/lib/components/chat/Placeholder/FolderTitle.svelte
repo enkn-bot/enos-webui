@@ -234,7 +234,7 @@
 				</button>
 			</EmojiPicker>
 
-			<div class="enos-display text-3xl line-clamp-1">
+			<div class="enos-display text-5xl @md:text-6xl line-clamp-1">
 				{folder.name}
 			</div>
 		</div>

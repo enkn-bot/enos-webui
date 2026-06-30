@@ -139,14 +139,14 @@
 			{:else}
 				<div
 					id="enos-welcome-greeting"
-					class="enos-display mb-3 @md:mb-4 max-w-2xl px-5 text-center text-4xl @md:text-5xl text-gray-900 dark:text-gray-50"
+					class="enos-display mb-3 @md:mb-4 max-w-2xl px-5 text-center text-5xl @md:text-6xl text-gray-900 dark:text-gray-50"
 					in:fade={{ duration: 100 }}
 				>
 					{welcomeGreeting}
 				</div>
 			{/if}
 
-			<div class="text-base font-normal @md:max-w-3xl w-full pb-3 {$selectedFolder ? 'mt-8' : (atSelectedModel ? 'mt-2' : '')}">
+			<div class="text-base font-normal @md:max-w-3xl w-full pb-3">
 				<MessageInput
 					bind:this={messageInput}
 					{history}

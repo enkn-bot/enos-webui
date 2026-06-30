@@ -27,7 +27,6 @@
 	import Pencil from '../icons/Pencil.svelte';
 	import GarbageBin from '../icons/GarbageBin.svelte';
 	import CloudArrowUp from '../icons/CloudArrowUp.svelte';
-	import { pendingAnnotation } from '$lib/stores/annotations';
 
 	const i18n = getContext('i18n');
 
@@ -243,13 +242,6 @@
 	const attachSelectedFile = async () => {
 		if (!selectedFile) return;
 		await onAttach(decodePreview(selectedFile), selectedFile.name, selectedFile.mime);
-	};
-
-	const handleQuoteInChat = () => {
-		if (!selectedFile || selectedFile.encoding !== 'utf8') return;
-		const ext = selectedFile.path.includes('.') ? (selectedFile.path.split('.').pop() ?? '') : '';
-		const formatted = `**\`${selectedFile.path}\`**\n\`\`\`${ext}\n${editContent}\n\`\`\`\n\n`;
-		pendingAnnotation.set(formatted);
 	};
 
 	const loadGitStatus = async () => {
@@ -744,20 +736,6 @@
 					>
 						{$i18n.t('Attach')}
 					</button>
-					{#if selectedFile && selectedFile.encoding === 'utf8'}
-						<button
-							type="button"
-							class="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg
-               bg-transparent hover:bg-black/5 dark:hover:bg-white/10 transition"
-							on:click={handleQuoteInChat}
-							title="Quote file content in chat"
-						>
-							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-3.5">
-								<path d="M3.75 2A1.75 1.75 0 0 0 2 3.75v.836a3.253 3.253 0 0 1 1.5-.586V3.75A.25.25 0 0 1 3.75 3.5h2.5a.25.25 0 0 1 .25.25v5.5a.25.25 0 0 1-.25.25H3.75a.25.25 0 0 1-.25-.25V8.5H2v.75C2 10.216 2.784 11 3.75 11H6.5V8.25A1.75 1.75 0 0 0 4.75 6.5h-.5A1.25 1.25 0 0 1 3 5.25V3.75A1.75 1.75 0 0 1 4.75 2h-1ZM9.25 2A1.75 1.75 0 0 0 7.5 3.75v.836a3.253 3.253 0 0 1 1.5-.586V3.75a.25.25 0 0 1 .25-.25h2.5a.25.25 0 0 1 .25.25v5.5a.25.25 0 0 1-.25.25H9.25A.25.25 0 0 1 9 9.25V8.5H7.5v.75C7.5 10.216 8.284 11 9.25 11H12V8.25A1.75 1.75 0 0 0 10.25 6.5h-.5A1.25 1.25 0 0 1 8.5 5.25V3.75A1.75 1.75 0 0 1 10.25 2h-1Z"/>
-							</svg>
-							Quote in chat
-						</button>
-					{/if}
 				</div>
 
 				{#if fileLoading}
