@@ -10,6 +10,7 @@
 	const i18n = getContext<Writable<i18nType>>('i18n');
 
 	const dispatch = createEventDispatcher();
+	const RESEARCH_OFFER_MARKER = '<!--enos-research-offer-->';
 
 	import { createNewFeedback, getFeedbackById, updateFeedbackById } from '$lib/apis/evaluations';
 	import { getChatById } from '$lib/apis/chats';
@@ -57,6 +58,7 @@
 	import { KokoroWorker } from '$lib/workers/KokoroWorker';
 	import FileItem from '$lib/components/common/FileItem.svelte';
 	import FollowUps from './ResponseMessage/FollowUps.svelte';
+	import ResearchOffer from './ResponseMessage/ResearchOffer.svelte';
 	import { fade } from 'svelte/transition';
 	import { flyAndScale } from '$lib/utils/transitions';
 	import RegenerateMenu from './ResponseMessage/RegenerateMenu.svelte';
@@ -193,6 +195,8 @@
 	let showRateComment = false;
 
 	$: displayFiles = message.files?.filter((f) => ['image', 'file'].includes(f.type)) ?? [];
+	$: displayContent = (message.content ?? '').replaceAll(RESEARCH_OFFER_MARKER, '');
+	$: hasOffer = (message.content ?? '').includes(RESEARCH_OFFER_MARKER) && message.done === true;
 	$: usageTooltipContent = (message as any).usage
 		? `<pre>${sanitizeResponseContent(
 				JSON.stringify((message as any).usage, null, 2)
@@ -852,7 +856,7 @@
 								<!-- unless message.error === true which is legacy error handling, where the error message is stored in message.content -->
 								<ContentRenderer
 									id={`${chatId}-${message.id}`}
-									content={message.content}
+									content={displayContent}
 									sources={message.sources}
 									floatingButtons={message?.done &&
 										!readOnly &&
@@ -886,6 +890,10 @@
 										updateChat();
 									}}
 								/>
+							{/if}
+
+							{#if hasOffer}
+								<ResearchOffer on:confirm={() => dispatch('researchConfirm')} />
 							{/if}
 
 							{#if message?.error}

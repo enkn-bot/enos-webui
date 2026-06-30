@@ -322,6 +322,7 @@
 									{addMessages}
 									{readOnly}
 									{topPadding}
+									on:researchConfirm
 								/>
 							{/if}
 						{/key}
@@ -379,6 +380,7 @@
 										{readOnly}
 										{editCodeBlock}
 										{topPadding}
+										on:researchConfirm
 									/>
 								{/if}
 							{/key}

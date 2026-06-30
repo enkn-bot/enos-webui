@@ -200,6 +200,7 @@
 
 	let imageGenerationEnabled = false;
 	let webSearchEnabled = false;
+	let deepResearchEnabled = false;
 	let codeInterpreterEnabled = false;
 
 	let showCommands = false;
@@ -2893,6 +2894,15 @@
 		await sendMessage(history, userMessageId);
 	};
 
+	const handleResearchConfirm = async () => {
+		deepResearchEnabled = true;
+		try {
+			await submitPrompt('Yes, research that.', []);
+		} finally {
+			deepResearchEnabled = false;
+		}
+	};
+
 	const submitHandler = async (userPrompt, { _raw = false } = {}) => {
 		console.log('submitHandler', userPrompt, $chatId);
 
@@ -3142,7 +3152,8 @@
 					$config?.features?.enable_web_search &&
 					($user?.role === 'admin' || $user?.permissions?.features?.web_search)
 						? webSearchEnabled
-						: false
+						: false,
+				deep_research: deepResearchEnabled
 			};
 
 		const currentModels = atSelectedModel?.id ? [atSelectedModel.id] : selectedModels;
@@ -4171,6 +4182,7 @@
 										topPadding={true}
 										bottomPadding={files.length > 0}
 										{onSelect}
+										on:researchConfirm={handleResearchConfirm}
 									/>
 								</div>
 							</div>

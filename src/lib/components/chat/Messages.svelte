@@ -528,6 +528,7 @@
 								{readOnly}
 								{editCodeBlock}
 								{topPadding}
+								on:researchConfirm
 							/>
 						{/each}
 					</ul>

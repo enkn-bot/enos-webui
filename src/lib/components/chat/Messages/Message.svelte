@@ -72,6 +72,7 @@
 				{readOnly}
 				{editCodeBlock}
 				{topPadding}
+				on:researchConfirm
 			/>
 		{:else if (history.messages[history.messages[messageId].parentId]?.models?.length ?? 1) === 1}
 			<ResponseMessage
@@ -123,6 +124,7 @@
 					{readOnly}
 					{editCodeBlock}
 					{topPadding}
+					on:researchConfirm
 				/>
 			{/key}
 		{/if}
