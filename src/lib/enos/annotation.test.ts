@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { annotationRef, type Annotation } from './annotation';
+import { annotationRef, serializeAnnotations, type Annotation } from './annotation';
 
 const mk = (over: Partial<Annotation> = {}): Annotation => ({
 	id: '1',
@@ -7,7 +7,8 @@ const mk = (over: Partial<Annotation> = {}): Annotation => ({
 	tag: 'h1',
 	selector: 'h1.team-name',
 	text: 'Esteemed Kompany',
-	styles: { color: '#1E1914', fontSize: '15px', fontFamily: 'Inter' },
+	html: '<h1 class="team-name">Esteemed Kompany</h1>',
+	styles: { fontSize: '15px', color: 'rgb(30,25,20)', display: 'flex' },
 	rect: { x: 10, y: 20, w: 528, h: 17 },
 	url: 'http://localhost:5180/',
 	note: '',
@@ -36,16 +37,59 @@ describe('annotationRef', () => {
 	});
 });
 
-import { serializeAnnotations } from './annotation';
 describe('serializeAnnotations', () => {
-	it('returns draft unchanged when empty', () => {
+	it('returns draft unchanged when list is empty', () => {
 		expect(serializeAnnotations([], 'hi')).toBe('hi');
 	});
-	it('prepends refs above the draft', () => {
-		const out = serializeAnnotations([mk({ note: 'bigger' })], 'and blue');
-		expect(out).toBe('↳ h1.team-name (src/Squad.tsx:42): bigger\n\nand blue');
+
+	it('one annotation produces a rich block above the draft', () => {
+		const out = serializeAnnotations([mk({ note: 'make bigger' })], 'fix it');
+		expect(out).toContain('[Annotation: h1.team-name]');
+		expect(out).toContain('source: src/Squad.tsx:42');
+		expect(out).toContain('box: 528×17 at (10,20)');
+		expect(out).toContain('fontSize: 15px');
+		expect(out).toContain('html: <h1');
+		expect(out).toContain('ask: make bigger');
+		expect(out.endsWith('\n\nfix it')).toBe(true);
 	});
-	it('refs only when draft empty', () => {
-		expect(serializeAnnotations([mk({ note: 'x', source: null })], '')).toBe('↳ h1.team-name: x');
+
+	it('omits source line when source is null', () => {
+		const out = serializeAnnotations([mk({ source: null })], '');
+		expect(out).not.toContain('source:');
+	});
+
+	it('omits ask line when note is empty', () => {
+		const out = serializeAnnotations([mk({ note: '' })], '');
+		expect(out).not.toContain('ask:');
+	});
+
+	it('omits text line when text is empty', () => {
+		const out = serializeAnnotations([mk({ text: '' })], '');
+		expect(out).not.toContain('text:');
+	});
+
+	it('omits html line when html is empty', () => {
+		const out = serializeAnnotations([mk({ html: '' })], '');
+		expect(out).not.toContain('html:');
+	});
+
+	it('omits styles line when styles map is empty', () => {
+		const out = serializeAnnotations([mk({ styles: {} })], '');
+		expect(out).not.toContain('styles:');
+	});
+
+	it('returns block only when draft is empty', () => {
+		const out = serializeAnnotations([mk({ note: 'x', source: null })], '');
+		expect(out).toContain('[Annotation: h1.team-name]');
+		expect(out.endsWith('\n\n')).toBe(false);
+	});
+
+	it('joins multiple annotations with a blank line', () => {
+		const a = mk({ selector: 'h1.team-name' });
+		const b = mk({ selector: 'p.subtitle', tag: 'p' });
+		const out = serializeAnnotations([a, b], '');
+		expect(out).toContain('[Annotation: h1.team-name]');
+		expect(out).toContain('[Annotation: p.subtitle]');
+		expect(out).toContain('\n\n');
 	});
 });

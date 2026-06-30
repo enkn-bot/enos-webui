@@ -151,6 +151,15 @@
 	// coding agent; the screenshot stays display-only and is never serialized.
 	const submitWithAnnotations = () => {
 		const merged = serializeAnnotations($pendingAnnotations, prompt);
+		// SEE mode: a non-instrumented element (no source file) → attach its
+		// screenshot so the turn routes to the vision seat. EDIT mode (source
+		// present) stays text-only → the coding agent edits the file:line from
+		// the serialized metadata, no image needed.
+		for (const a of $pendingAnnotations) {
+			if (!a.source && a.image) {
+				files = [...files, { type: 'image', url: a.image, name: `annotation-${a.id}.png` }];
+			}
+		}
 		clearAnnotations();
 		dispatch('submit', merged);
 	};

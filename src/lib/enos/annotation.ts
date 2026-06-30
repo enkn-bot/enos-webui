@@ -4,7 +4,8 @@ export type Annotation = {
 	tag: string;
 	selector: string;
 	text: string;
-	styles: { color: string; fontSize: string; fontFamily: string };
+	html: string;
+	styles: Record<string, string>;
 	rect: { x: number; y: number; w: number; h: number };
 	url: string;
 	note: string;
@@ -19,10 +20,26 @@ export const annotationRef = (a: Annotation): string => {
 	return `↳ ${a.selector}${src}${note}`;
 };
 
-// Prepend the annotation refs (text, model-actionable) to the user's draft on
+// Prepend rich annotation blocks (text, model-actionable) to the user's draft on
 // send. The screenshot is NOT serialized — it's display-only in the chip.
 export const serializeAnnotations = (list: Annotation[], draft: string): string => {
 	if (list.length === 0) return draft;
-	const refs = list.map(annotationRef).join('\n');
-	return draft ? `${refs}\n\n${draft}` : refs;
+
+	const blocks = list
+		.map((a) => {
+			const lines: string[] = [`[Annotation: ${a.selector}]`];
+			if (a.source) lines.push(`source: ${a.source}`);
+			lines.push(`box: ${a.rect.w}×${a.rect.h} at (${a.rect.x},${a.rect.y})`);
+			const styleEntries = Object.entries(a.styles);
+			if (styleEntries.length > 0) {
+				lines.push(`styles: ${styleEntries.map(([k, v]) => `${k}: ${v};`).join(' ')}`);
+			}
+			if (a.html) lines.push(`html: ${a.html}`);
+			if (a.text) lines.push(`text: "${a.text}"`);
+			if (a.note) lines.push(`ask: ${a.note}`);
+			return lines.join('\n');
+		})
+		.join('\n\n');
+
+	return draft ? `${blocks}\n\n${draft}` : blocks;
 };

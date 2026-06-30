@@ -2984,7 +2984,13 @@
 			}
 		}
 
-		if (await handleProjectChatAction(userPrompt)) return;
+		// Annotation/image turns must reach a vision-capable model: skip the
+		// text-only Desk project (coding-agent) route when an image is attached
+		// and let the turn fall through to submitPrompt → OWUI vision seat.
+		const hasImageFiles = files.some(
+			(f) => f.type === 'image' || (f?.content_type ?? '').startsWith('image/')
+		);
+		if (!hasImageFiles && (await handleProjectChatAction(userPrompt))) return;
 
 		// Clear input and submit
 		messageInput?.setText('');
