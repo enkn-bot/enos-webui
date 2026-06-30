@@ -7,19 +7,22 @@ describe('deskPiTurnView', () => {
 		let now = 1_000;
 		const view = createDeskPiTurnView({ now: () => now });
 
+		// Reasoning step now carries a gist of the model's reasoning as its label.
 		const thinking = view.onUpdate({ reasoning: 'checking files', content: '' });
 		expect(thinking.statusChanged).toBe(true);
 		expect(thinking.statusHistory).toEqual([
-			{ action: 'reasoning', description: 'Thinking', done: false }
+			{ action: 'reasoning', description: 'checking files', done: false }
 		]);
 
 		now = 2_500;
 		const content = view.onUpdate({ reasoning: 'checking files', content: 'Fixed it.' });
 		expect(content.statusChanged).toBe(true);
+		// Settled once content arrives: done + elapsed duration stamped (1000→2500ms).
 		expect(content.statusHistory[0]).toEqual({
 			action: 'reasoning',
-			description: 'Thinking',
-			done: true
+			description: 'checking files',
+			done: true,
+			duration: 1.5
 		});
 		expect(content.messageContent).toContain('Fixed it.');
 	});

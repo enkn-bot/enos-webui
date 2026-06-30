@@ -1,6 +1,30 @@
 import { describe, expect, test } from 'vitest';
 
-import { buildDeskReasoningBlock, composeDeskMessageContent } from './deskReasoning';
+import { buildDeskReasoningBlock, composeDeskMessageContent, reasoningGist } from './deskReasoning';
+
+describe('reasoningGist', () => {
+	test('empty in, empty out', () => {
+		expect(reasoningGist('')).toBe('');
+		expect(reasoningGist('   \n  ')).toBe('');
+	});
+
+	test('returns the last complete sentence (the latest thought)', () => {
+		const text =
+			'Let me check the config. The cache TTL is 24h. Still not connecting — let me take a screenshot.';
+		expect(reasoningGist(text)).toBe('Still not connecting — let me take a screenshot.');
+	});
+
+	test('collapses whitespace/newlines to one line', () => {
+		expect(reasoningGist('First thought.\n\nSecond   thought here')).toBe('Second thought here');
+	});
+
+	test('length-caps long single sentences with an ellipsis', () => {
+		const long = 'a'.repeat(200);
+		const out = reasoningGist(long, 50);
+		expect(out.length).toBe(50);
+		expect(out.endsWith('…')).toBe(true);
+	});
+});
 
 describe('buildDeskReasoningBlock', () => {
 	test('no reasoning -> empty block (plain turns are untouched)', () => {

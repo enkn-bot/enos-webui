@@ -53,20 +53,30 @@
 				</div>
 			</div>
 		{:else if status?.action === 'reasoning' || status?.action === 'thinking'}
+			{@const gist =
+				status?.description && status.description !== 'Thinking' ? status.description : ''}
 			<div class="flex flex-col justify-center -space-y-0.5">
+				<!-- Primary line = the model's own reasoning gist (WHAT it thought),
+				     falling back to Thinking/Thought when no gist is available. -->
 				<div
-					class="{(done || status?.done) === false ? 'shimmer' : ''} text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
+					class="{(done || status?.done) === false ? 'shimmer' : ''} text-gray-500 dark:text-gray-500 text-base line-clamp-2 text-wrap"
 				>
-					{#if (done || status?.done) === false}
+					{#if gist}
+						{gist}
+					{:else if (done || status?.done) === false}
 						Thinking
-					{:else if status?.duration && Number(status.duration) >= 1}
-						Thought for {Number(status.duration) < 60
-							? `${Math.round(Number(status.duration))}s`
-							: `${Math.floor(Number(status.duration) / 60)}m ${Math.round(Number(status.duration) % 60)}s`}
 					{:else}
 						Thought
 					{/if}
 				</div>
+				<!-- Duration demoted to a quiet subline once settled. -->
+				{#if (done || status?.done) === true && status?.duration && Number(status.duration) >= 1}
+					<div class="text-xs text-gray-400 dark:text-gray-600 pt-0.5">
+						Thought for {Number(status.duration) < 60
+							? `${Math.round(Number(status.duration))}s`
+							: `${Math.floor(Number(status.duration) / 60)}m ${Math.round(Number(status.duration) % 60)}s`}
+					</div>
+				{/if}
 			</div>
 		{:else if status?.action === 'sources_retrieved' && status?.count !== undefined}
 			<div class="flex flex-col justify-center -space-y-0.5">

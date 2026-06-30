@@ -9,6 +9,21 @@
 
 export type DeskReasoningOpts = { done: boolean; durationS: number };
 
+/**
+ * A one-line gist of the model's reasoning, so the Desk feed shows WHAT it
+ * reasoned ("Still not connecting — the panel is in chat mode…") rather than a
+ * bare "Thinking". Takes the last complete sentence of the streamed reasoning
+ * (the model's most recent thought), normalised to one line and length-capped.
+ */
+export const reasoningGist = (text: string, maxLen = 140): string => {
+	const t = (text ?? '').replace(/\s+/g, ' ').trim();
+	if (!t) return '';
+	const parts = t.split(/(?<=[.!?])\s+/).filter(Boolean);
+	let gist = parts[parts.length - 1] ?? t;
+	if (gist.length > maxLen) gist = gist.slice(0, maxLen - 1).trimEnd() + '…';
+	return gist;
+};
+
 const blockquote = (text: string): string =>
 	text
 		.split('\n')

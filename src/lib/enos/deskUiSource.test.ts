@@ -459,8 +459,9 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(modal).not.toContain('Documents/ENOS');
 		expect(modal).not.toContain('Choose a local folder or start clean.');
 		expect(modal).toMatch(/\{#if showLegacyFolderOptions\}[\s\S]*Folder Background Image/);
-		expect(modal).toMatch(/\{#if showLegacyFolderOptions\}[\s\S]*System Prompt/);
-		expect(modal).toMatch(/\{#if showLegacyFolderOptions\}[\s\S]*Project Knowledge/);
+		// Instructions (system_prompt) + Context (Knowledge) now render for any edit —
+		// including Desk projectEditMode — so the project cards open a usable editor.
+		expect(modal).toMatch(/\{#if edit\}[\s\S]*Instructions[\s\S]*Context/);
 		expect(modal).not.toContain("placeholder={$i18n.t('Enter folder name')}");
 	});
 
@@ -571,8 +572,9 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(modal).toContain('applyInitialFolder(initialFolder)');
 		expect(modal).toContain('showLegacyFolderOptions = edit && !projectEditMode');
 		expect(modal).toMatch(/\{#if showLegacyFolderOptions\}[\s\S]*Folder Background Image/);
-		expect(modal).toMatch(/\{#if showLegacyFolderOptions\}[\s\S]*System Prompt/);
-		expect(modal).toMatch(/\{#if showLegacyFolderOptions\}[\s\S]*Project Knowledge/);
+		// Instructions (system_prompt) + Context (Knowledge) now render for any edit —
+		// including Desk projectEditMode — so the project cards open a usable editor.
+		expect(modal).toMatch(/\{#if edit\}[\s\S]*Instructions[\s\S]*Context/);
 		expect(folderTitle).toContain('initialFolder={folder}');
 		expect(folderTitle).toContain('projectEditMode={isDeskSurface()}');
 		expect(recursiveFolder).toContain('initialFolder={folders[folderId]}');
