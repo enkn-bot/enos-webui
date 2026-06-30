@@ -3,9 +3,11 @@
 	const i18n = getContext('i18n');
 
 	import StatusItem from './StatusHistory/StatusItem.svelte';
+	import ChevronDown from '$lib/components/icons/ChevronDown.svelte';
 	import equal from 'fast-deep-equal';
 	import { enosOrbColorForModel } from '$lib/enos/modelTier';
 	import { selectDisplayStatus, normalizeAction, isStepSettled } from '$lib/enos/cognitionVocabulary';
+	import { formatDeskStatusLabel } from '$lib/enos/deskStatus';
 	export let statusHistory = [];
 	export let expand = false;
 	export let compactDesk = false;
@@ -103,10 +105,9 @@
 {#if history && history.length > 0 && status}
 	{#if status?.hidden !== true}
 		{#if compactDesk}
-			<!-- Desk = supervision: an always-visible operational feed. Every step shows on
-			     its own line with a leading dot; the mind-color dot rides the active step
-			     and the rest stay neutral (done/inactive). No expand/collapse — the
-			     sequence (Read → Edited → Ran) IS the value on a coding surface. -->
+			{#if !answerPresent}
+			<!-- Desk, live: always-visible operational feed WHILE the turn streams, so a
+			     coding sequence (Read → Edited → Ran) shows progress as it happens. -->
 			<div class="text-sm flex flex-col w-full">
 				{#each feedHistory as historyItem, idx}
 					{@const isLast = idx === feedHistory.length - 1}
@@ -135,6 +136,49 @@
 					</div>
 				{/each}
 			</div>
+			{:else if feedHistory.length > 0}
+				<!-- Desk, settled: collapse to ONE clean header (matches the reasoning gist
+				     collapsible) — expandable to the full sequence. A finished turn no longer
+				     shows the always-visible dots, which read as an unfinished, older UI. -->
+				<div class="text-sm flex flex-col w-full">
+					<button
+						class="w-full flex items-center gap-1.5 text-left text-gray-500 dark:text-gray-500"
+						aria-expanded={showHistory}
+						aria-label={$i18n.t('Toggle status history')}
+						on:click={() => (showHistory = !showHistory)}
+					>
+						<span class="text-base line-clamp-1">{formatDeskStatusLabel(status, true)}</span>
+						{#if feedHistory.length > 1}
+							<ChevronDown
+								className="size-3.5 shrink-0 text-gray-400 dark:text-gray-600 transition-transform {showHistory
+									? 'rotate-180'
+									: ''}"
+								strokeWidth="2.5"
+							/>
+						{/if}
+					</button>
+					{#if showHistory && feedHistory.length > 1}
+						<div class="mt-1">
+							{#each feedHistory as historyItem, idx}
+								{@const isLast = idx === feedHistory.length - 1}
+								<div class="flex items-stretch gap-2">
+									<div class=" ">
+										<div class="pt-2 px-1 mb-1">
+											<span class="relative flex size-1.5 rounded-full justify-center items-center">
+												<span class="relative inline-flex size-1.5 rounded-full bg-gray-400 dark:bg-gray-600"></span>
+											</span>
+										</div>
+										{#if !isLast}
+											<div class="w-[0.5px] ml-[6.5px] h-[calc(100%-12px)] bg-gray-200 dark:bg-gray-800"></div>
+										{/if}
+									</div>
+									<StatusItem status={historyItem} done={true} {compactDesk} />
+								</div>
+							{/each}
+						</div>
+					{/if}
+				</div>
+			{/if}
 		{:else}
 			<div class="text-sm flex flex-col w-full">
 				<button
