@@ -36,7 +36,7 @@
 	export let onUpdate: Function = (folderId) => {};
 	export let onDelete: Function = (folderId) => {};
 
-	export let showFolderModal = false;
+	let showFolderModal = false;
 	let showCreateSubFolderModal = false;
 	let showDeleteConfirm = false;
 	let deleteFolderContents = true;
@@ -212,8 +212,8 @@
 		</div>
 	</DeleteConfirmDialog>
 
-	<div class="mb-3 @md:mb-4 w-full flex relative group items-center">
-		<div class="flex gap-3.5 items-center">
+	<div class="mb-3 @md:mb-4 px-5 @md:max-w-3xl w-full flex relative group items-center justify-center">
+		<div class="text-center flex gap-3.5 items-center">
 			<EmojiPicker
 				onClose={() => {}}
 				selected={folder?.meta?.icon ?? null}
@@ -239,7 +239,7 @@
 			</div>
 		</div>
 
-		<div class="ml-auto flex items-center">
+		<div class="absolute right-0 flex items-center">
 			<FolderMenu
 				align="end"
 				projectMode={true}
