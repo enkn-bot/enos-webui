@@ -80,15 +80,19 @@ describe('ENOS UI cleanup source ownership', () => {
 		const folderTitle = read('src/lib/components/chat/Placeholder/FolderTitle.svelte');
 		const appCss = read('src/app.css');
 
-		// Greeting + project title share one serif display treatment via the token class.
+		// Greeting + project title share ONE serif display treatment AND one size,
+		// via the .enos-display (serif token) + .enos-landing-title (size) classes,
+		// so the two landing titles are always identical.
 		expect(placeholder).toContain(
-			'class="enos-display mb-3 @md:mb-4 max-w-2xl px-5 text-center text-4xl @md:text-5xl text-gray-900 dark:text-gray-50"'
+			'class="enos-display enos-landing-title mb-3 @md:mb-4 max-w-2xl px-5 text-center text-gray-900 dark:text-gray-50"'
 		);
 		expect(placeholder).not.toContain("font-family: 'Anthropic Serif'");
-		expect(folderTitle).toContain('enos-display text-4xl @md:text-5xl line-clamp-1');
+		expect(folderTitle).toContain('enos-display enos-landing-title line-clamp-1');
 		expect(placeholder).not.toContain("$selectedFolder ? 'mt-8'");
-		// The class is defined off the secondary (serif) token, not a hardcoded family.
+		// The serif treatment is defined off the secondary (serif) token, not a hardcoded family.
 		expect(appCss).toMatch(/\.enos-display\s*\{[^}]*font-family:\s*var\(--font-secondary\)/);
+		// Single source of truth for the landing-title size.
+		expect(appCss).toMatch(/\.enos-landing-title\s*\{[^}]*font-size:/);
 	});
 
 	test('decorative emojis are removed from empty states and settings chrome', () => {
