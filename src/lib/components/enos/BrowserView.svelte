@@ -126,11 +126,25 @@
 		node.addEventListener('did-start-loading', onStart);
 		node.addEventListener('did-stop-loading', onStop);
 		node.addEventListener('found-in-page', onFound);
-		const onIpc = (e: any) => {
+		const onIpc = async (e: any) => {
 			if (e.channel !== 'enos:annotation') return;
 			const p = e.args?.[0];
 			if (!p) return;
-			const annotation: Annotation = { id: crypto.randomUUID(), ...p };
+			let image: string | undefined;
+			try {
+				if (p.rect?.w > 0 && p.rect?.h > 0 && node.capturePage) {
+					const img = await node.capturePage({
+						x: p.rect.x,
+						y: p.rect.y,
+						width: p.rect.w,
+						height: p.rect.h
+					});
+					image = img?.toDataURL?.();
+				}
+			} catch (err) {
+				console.warn('[enos-annotate] capturePage failed', err);
+			}
+			const annotation: Annotation = { id: crypto.randomUUID(), ...p, image };
 			addAnnotation(annotation);
 		};
 		node.addEventListener('ipc-message', onIpc);

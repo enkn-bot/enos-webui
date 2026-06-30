@@ -35,3 +35,17 @@ describe('annotationRef', () => {
 		);
 	});
 });
+
+import { serializeAnnotations } from './annotation';
+describe('serializeAnnotations', () => {
+	it('returns draft unchanged when empty', () => {
+		expect(serializeAnnotations([], 'hi')).toBe('hi');
+	});
+	it('prepends refs above the draft', () => {
+		const out = serializeAnnotations([mk({ note: 'bigger' })], 'and blue');
+		expect(out).toBe('↳ h1.team-name (src/Squad.tsx:42): bigger\n\nand blue');
+	});
+	it('refs only when draft empty', () => {
+		expect(serializeAnnotations([mk({ note: 'x', source: null })], '')).toBe('↳ h1.team-name: x');
+	});
+});

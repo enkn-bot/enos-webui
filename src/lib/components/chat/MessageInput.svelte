@@ -11,7 +11,7 @@
 	dayjs.extend(duration);
 	dayjs.extend(relativeTime);
 
-	import { onMount, onDestroy, tick, getContext, createEventDispatcher } from 'svelte';
+	import { onMount, tick, getContext, createEventDispatcher } from 'svelte';
 
 	import { createPicker, getAuthToken } from '$lib/utils/google-drive-picker';
 	import { pickAndDownloadFile } from '$lib/utils/onedrive-file-picker';
@@ -71,8 +71,8 @@
 	import RichTextInput from '../common/RichTextInput.svelte';
 	import Tooltip from '../common/Tooltip.svelte';
 	import FileItem from '../common/FileItem.svelte';
-	import { pendingAnnotations, clearAnnotations } from '$lib/stores/annotations';
-	import { annotationRef } from '$lib/enos/annotation';
+	import { pendingAnnotations, removeAnnotation, clearAnnotations } from '$lib/stores/annotations';
+	import { serializeAnnotations } from '$lib/enos/annotation';
 	import Image from '../common/Image.svelte';
 	import Spinner from '../common/Spinner.svelte';
 	import PastedTextCard from './PastedTextCard.svelte';
@@ -145,31 +145,15 @@
 	export let files = [];
 
 	// Browser annotations arrive via the pendingAnnotations store. Consume each
-	// one immediately: attach its element screenshot as a native image upload
-	// (same path as paste/drop → renders, sent to vision, cleared on send) and
-	// fold the note/source into the prompt text.
-	// Browser annotations arrive via the pendingAnnotations store. Text-first:
-	// fold each element's "↳ selector (file:line): note" ref into the prompt and
-	// focus the composer so the user can keep typing. No image — the Desk coder
-	// is text-only and acts on the selector + source, not pixels.
-	let unsubAnnotations: (() => void) | undefined;
-	onMount(() => {
-		unsubAnnotations = pendingAnnotations.subscribe(async (list) => {
-			if (!list.length) return;
-			const items = [...list];
-			clearAnnotations(); // clear first → re-entrant call sees [] and returns
-			const refs = items.map(annotationRef).join('\n');
-			await tick();
-			// The RichTextInput (contenteditable) does not react to plain `prompt`
-			// writes — it must be updated via setText (same as the clear path).
-			const next = prompt ? `${prompt}\n${refs}` : refs;
-			chatInputElement?.setText?.(next);
-			prompt = next;
-			await tick();
-			chatInputElement?.focus?.();
-		});
-	});
-	onDestroy(() => unsubAnnotations?.());
+	// Browser annotations live in the pendingAnnotations store and render as a
+	// chip on the composer (Codex style). On send, their actionable refs
+	// (selector + source:line + note) are prepended to the message for the
+	// coding agent; the screenshot stays display-only and is never serialized.
+	const submitWithAnnotations = () => {
+		const merged = serializeAnnotations($pendingAnnotations, prompt);
+		clearAnnotations();
+		dispatch('submit', merged);
+	};
 
 	export let selectedToolIds = [];
 	export let selectedSkillIds = [];
@@ -1264,7 +1248,7 @@
 								document.getElementById('chat-input')?.focus();
 
 								if ($settings?.speechAutoSend ?? false) {
-									dispatch('submit', prompt);
+									submitWithAnnotations();
 								}
 							}}
 						/>
@@ -1273,7 +1257,7 @@
 						class="w-full flex flex-col gap-1.5 {recording ? 'hidden' : ''}"
 						on:submit|preventDefault={() => {
 							// check if selectedModels support image input
-							dispatch('submit', prompt);
+							submitWithAnnotations();
 						}}
 					>
 						<button
@@ -1337,6 +1321,67 @@
 												<XMark />
 											</button>
 										</div>
+									</div>
+								</div>
+							{/if}
+
+							{#if $pendingAnnotations.length > 0}
+								<div class="mx-2 mt-2.5 relative group w-fit">
+									<div
+										class="flex items-center gap-1.5 pl-2 pr-1.5 py-1 rounded-lg text-sm font-medium border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-850 text-gray-700 dark:text-gray-200"
+									>
+										<svg viewBox="0 0 16 16" fill="currentColor" class="size-4 text-gray-400">
+											<path d="M2.5 3A1.5 1.5 0 0 1 4 1.5h8A1.5 1.5 0 0 1 13.5 3v6A1.5 1.5 0 0 1 12 10.5H6.7l-2.9 2.4A.5.5 0 0 1 3 12.5V10.5A1.5 1.5 0 0 1 2.5 9V3Z" />
+										</svg>
+										<span>{$pendingAnnotations.length} annotation{$pendingAnnotations.length > 1 ? 's' : ''}</span>
+										<button
+											type="button"
+											class="ml-0.5 p-0.5 rounded-full opacity-0 group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+											on:click={clearAnnotations}
+											title="Clear annotations"
+										>
+											<svg viewBox="0 0 20 20" fill="currentColor" class="size-3.5">
+												<path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+											</svg>
+										</button>
+									</div>
+									<div
+										class="hidden group-hover:block absolute left-0 bottom-full mb-2 z-30 w-72 max-h-72 overflow-y-auto p-2 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xl"
+									>
+										{#each $pendingAnnotations as a (a.id)}
+											<div class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-850">
+												{#if a.image}
+													<img
+														src={a.image}
+														alt=""
+														class="size-9 shrink-0 rounded-md object-cover border border-gray-100 dark:border-gray-800"
+													/>
+												{/if}
+												<div class="min-w-0 flex-1">
+													<div class="flex items-center gap-1.5">
+														<span class="px-1.5 py-0.5 rounded-md text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+															{a.selector}
+														</span>
+														<button
+															type="button"
+															class="ml-auto p-0.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+															on:click={() => removeAnnotation(a.id)}
+															title="Remove"
+														>
+															<svg viewBox="0 0 20 20" fill="currentColor" class="size-3 text-gray-400">
+																<path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+															</svg>
+														</button>
+													</div>
+													{#if a.source}
+														<div class="mt-0.5 text-xs font-mono text-gray-400 truncate">{a.source}</div>
+													{/if}
+													{#if a.note}
+														<div class="mt-1 text-sm text-gray-700 dark:text-gray-200 break-words">{a.note}</div>
+													{/if}
+												</div>
+											</div>
+										{/each}
 									</div>
 								</div>
 							{/if}
@@ -1573,7 +1618,7 @@
 																if (enterPressed) {
 																	e.preventDefault();
 																	if (prompt !== '' || files.length > 0) {
-																		dispatch('submit', prompt);
+																		submitWithAnnotations();
 																	}
 																}
 															}
