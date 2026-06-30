@@ -19,6 +19,7 @@
 
 	import CodeEditor from '$lib/components/common/CodeEditor.svelte';
 	import SvgPanZoom from '$lib/components/common/SVGPanZoom.svelte';
+	import EnosUiRender from './EnosUi/EnosUiRender.svelte';
 
 	import ChevronUp from '$lib/components/icons/ChevronUp.svelte';
 	import ChevronUpDown from '$lib/components/icons/ChevronUpDown.svelte';
@@ -64,6 +65,8 @@
 
 	let renderHTML = null;
 	let renderError = null;
+
+	let enosUiSpec: any = null;
 
 	let highlightedCode = null;
 	let executing = false;
@@ -386,6 +389,12 @@
 				renderError = $i18n.t('Failed to render visualization') + `: ${errorMsg}`;
 				renderHTML = null;
 			}
+		} else if (lang === 'enos-ui' && (token?.raw ?? '').slice(-4).includes('```')) {
+			try {
+				enosUiSpec = JSON.parse(code.trim());
+			} catch (e) {
+				enosUiSpec = null;
+			}
 		}
 	};
 
@@ -455,6 +464,22 @@
 					{/if}
 					<pre>{code}</pre>
 				</div>
+			{/if}
+		{:else if lang === 'enos-ui'}
+			{#if (token?.raw ?? '').slice(-4).includes('```')}
+				{#if enosUiSpec !== null}
+					<EnosUiRender spec={enosUiSpec} />
+				{:else}
+					<!-- fence closed but JSON parse failed: show raw code -->
+					<div class="p-3">
+						<pre class="text-sm font-mono whitespace-pre-wrap overflow-x-auto text-gray-700 dark:text-gray-300">{code}</pre>
+					</div>
+				{/if}
+			{:else}
+				<!-- fence still open (streaming): lightweight skeleton -->
+				<div
+					class="p-4 text-sm text-gray-400 dark:text-gray-500 italic animate-pulse"
+				>rendering…</div>
 			{/if}
 		{:else}
 			<div
