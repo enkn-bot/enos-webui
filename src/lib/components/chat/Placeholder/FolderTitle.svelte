@@ -212,7 +212,10 @@
 		</div>
 	</DeleteConfirmDialog>
 
-	<div class="mb-3 @md:mb-4 w-full flex relative group items-center">
+	<!-- mb-12 (3rem) mirrors the welcome greeting's gap above the composer
+	     (#enos-welcome-greeting margin-bottom: 3rem in static/custom.css) so the
+	     project landing has the same breathing room as the greeting. -->
+	<div class="mb-12 w-full flex relative group items-center">
 		<div class="flex gap-3.5 items-center min-w-0">
 			<EmojiPicker
 				onClose={() => {}}
