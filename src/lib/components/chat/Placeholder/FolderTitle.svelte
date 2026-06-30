@@ -215,7 +215,10 @@
 	<!-- mb-12 (3rem) mirrors the welcome greeting's gap above the composer
 	     (#enos-welcome-greeting margin-bottom: 3rem in static/custom.css) so the
 	     project landing has the same breathing room as the greeting. -->
-	<div class="mb-12 w-full flex relative group items-center">
+	<!-- px-2.5 (10px) insets the row so the folder icon's left edge and the menu's
+	     right edge align to the composer box below (which sits 10px inset from the
+	     column on each side), not the full column width. -->
+	<div class="mb-12 px-2.5 w-full flex relative group items-center">
 		<div class="flex gap-3.5 items-center min-w-0">
 			<EmojiPicker
 				onClose={() => {}}
@@ -227,12 +230,12 @@
 			>
 				<button
 					aria-label={$i18n.t('Change folder icon')}
-					class=" rounded-full bg-gray-50 dark:bg-gray-800 size-11 flex justify-center items-center"
+					class=" rounded-full bg-gray-50 dark:bg-gray-800 size-7 flex justify-center items-center"
 				>
 					{#if folder?.meta?.icon}
-						<Emoji className="size-6" shortCode={folder.meta.icon} />
+						<Emoji className="size-4" shortCode={folder.meta.icon} />
 					{:else}
-						<Folder className="size-4.5" strokeWidth="2" />
+						<Folder className="size-4" strokeWidth="2" />
 					{/if}
 				</button>
 			</EmojiPicker>
