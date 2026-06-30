@@ -4,6 +4,8 @@
 	import { normalizeUrl } from '$lib/enos/browserUrl';
 	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 	import GlobeAlt from '$lib/components/icons/GlobeAlt.svelte';
+	import { addAnnotation } from '$lib/stores/annotations';
+	import type { Annotation } from '$lib/enos/annotation';
 
 	const i18n = getContext('i18n');
 
@@ -15,6 +17,7 @@
 	let canGoBack = false;
 	let canGoForward = false;
 	let loading = false;
+	let annotating = false;
 
 	// 3-dots menu
 	let showMenu = false;
@@ -41,6 +44,18 @@
 	const reload = () => webviewEl?.reload?.();
 	const back = () => webviewEl?.goBack?.();
 	const forward = () => webviewEl?.goForward?.();
+
+	const setAnnotate = (on: boolean) => {
+		annotating = on;
+		webviewEl?.send?.('enos:annotate-mode', on);
+	};
+	const toggleAnnotate = () => setAnnotate(!annotating);
+	const onAnnotateKey = (e: KeyboardEvent) => {
+		if ((e.metaKey || e.ctrlKey) && e.key === '.') {
+			e.preventDefault();
+			toggleAnnotate();
+		}
+	};
 
 	const forceReload = () => {
 		webviewEl?.reloadIgnoringCache?.();
@@ -111,6 +126,14 @@
 		node.addEventListener('did-start-loading', onStart);
 		node.addEventListener('did-stop-loading', onStop);
 		node.addEventListener('found-in-page', onFound);
+		const onIpc = (e: any) => {
+			if (e.channel !== 'enos:annotation') return;
+			const p = e.args?.[0];
+			if (!p) return;
+			const annotation: Annotation = { id: crypto.randomUUID(), ...p };
+			addAnnotation(annotation);
+		};
+		node.addEventListener('ipc-message', onIpc);
 		return {
 			destroy() {
 				node.removeEventListener('did-navigate', onNav);
@@ -118,6 +141,7 @@
 				node.removeEventListener('did-start-loading', onStart);
 				node.removeEventListener('did-stop-loading', onStop);
 				node.removeEventListener('found-in-page', onFound);
+				node.removeEventListener('ipc-message', onIpc);
 			}
 		};
 	};
@@ -125,6 +149,8 @@
 	const menuBtnClass =
 		'flex items-center gap-2 w-full px-3 py-1.5 text-sm text-left rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-default';
 </script>
+
+<svelte:window on:keydown={onAnnotateKey} />
 
 <!-- click-outside overlay to close menu -->
 {#if showMenu}
@@ -177,6 +203,18 @@
 			autocomplete="off"
 			spellcheck="false"
 		/>
+
+		<!-- Annotate toggle -->
+		<button
+			type="button"
+			class="px-2 py-1 rounded-md text-xs font-medium transition {annotating
+				? 'bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400'
+				: 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}"
+			on:click={toggleAnnotate}
+			title="Annotate (⌘.)"
+		>
+			{annotating ? 'Annotating' : 'Annotate'}
+		</button>
 
 		<!-- 3-dots menu button -->
 		<div class="relative">

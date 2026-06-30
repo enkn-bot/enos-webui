@@ -71,6 +71,12 @@
 	import RichTextInput from '../common/RichTextInput.svelte';
 	import Tooltip from '../common/Tooltip.svelte';
 	import FileItem from '../common/FileItem.svelte';
+	import {
+		pendingAnnotations,
+		removeAnnotation,
+		clearAnnotations
+	} from '$lib/stores/annotations';
+	import { serializeAnnotations } from '$lib/enos/annotation';
 	import Image from '../common/Image.svelte';
 	import Spinner from '../common/Spinner.svelte';
 	import PastedTextCard from './PastedTextCard.svelte';
@@ -141,6 +147,13 @@
 
 	export let prompt = '';
 	export let files = [];
+
+	// Fold any pending browser annotations into the submitted prompt, then clear.
+	const submitWithAnnotations = () => {
+		const merged = serializeAnnotations($pendingAnnotations, prompt);
+		clearAnnotations();
+		dispatch('submit', merged);
+	};
 
 	export let selectedToolIds = [];
 	export let selectedSkillIds = [];
@@ -1235,7 +1248,7 @@
 								document.getElementById('chat-input')?.focus();
 
 								if ($settings?.speechAutoSend ?? false) {
-									dispatch('submit', prompt);
+									submitWithAnnotations();
 								}
 							}}
 						/>
@@ -1244,7 +1257,7 @@
 						class="w-full flex flex-col gap-1.5 {recording ? 'hidden' : ''}"
 						on:submit|preventDefault={() => {
 							// check if selectedModels support image input
-							dispatch('submit', prompt);
+							submitWithAnnotations();
 						}}
 					>
 						<button
@@ -1309,6 +1322,32 @@
 											</button>
 										</div>
 									</div>
+								</div>
+							{/if}
+
+							{#if $pendingAnnotations.length > 0}
+								<div class="mx-2 mt-2.5 flex items-center flex-wrap gap-2">
+									{#each $pendingAnnotations as a (a.id)}
+										<div
+											class="flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
+											title={a.source ?? a.selector}
+										>
+											<svg viewBox="0 0 16 16" fill="currentColor" class="size-3.5">
+												<path d="M2.5 3A1.5 1.5 0 0 1 4 1.5h8A1.5 1.5 0 0 1 13.5 3v6A1.5 1.5 0 0 1 12 10.5H6.7l-2.9 2.4A.5.5 0 0 1 3 12.5V10.5A1.5 1.5 0 0 1 2.5 9V3Z" />
+											</svg>
+											<span>{a.selector}</span>
+											<button
+												type="button"
+												class="p-0.5 rounded hover:bg-blue-100 dark:hover:bg-blue-500/25"
+												on:click={() => removeAnnotation(a.id)}
+												title="Remove annotation"
+											>
+												<svg viewBox="0 0 20 20" fill="currentColor" class="size-3">
+													<path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+												</svg>
+											</button>
+										</div>
+									{/each}
 								</div>
 							{/if}
 
@@ -1544,7 +1583,7 @@
 																if (enterPressed) {
 																	e.preventDefault();
 																	if (prompt !== '' || files.length > 0) {
-																		dispatch('submit', prompt);
+																		submitWithAnnotations();
 																	}
 																}
 															}
