@@ -19,15 +19,15 @@ test('BrowserView binds the annotate shortcut', () => {
 
 const mi = readFileSync('src/lib/components/chat/MessageInput.svelte', 'utf8');
 
-test('MessageInput imports pendingAnnotations', () => {
-	assert.match(mi, /pendingAnnotations/);
+test('MessageInput subscribes to pendingAnnotations', () => {
+	assert.match(mi, /pendingAnnotations\.subscribe/);
 });
-test('MessageInput serializes annotations on submit', () => {
-	assert.match(mi, /serializeAnnotations\(/);
+test('MessageInput attaches the screenshot via inputFilesHandler', () => {
+	assert.match(mi, /inputFilesHandler\(\[dataUrlToFile/);
 });
-test('MessageInput clears annotations after submit', () => {
+test('MessageInput consumes annotations with clearAnnotations', () => {
 	assert.match(mi, /clearAnnotations\(\)/);
 });
-test('MessageInput shows an annotation chip', () => {
-	assert.match(mi, /\$pendingAnnotations\.length/);
+test('MessageInput folds the note/source ref into the prompt', () => {
+	assert.match(mi, /annotationRef\(a\)/);
 });
