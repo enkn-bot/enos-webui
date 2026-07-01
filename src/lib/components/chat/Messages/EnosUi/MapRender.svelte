@@ -1,7 +1,7 @@
 <script>
 	import { onMount, onDestroy } from 'svelte';
 
-	/** @type {{ key?: string, center?: number[], zoom?: number, markers?: {lng:number,lat:number,label?:string}[], title?: string, route?: number[][], summary?: {modeVerb?:string,distance?:string,duration?:string,via?:string}, steps?: string[], places?: {name:string,category?:string,distance?:string,address?:string,hours?:string,lng:number,lat:number}[] }} */
+	/** @type {{ key?: string, center?: number[], zoom?: number, markers?: {lng:number,lat:number,label?:string}[], title?: string, route?: number[][], summary?: {modeVerb?:string,distance?:string,duration?:string,via?:string}, steps?: string[], places?: {name:string,category?:string,distance?:string,address?:string,hours?:string,lng:number,lat:number}[], area?: number[][], reach?: {duration?:string,modeVerb?:string} }} */
 	export let data = {};
 
 	// Nearby variant: server-authored `places` (TomTom POI fields only — no
@@ -83,6 +83,36 @@
 				};
 				if (mapInstance.isStyleLoaded && mapInstance.isStyleLoaded()) drawRoute();
 				else mapInstance.on('load', drawRoute);
+			}
+			// Optional reachable-range polygon (isochrone): shaded accent fill +
+			// dashed outline, per the map-primitives mockup.
+			const area = Array.isArray(data?.area) && data.area.length > 3 ? data.area : null;
+			if (area) {
+				const drawArea = () => {
+					if (!mapInstance || mapInstance.getSource('enos-area')) return;
+					const src = {
+						type: 'geojson',
+						data: { type: 'Feature', geometry: { type: 'Polygon', coordinates: [area] } }
+					};
+					mapInstance.addLayer({
+						id: 'enos-area',
+						type: 'fill',
+						source: src,
+						paint: { 'fill-color': '#e07a3f', 'fill-opacity': 0.16 }
+					});
+					mapInstance.addLayer({
+						id: 'enos-area-line',
+						type: 'line',
+						source: src,
+						paint: {
+							'line-color': '#e07a3f',
+							'line-width': 2,
+							'line-dasharray': [2, 1.6]
+						}
+					});
+				};
+				if (mapInstance.isStyleLoaded && mapInstance.isStyleLoaded()) drawArea();
+				else mapInstance.on('load', drawArea);
 			}
 			// The block renders mid-stream, so the map's initial tile paint often
 			// doesn't fire even though the container is already sized. An explicit
@@ -206,6 +236,17 @@
 					</span>
 					<b class="text-[15px] text-black dark:text-white">{data.summary.duration}</b>
 					<span class="text-gray-400">· {data.summary.distance}</span>
+				</div>
+			{:else if data?.reach}
+				<!-- floating reach pill (reachable range) -->
+				<div
+					class="absolute left-3 top-3 flex items-center gap-2 rounded-xl border border-gray-100/60 dark:border-gray-850/60 bg-white/95 dark:bg-black/80 px-3 py-1.5 text-sm shadow-sm backdrop-blur"
+				>
+					<span class="text-gray-400 text-xs uppercase tracking-wide">Reach</span>
+					<b class="text-[15px] text-black dark:text-white">{data.reach.duration}</b>
+					{#if data.reach.modeVerb}
+						<span class="text-gray-400">· {data.reach.modeVerb}</span>
+					{/if}
 				</div>
 			{/if}
 		</div>
