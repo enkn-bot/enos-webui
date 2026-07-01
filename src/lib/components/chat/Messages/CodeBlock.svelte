@@ -390,7 +390,7 @@
 				renderError = $i18n.t('Failed to render visualization') + `: ${errorMsg}`;
 				renderHTML = null;
 			}
-		} else if (lang === 'enos-ui' && (token?.raw ?? '').slice(-4).includes('```')) {
+		} else if (lang === 'enos-ui' && (token?.raw ?? '').trimEnd().endsWith('```')) {
 			// Models occasionally emit slightly-invalid JSON (missing/trailing comma,
 			// comments). Repair before giving up so a single slip never dumps raw JSON
 			// or breaks the render — beautiful + reliable every time.
@@ -474,7 +474,7 @@
 				</div>
 			{/if}
 		{:else if lang === 'enos-ui'}
-			{#if (token?.raw ?? '').slice(-4).includes('```')}
+			{#if (token?.raw ?? '').trimEnd().endsWith('```')}
 				{#if enosUiSpec !== null}
 					<EnosUiRender spec={enosUiSpec} />
 					{/if}
