@@ -1339,7 +1339,6 @@
 				? 'dark'
 				: 'light'
 			: 'light'}
-	richColors
 	position="top-right"
 	closeButton
 	toastOptions={toastOptions}

@@ -25,6 +25,11 @@ test('ENOS uses one notification visual system for Sonner and app update toasts'
 		/<Toaster[\s\S]*toastOptions=\{toastOptions\}/,
 		'The global Toaster should apply the ENOS toast style contract to ordinary toast.success/error/info calls'
 	);
+	assert.doesNotMatch(
+		rootLayout,
+		/\brichColors\b/,
+		'Ordinary toast.success/error/info calls should not use Sonner rich-color status cards'
+	);
 
 	assert.match(
 		appLayout,
