@@ -124,12 +124,72 @@
 <div class="rounded-2xl border border-gray-100/30 dark:border-gray-850/30 overflow-hidden flex flex-col">
 	{#if data?.title}
 		<div class="px-4 py-3 border-b border-gray-100/30 dark:border-gray-850/30">
-			<h2 class="text-sm font-semibold text-black dark:text-white">{data.title}</h2>
+			<h2
+				class="text-base font-semibold text-black dark:text-white"
+				style="font-family: 'ENOS Serif', Georgia, serif;"
+			>
+				{data.title}
+			</h2>
 		</div>
 	{/if}
 	{#if error}
 		<div class="p-4 text-sm text-gray-400 dark:text-gray-500 italic">{error}</div>
 	{:else}
-		<div bind:this={container} class="w-full" style="height: 360px;"></div>
+		<div class="relative">
+			<div bind:this={container} class="w-full" style="height: 360px;"></div>
+			{#if data?.summary}
+				<!-- floating distance/time pill (directions) -->
+				<div
+					class="absolute left-3 top-3 flex items-center gap-2 rounded-xl border border-gray-100/60 dark:border-gray-850/60 bg-white/95 dark:bg-black/80 px-3 py-1.5 text-sm shadow-sm backdrop-blur"
+				>
+					<span class="text-gray-400 text-xs uppercase tracking-wide">
+						{data.summary.modeVerb ?? 'Route'}
+					</span>
+					<b class="text-[15px] text-black dark:text-white">{data.summary.duration}</b>
+					<span class="text-gray-400">· {data.summary.distance}</span>
+				</div>
+			{/if}
+		</div>
+		{#if data?.summary}
+			<!-- summary row (directions) -->
+			<div
+				class="flex flex-wrap gap-x-7 gap-y-2 px-4 py-3 border-t border-gray-100/30 dark:border-gray-850/30 items-baseline"
+			>
+				<div>
+					<div class="text-[11px] uppercase tracking-wide text-gray-400">Distance</div>
+					<div class="text-lg font-semibold text-black dark:text-white">
+						{data.summary.distance}
+					</div>
+				</div>
+				<div>
+					<div class="text-[11px] uppercase tracking-wide text-gray-400">Time</div>
+					<div class="text-lg font-semibold text-black dark:text-white">
+						{data.summary.duration}
+					</div>
+				</div>
+				{#if data.summary.via}
+					<div class="ml-auto text-right text-gray-400 text-sm max-w-[45%]">
+						<div class="text-[11px] uppercase tracking-wide">Via</div>
+						{data.summary.via}
+					</div>
+				{/if}
+			</div>
+		{/if}
+		{#if data?.steps?.length}
+			<!-- collapsible turn-by-turn (directions) -->
+			<details class="border-t border-gray-100/30 dark:border-gray-850/30 group">
+				<summary
+					class="cursor-pointer list-none px-4 py-3 text-sm font-medium flex justify-between items-center select-none text-black dark:text-white"
+				>
+					<span>Turn-by-turn ({data.steps.length} steps)</span>
+					<span class="text-gray-400 transition-transform group-open:rotate-180">▾</span>
+				</summary>
+				<ol
+					class="px-4 pb-4 pl-9 text-sm leading-loose list-decimal marker:text-gray-400 text-black dark:text-white"
+				>
+					{#each data.steps as s}<li>{s}</li>{/each}
+				</ol>
+			</details>
+		{/if}
 	{/if}
 </div>
