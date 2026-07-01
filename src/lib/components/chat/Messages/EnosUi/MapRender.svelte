@@ -56,12 +56,16 @@
 				zoom: typeof data?.zoom === 'number' ? data.zoom : 14
 			});
 			mapInstance.addControl(new tt.NavigationControl());
-			// The block renders mid-stream, so the container often has no final
-			// height at init and TomTom paints an empty tile grid. Resize on load
-			// and whenever the container settles to its real dimensions.
-			mapInstance.on('load', () => mapInstance && mapInstance.resize());
+			// The block renders mid-stream, so the map's initial tile paint often
+			// doesn't fire even though the container is already sized. An explicit
+			// resize() kicks the tile fetch/repaint; call it on load, on a short
+			// timeout chain (unconditional — a no-op resize still triggers the
+			// paint), and whenever the container later reflows.
+			const kick = () => mapInstance && mapInstance.resize();
+			mapInstance.on('load', kick);
+			[0, 150, 400, 800].forEach((t) => setTimeout(kick, t));
 			if (typeof ResizeObserver !== 'undefined') {
-				resizeObserver = new ResizeObserver(() => mapInstance && mapInstance.resize());
+				resizeObserver = new ResizeObserver(kick);
 				resizeObserver.observe(container);
 			}
 			const markers =
