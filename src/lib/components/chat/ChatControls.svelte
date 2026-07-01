@@ -9,6 +9,7 @@
 	import { browser } from '$app/environment';
 	import { SvelteFlowProvider } from '@xyflow/svelte';
 	import { slide } from 'svelte/transition';
+	import type { Readable } from 'svelte/store';
 	import { Pane, PaneResizer } from 'paneforge';
 	import { v4 as uuidv4 } from 'uuid';
 
@@ -60,8 +61,11 @@
 	import { resolveCloudProjectRoot } from '$lib/enos/cloudFiles';
 	import { mergeCloudWorkspaceTerminalEntries } from '$lib/enos/cloudWorkspaceTerminal';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
+	import { pushRecentActivityShared } from '$lib/enos/recentActivity';
 
-	const i18n = getContext('i18n');
+	type I18nStore = Readable<{ t: (key: string, options?: Record<string, unknown>) => string }>;
+
+	const i18n = getContext<I18nStore>('i18n');
 
 	const DESK_CONTROL_TAB_ORDER = ['files'] satisfies ControlTab[];
 	const DEFAULT_CONTROL_TAB_ORDER = ['controls', 'files'] satisfies ControlTab[];
@@ -232,6 +236,30 @@
 			files = files.filter((f) => f.itemId !== tempItemId);
 			toast.error($i18n.t('Failed to attach file'));
 		}
+	};
+
+	const handleDeskFilePreview = (name: string, path: string) => {
+		if (effectiveFileFolderId && typeof localStorage !== 'undefined') {
+			pushRecentActivityShared(
+				localStorage,
+				effectiveFileFolderId,
+				{ kind: 'file', title: name, subtitle: path, timestamp: Date.now() },
+				Date.now()
+			);
+		}
+	};
+
+	// A Recent-list click (DeskDock) bubbles up here; LocalFileNav is slotted INTO
+	// DeskDock by us, not a child of it, so DeskDock can't reach it directly. We hold
+	// the target path and hand it to LocalFileNav via openPath/openToken — token bumps
+	// on every click (even re-clicking the same file) since a same-value prop change
+	// wouldn't otherwise re-trigger LocalFileNav's reactive open.
+	let pendingFileOpenPath: string | null = null;
+	let pendingFileOpenToken = 0;
+	const handleDeskOpenFile = (item: { subtitle?: string }) => {
+		if (!item.subtitle) return;
+		pendingFileOpenPath = item.subtitle;
+		pendingFileOpenToken += 1;
 	};
 
 	const handleProjectDigest = async (folderId: string, digest: EnosDesktopProjectDigest) => {
@@ -535,12 +563,20 @@
 					<Artifacts {history} />
 				{:else if isDeskSurface}
 					<!-- Desk: Codex-style tabbed dock -->
-					<DeskDock folderId={effectiveFileFolderId} {chatId}>
+					<DeskDock
+						folderId={effectiveFileFolderId}
+						{chatId}
+						onClose={() => showControls.set(false)}
+						onOpenFile={handleDeskOpenFile}
+					>
 						<svelte:fragment slot="files">
 							{#if showProjectFileNav}
 								<LocalFileNav
 									folderId={effectiveFileFolderId}
 									onAttach={handleTerminalAttach}
+									onPreview={handleDeskFilePreview}
+									openPath={pendingFileOpenPath}
+									openToken={pendingFileOpenToken}
 									onProjectDigest={handleProjectDigest}
 									onCopyToCloud={handleCopyLocalProjectToCloud}
 								/>
@@ -701,12 +737,19 @@
 						<Artifacts {history} overlay={dragged} />
 					{:else if isDeskSurface}
 						<!-- Desk: Codex-style tabbed dock -->
-						<DeskDock folderId={effectiveFileFolderId} {chatId}>
+						<DeskDock
+							folderId={effectiveFileFolderId}
+							{chatId}
+							onOpenFile={handleDeskOpenFile}
+						>
 							<svelte:fragment slot="files">
 								{#if showProjectFileNav}
 									<LocalFileNav
 										folderId={effectiveFileFolderId}
 										onAttach={handleTerminalAttach}
+										onPreview={handleDeskFilePreview}
+										openPath={pendingFileOpenPath}
+										openToken={pendingFileOpenToken}
 										onProjectDigest={handleProjectDigest}
 										onCopyToCloud={handleCopyLocalProjectToCloud}
 									/>

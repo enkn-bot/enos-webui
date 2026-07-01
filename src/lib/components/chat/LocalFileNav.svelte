@@ -44,6 +44,16 @@
 		folderId: string,
 		workspace: EnosDesktopWorkspace
 	) => void | Promise<void> = () => {};
+	// Fired whenever a file is opened/previewed in this browser (not just when it's
+	// attached to a chat) — the "recently touched files" signal for the Desk dock's
+	// Recent list. `path` is the project-relative path (needed to reopen this exact
+	// file later — `name` alone can't disambiguate same-named files in other folders).
+	export let onPreview: (name: string, path: string) => void = () => {};
+	// Set by a Recent-list click elsewhere in Desk: jump straight to this file. Paired
+	// with `openToken` (bump on every click, even re-clicking the same path) since
+	// Svelte only re-runs a reactive block when a referenced value actually changes.
+	export let openPath: string | null = null;
+	export let openToken = 0;
 
 	let bridge: EnosDesktopBridge | null = null;
 	let workspace: EnosDesktopWorkspace | null = null;
@@ -232,12 +242,35 @@
 		try {
 			selectedFile = await bridge.readFile(entry.path, folderId);
 			editContent = selectedFile.encoding === 'utf8' ? selectedFile.data : '';
+			onPreview(entry.name, entry.path);
 		} catch (e) {
 			error = friendlyDesktopError(e);
 		} finally {
 			fileLoading = false;
 		}
 	};
+
+	// Jump directly to a project-relative path (Recent-list click). Reuses the same
+	// error surface as the regular browse-and-open flow — a moved/deleted file just
+	// shows the existing red error banner, no separate UI needed.
+	const openPathDirectly = async (path: string) => {
+		if (!bridge) return;
+		fileLoading = true;
+		error = null;
+		try {
+			selectedFile = await bridge.readFile(path, folderId);
+			editContent = selectedFile.encoding === 'utf8' ? selectedFile.data : '';
+		} catch (e) {
+			selectedFile = null;
+			error = friendlyDesktopError(e);
+		} finally {
+			fileLoading = false;
+		}
+	};
+
+	$: if (openToken && openPath && bridge && workspace) {
+		void openPathDirectly(openPath);
+	}
 
 	const attachSelectedFile = async () => {
 		if (!selectedFile) return;

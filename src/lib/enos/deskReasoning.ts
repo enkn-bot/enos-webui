@@ -29,6 +29,33 @@ export const reasoningGist = (text: string, maxLen = 140): string => {
 	return gist;
 };
 
+/**
+ * Pull the reasoning chain-of-thought OUT of a message body's
+ * `<details type="reasoning">…</details>` block, stripped of its `<summary>`
+ * and the leading blockquote (`> `) markers, so it can be rendered as plain
+ * prose nested inside the status tray (Chat surface). Returns '' when the
+ * message carries no reasoning block. Mirrors reasoningGist's `>`-stripping.
+ */
+const decodeEntities = (text: string): string =>
+	text
+		.replace(/&gt;/g, '>')
+		.replace(/&lt;/g, '<')
+		.replace(/&quot;/g, '"')
+		.replace(/&#x27;/g, "'")
+		.replace(/&#39;/g, "'")
+		.replace(/&apos;/g, "'")
+		.replace(/&amp;/g, '&');
+
+export const extractReasoningText = (content: string): string => {
+	const m = /<details\s+type="reasoning"[^>]*>([\s\S]*?)<\/details>/i.exec(content ?? '');
+	if (!m) return '';
+	// Decode entities FIRST so the HTML-escaped blockquote markers ("&gt; ") become
+	// real ">" and then strip cleanly; &amp; is decoded last to avoid double-decode.
+	return decodeEntities(m[1].replace(/<summary>[\s\S]*?<\/summary>/i, ''))
+		.replace(/^\s*>+\s?/gm, '')
+		.trim();
+};
+
 const blockquote = (text: string): string =>
 	text
 		.split('\n')
