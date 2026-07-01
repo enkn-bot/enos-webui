@@ -99,7 +99,7 @@ describe('ENOS UI cleanup source ownership', () => {
 		const placeholder = read('src/lib/components/chat/Placeholder.svelte');
 
 		expect(placeholder).toMatch(
-			/Project view:[\s\S]*class="m-auto w-full max-w-6xl px-2 @2xl:px-20 translate-y-12 py-24 text-center"/
+			/Project view:[\s\S]*class="m-auto w-full max-w-6xl px-2 @2xl:px-20 translate-y-14 py-24 text-center"/
 		);
 		expect(placeholder).toMatch(
 			/Greeting view[\s\S]*class="m-auto w-full max-w-6xl px-2 @2xl:px-20 translate-y-6 py-24 text-center"/
