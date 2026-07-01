@@ -2,10 +2,12 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
 import { viteStaticCopy } from 'vite-plugin-static-copy';
+import { svelteTesting } from '@testing-library/svelte/vite';
 
 export default defineConfig({
 	plugins: [
 		sveltekit(),
+		svelteTesting(),
 		viteStaticCopy({
 			targets: [
 				{
@@ -26,6 +28,7 @@ export default defineConfig({
 	// Scope vitest to src/ — test/*.test.mjs are node:test files run via `node --test`,
 	// not vitest, and would otherwise fail collection with "No test suite found".
 	test: {
+		environment: 'jsdom',
 		include: ['src/**/*.{test,spec}.{js,ts}']
 	},
 	worker: {
