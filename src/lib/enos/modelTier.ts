@@ -3,6 +3,11 @@ export type EnosOrbTone = 'orange' | 'coral' | 'teal' | 'sage' | 'all';
 const MODEL_TONE_BY_ID = new Map<string, EnosOrbTone>([
 	['enos.subconscious', 'orange'],
 	['enos.desk.subconscious', 'orange'],
+	['enos.conscious', 'coral'],
+	['enos.desk.conscious', 'coral'],
+	['enos.ego', 'teal'],
+	['enos.desk.ego', 'teal'],
+	// back-compat: pre-rename ids kept as aliases so old saved chats still tint.
 	['enos.mind', 'coral'],
 	['enos.desk.mind', 'coral'],
 	['enos.deepmind', 'teal'],

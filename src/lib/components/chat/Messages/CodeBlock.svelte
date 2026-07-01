@@ -20,6 +20,7 @@
 	import CodeEditor from '$lib/components/common/CodeEditor.svelte';
 	import SvgPanZoom from '$lib/components/common/SVGPanZoom.svelte';
 	import EnosUiRender from './EnosUi/EnosUiRender.svelte';
+	import { jsonrepair } from 'jsonrepair';
 
 	import ChevronUp from '$lib/components/icons/ChevronUp.svelte';
 	import ChevronUpDown from '$lib/components/icons/ChevronUpDown.svelte';
@@ -389,11 +390,18 @@
 				renderError = $i18n.t('Failed to render visualization') + `: ${errorMsg}`;
 				renderHTML = null;
 			}
-		} else if (lang === 'enos-ui' && (token?.raw ?? '').slice(-4).includes('```')) {
+		} else if (lang === 'enos-ui' && (token?.raw ?? '').trimEnd().endsWith('```')) {
+			// Models occasionally emit slightly-invalid JSON (missing/trailing comma,
+			// comments). Repair before giving up so a single slip never dumps raw JSON
+			// or breaks the render — beautiful + reliable every time.
 			try {
 				enosUiSpec = JSON.parse(code.trim());
 			} catch (e) {
-				enosUiSpec = null;
+				try {
+					enosUiSpec = JSON.parse(jsonrepair(code.trim()));
+				} catch (e2) {
+					enosUiSpec = null;
+				}
 			}
 		}
 	};
@@ -466,15 +474,11 @@
 				</div>
 			{/if}
 		{:else if lang === 'enos-ui'}
-			{#if (token?.raw ?? '').slice(-4).includes('```')}
+			{#if (token?.raw ?? '').trimEnd().endsWith('```')}
 				{#if enosUiSpec !== null}
 					<EnosUiRender spec={enosUiSpec} />
-				{:else}
-					<!-- fence closed but JSON parse failed: show raw code -->
-					<div class="p-3">
-						<pre class="text-sm font-mono whitespace-pre-wrap overflow-x-auto text-gray-700 dark:text-gray-300">{code}</pre>
-					</div>
-				{/if}
+					{/if}
+				<!-- fence closed but JSON unrepairable: render nothing (never dump raw JSON) -->
 			{:else}
 				<!-- fence still open (streaming): lightweight skeleton -->
 				<div

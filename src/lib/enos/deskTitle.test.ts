@@ -37,7 +37,7 @@ describe('ENOS Desk title generation', () => {
 			chatId: 'chat-1',
 			folderId: 'folder-1',
 			currentTitle: 'New Chat',
-			modelId: 'enos.mind',
+			modelId: 'enos.conscious',
 			userPrompt: 'scores for the brazil game',
 			assistantContent: 'Brazil won 3-0.',
 			generateTitle,
@@ -47,7 +47,7 @@ describe('ENOS Desk title generation', () => {
 			notifyFolderChatsChanged
 		});
 
-		expect(generateTitle).toHaveBeenCalledWith('tok', 'enos.mind', [
+		expect(generateTitle).toHaveBeenCalledWith('tok', 'enos.conscious', [
 			{ role: 'user', content: 'scores for the brazil game' },
 			{ role: 'assistant', content: 'Brazil won 3-0.' }
 		]);
@@ -69,7 +69,7 @@ describe('ENOS Desk title generation', () => {
 			chatId: 'chat-1',
 			folderId: null,
 			currentTitle: 'Existing title',
-			modelId: 'enos.mind',
+			modelId: 'enos.conscious',
 			userPrompt: 'hello',
 			assistantContent: 'hi',
 			generateTitle,
