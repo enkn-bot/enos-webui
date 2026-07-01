@@ -922,6 +922,8 @@ describe('ENOS Desk UI source guardrails', () => {
 		const dock = read('src/lib/components/enos/DeskDock.svelte');
 
 		expect(dock).toContain('{#if state.tabs.length > 0 || onClose}');
+		expect(dock).toContain('px-6 pt-0 pb-8');
+		expect(dock).not.toContain('px-6 pt-4 pb-8');
 		expect(dock).toContain("{$i18n.t('Open')}</span>");
 		expect(dock).toContain("{$i18n.t('Recent')}");
 		expect(dock).not.toContain('uppercase tracking-widest');

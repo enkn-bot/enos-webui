@@ -383,7 +383,7 @@
 	<!-- Body -->
 	<div class="flex-1 min-h-0 relative">
 		{#if showPicker || !activeTab}
-			<div class="h-full flex justify-center items-start px-6 pt-4 pb-8 overflow-y-auto">
+			<div class="h-full flex justify-center items-start px-6 pt-0 pb-8 overflow-y-auto">
 				<div class="w-full max-w-sm flex flex-col gap-5">
 					<div class="flex flex-col gap-1">
 						<button
