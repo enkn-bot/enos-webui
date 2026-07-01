@@ -95,6 +95,17 @@ describe('ENOS UI cleanup source ownership', () => {
 		expect(appCss).toMatch(/\.enos-landing-title\s*\{[^}]*font-size:/);
 	});
 
+	test('project landing sits on the same visual band as the welcome landing', () => {
+		const placeholder = read('src/lib/components/chat/Placeholder.svelte');
+
+		expect(placeholder).toMatch(
+			/Project view:[\s\S]*class="m-auto w-full max-w-6xl px-2 @2xl:px-20 translate-y-12 py-24 text-center"/
+		);
+		expect(placeholder).toMatch(
+			/Greeting view[\s\S]*class="m-auto w-full max-w-6xl px-2 @2xl:px-20 translate-y-6 py-24 text-center"/
+		);
+	});
+
 	test('decorative emojis are removed from empty states and settings chrome', () => {
 		const emptyStateFiles = [
 			'src/routes/(app)/automations/+page.svelte',
