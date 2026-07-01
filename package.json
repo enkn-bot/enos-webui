@@ -115,6 +115,7 @@
 		"i18next-resources-to-backend": "^1.2.0",
 		"idb": "^7.1.1",
 		"js-sha256": "^0.10.1",
+		"jsonrepair": "^3.14.1",
 		"jspdf": "^4.0.0",
 		"jszip": "^3.10.1",
 		"katex": "^0.16.22",
