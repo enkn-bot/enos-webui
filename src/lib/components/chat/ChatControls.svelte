@@ -27,6 +27,8 @@
 		showFileNavDir,
 		showLocalFileFolderId,
 		pendingTrayOpen,
+		pendingDeskBrowserUrl,
+		pendingDeskFileOpenPath,
 		selectedFolder,
 		selectedTerminalId,
 		user
@@ -46,6 +48,7 @@
 	import FileNav from './FileNav.svelte';
 	import LocalFileNav from './LocalFileNav.svelte';
 	import DeskDock from '$lib/components/enos/DeskDock.svelte';
+	import type { DeskDockTabType } from '$lib/enos/tabDock';
 	import PyodideFileNav from './PyodideFileNav.svelte';
 	import Overview from './Overview.svelte';
 	import XMark from '../icons/XMark.svelte';
@@ -105,6 +108,12 @@
 	let canApplyInitialTab = false;
 	let hasAppliedInitialTab = false;
 	let applyingPendingTrayOpen = false;
+	let pendingDockOpenType: DeskDockTabType | null = null;
+	let pendingDockOpenToken = 0;
+	let pendingDockOpenUrl: string | null = null;
+	let pendingDockOpenUrlToken = 0;
+	let lastDeskBrowserUrlToken = 0;
+	let lastDeskFileOpenToken = 0;
 
 	$: hasMessages = history?.messages && Object.keys(history.messages).length > 0;
 
@@ -140,6 +149,7 @@
 	$: showProjectFileNav = showLocalFileNav && Boolean(effectiveFileFolderId);
 	$: showDeskProjectFilesEmpty = showLocalFileNav && !effectiveFileFolderId;
 	$: showFilesTab =
+		isDeskSurface ||
 		showLocalFileNav ||
 		showActiveTerminalFileNav ||
 		showGenericTerminalFileNav ||
@@ -262,6 +272,23 @@
 		pendingFileOpenToken += 1;
 	};
 
+	$: if (
+		$pendingDeskFileOpenPath &&
+		$pendingDeskFileOpenPath.token !== lastDeskFileOpenToken
+	) {
+		lastDeskFileOpenToken = $pendingDeskFileOpenPath.token;
+		pendingFileOpenPath = $pendingDeskFileOpenPath.path;
+		pendingFileOpenToken += 1;
+		pendingDeskFileOpenPath.set(null);
+	}
+
+	$: if ($pendingDeskBrowserUrl && $pendingDeskBrowserUrl.token !== lastDeskBrowserUrlToken) {
+		lastDeskBrowserUrlToken = $pendingDeskBrowserUrl.token;
+		pendingDockOpenUrl = $pendingDeskBrowserUrl.url;
+		pendingDockOpenUrlToken += 1;
+		pendingDeskBrowserUrl.set(null);
+	}
+
 	const handleProjectDigest = async (folderId: string, digest: EnosDesktopProjectDigest) => {
 		if (!folderId) {
 			return;
@@ -369,16 +396,22 @@
 		}
 	};
 
+	const isDeskDockTab = (tab: PendingTrayOpenTab): tab is DeskDockTabType =>
+		tab === 'browser' || tab === 'terminal' || tab === 'files';
+
 	const resolveTrayTab = (requestedTab: PendingTrayOpenTab): ControlTab | null => {
+		if (isDeskSurface && isDeskDockTab(requestedTab)) {
+			return visibleControlTabs.includes('files') ? 'files' : null;
+		}
 		if (requestedTab === 'default') {
 			return visibleControlTabs[0] ?? null;
 		}
 
-		return visibleControlTabs.includes(requestedTab) ? requestedTab : null;
+		return visibleControlTabs.includes(requestedTab as ControlTab) ? (requestedTab as ControlTab) : null;
 	};
 
 	const isWaitingForTrayTab = (requestedTab: PendingTrayOpenTab) =>
-		requestedTab === 'files' && isDeskSurface && desktopCapabilities === undefined;
+		isDeskSurface && isDeskDockTab(requestedTab) && desktopCapabilities === undefined;
 
 	export const openTray = async (requestedTab: PendingTrayOpenTab = 'default') => {
 		const tab = resolveTrayTab(requestedTab);
@@ -391,6 +424,10 @@
 
 		activeTab = tab;
 		savedTab = tab;
+		if (isDeskSurface && isDeskDockTab(requestedTab)) {
+			pendingDockOpenType = requestedTab;
+			pendingDockOpenToken += 1;
+		}
 		showControls.set(true);
 
 		await tick();
@@ -566,6 +603,10 @@
 					<DeskDock
 						folderId={effectiveFileFolderId}
 						{chatId}
+						openType={pendingDockOpenType}
+						openToken={pendingDockOpenToken}
+						openUrl={pendingDockOpenUrl}
+						openUrlToken={pendingDockOpenUrlToken}
 						onClose={() => showControls.set(false)}
 						onOpenFile={handleDeskOpenFile}
 					>
@@ -740,6 +781,11 @@
 						<DeskDock
 							folderId={effectiveFileFolderId}
 							{chatId}
+							openType={pendingDockOpenType}
+							openToken={pendingDockOpenToken}
+							openUrl={pendingDockOpenUrl}
+							openUrlToken={pendingDockOpenUrlToken}
+							onClose={() => showControls.set(false)}
 							onOpenFile={handleDeskOpenFile}
 						>
 							<svelte:fragment slot="files">

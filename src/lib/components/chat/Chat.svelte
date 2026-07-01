@@ -52,7 +52,11 @@
 		showLocalFileFolderId,
 		showLocalFilePath,
 		chatRequestQueues,
-		desktopEvent
+		desktopEvent,
+		requestTrayOpen,
+		requestDeskTerminalInput,
+		requestDeskBrowserUrl,
+		requestDeskFileOpenPath
 	} from '$lib/stores';
 
 	import { WEBUI_API_BASE_URL } from '$lib/constants';
@@ -154,6 +158,8 @@
 	import { applyDeskProjectFileRuntime } from '$lib/enos/deskProjectRuntime';
 	import { maybeGenerateDeskChatTitle } from '$lib/enos/deskTitle';
 	import { normalizeChatTitleEventData } from '$lib/enos/chatTitleEvents';
+	import { deskTrayIntentFromPrompt } from '$lib/enos/deskTrayIntent';
+	import { deskActionIntentFromPrompt } from '$lib/enos/deskActionIntent';
 
 	export let chatIdProp = '';
 
@@ -2385,10 +2391,46 @@
 		return true;
 	};
 
-
 	const handleProjectChatAction = async (userPrompt) => {
 		try {
 			if (!isDeskSurface()) return false;
+
+			const deskActionIntent = deskActionIntentFromPrompt(userPrompt);
+			if (deskActionIntent) {
+				if (deskActionIntent.kind === 'terminal-input') {
+					requestTrayOpen('terminal');
+					requestDeskTerminalInput(deskActionIntent.input);
+					await createLocalProjectActionMessage(
+						userPrompt,
+						`Sent to Terminal:\n\n\`${deskActionIntent.input.trim()}\``
+					);
+				} else if (deskActionIntent.kind === 'browser-url') {
+					requestTrayOpen('browser');
+					requestDeskBrowserUrl(deskActionIntent.url);
+					await createLocalProjectActionMessage(
+						userPrompt,
+						`Opened in Browser:\n\n${deskActionIntent.url}`
+					);
+				} else {
+					requestTrayOpen('files');
+					requestDeskFileOpenPath(deskActionIntent.path);
+					await createLocalProjectActionMessage(
+						userPrompt,
+						`Opened in Files:\n\n\`${deskActionIntent.path}\``
+					);
+				}
+				return true;
+			}
+
+			const trayIntent = deskTrayIntentFromPrompt(userPrompt);
+			if (trayIntent) {
+				requestTrayOpen(trayIntent);
+				await createLocalProjectActionMessage(
+					userPrompt,
+					`Opened the ${trayIntent === 'terminal' ? 'Terminal' : trayIntent === 'browser' ? 'Browser' : 'Files'} tab.`
+				);
+				return true;
+			}
 
 			// F2: the welcome IS the empty state — Desk no longer pre-creates a project.
 			// When the first message lands with no project selected, create + select it

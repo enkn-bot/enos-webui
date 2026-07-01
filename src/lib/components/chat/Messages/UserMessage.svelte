@@ -18,6 +18,7 @@
 	import DeleteConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
 	import PastedTextCard from '../PastedTextCard.svelte';
 	import { isPastedTextFile } from '$lib/enos/pastedText';
+	import { stripSerializedAnnotationsForDisplay } from '$lib/enos/annotation';
 
 	import localizedFormat from 'dayjs/plugin/localizedFormat';
 
@@ -56,6 +57,9 @@
 	let editScrollContainer: HTMLDivElement;
 
 	let message = structuredClone(history.messages[messageId]);
+	const isAnnotationFile = (file: any) =>
+		file?.annotation === true || (file?.name ?? '').startsWith('annotation-');
+	let displayContent = '';
 	$: if (history.messages) {
 		const source = history.messages[messageId];
 		if (source) {
@@ -66,6 +70,7 @@
 			}
 		}
 	}
+	$: displayContent = stripSerializedAnnotationsForDisplay(message?.content ?? '');
 
 	const copyToClipboard = async (text) => {
 		const res = await _copyToClipboard(text);
@@ -199,11 +204,42 @@
 		<div class="chat-{message.role} w-full min-w-full markdown-prose">
 			{#if edit !== true}
 				{#if message.files}
+					{@const annotationFiles = message.files.filter(isAnnotationFile)}
+					{#if annotationFiles.length > 0}
+						<div class="mb-2 flex flex-col items-end gap-2">
+							<div class="flex flex-wrap justify-end gap-2">
+								{#each annotationFiles as file}
+									{@const fileUrl =
+										file.url?.startsWith('data') || file.url?.startsWith('http')
+											? file.url
+											: `${WEBUI_API_BASE_URL}/files/${file.url}${file?.content_type ? '/content' : ''}`}
+									<img
+										src={fileUrl}
+										alt=""
+										class="h-20 w-32 rounded-xl object-cover border border-gray-100 dark:border-gray-800 shadow-sm"
+									/>
+								{/each}
+							</div>
+							<div
+								class="inline-flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-850 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-100 shadow-sm"
+							>
+								<svg viewBox="0 0 16 16" fill="currentColor" class="size-4 text-gray-500 dark:text-gray-300">
+									<path d="M2.5 3A1.5 1.5 0 0 1 4 1.5h8A1.5 1.5 0 0 1 13.5 3v6A1.5 1.5 0 0 1 12 10.5H6.7l-2.9 2.4A.5.5 0 0 1 3 12.5V10.5A1.5 1.5 0 0 1 2.5 9V3Z" />
+								</svg>
+								<span>{annotationFiles.length} annotation{annotationFiles.length > 1 ? 's' : ''}</span>
+							</div>
+						</div>
+					{/if}
+				{/if}
+
+				{#if message.files}
+					{@const regularFiles = message.files.filter((file) => !isAnnotationFile(file))}
+					{#if regularFiles.length > 0}
 					<div
 						class="mb-1 w-full flex flex-col justify-end overflow-x-auto gap-1 flex-wrap"
 						dir={$settings?.chatDirection ?? 'auto'}
 					>
-						{#each message.files as file}
+						{#each regularFiles as file}
 							{@const fileUrl =
 								file.url?.startsWith('data') || file.url?.startsWith('http')
 									? file.url
@@ -226,6 +262,7 @@
 							</div>
 						{/each}
 					</div>
+					{/if}
 				{/if}
 			{/if}
 
@@ -364,7 +401,7 @@
 						</div>
 					</div>
 				</div>
-			{:else if message.content !== ''}
+			{:else if displayContent !== ''}
 				<div class="w-full">
 					<div class="flex {($settings?.chatBubble ?? true) ? 'justify-end pb-1' : 'w-full'}">
 						<div
@@ -374,17 +411,17 @@
 									}`
 								: ' w-full'}"
 						>
-							{#if message.content}
+							{#if displayContent}
 								{#if $settings?.renderMarkdownInUserMessages ?? true}
 									<Markdown
 										id={`${chatId}-${message.id}`}
-										content={message.content}
+										content={displayContent}
 										{editCodeBlock}
 										{topPadding}
 									/>
 									{:else}
 										<div class="whitespace-pre-wrap" dir={$settings?.chatDirection ?? 'auto'}>
-											{message.content}
+											{displayContent}
 										</div>
 									{/if}
 								{/if}

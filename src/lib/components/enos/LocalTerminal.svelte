@@ -8,6 +8,7 @@
 
 	import { getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 	import { resolveTerminalTheme, resolveTerminalFont } from '$lib/enos/terminalTheme';
+	import { pendingDeskTerminalInput } from '$lib/stores';
 
 	export let folderId: string | null = null;
 	export let overlay = false;
@@ -21,8 +22,25 @@
 	let offExit: (() => void) | null = null;
 	let termBg = resolveTerminalTheme().background;
 	let themeObserver: MutationObserver | null = null;
+	let lastTerminalInputToken = 0;
 
 	const localTerminal = () => getEnosDesktopBridge()?.localTerminal ?? null;
+	const writeTerminalError = (message: string) => {
+		term?.write(`\r\n\x1b[31m${message}\x1b[0m\r\n`);
+	};
+
+	$: if (
+		$pendingDeskTerminalInput &&
+		sessionId &&
+		$pendingDeskTerminalInput.token !== lastTerminalInputToken
+	) {
+		lastTerminalInputToken = $pendingDeskTerminalInput.token;
+		const lt = localTerminal();
+		if (lt) {
+			void lt.write(sessionId, $pendingDeskTerminalInput.input);
+			pendingDeskTerminalInput.set(null);
+		}
+	}
 
 	onMount(async () => {
 		term = new Terminal({
@@ -40,7 +58,7 @@
 
 		const lt = localTerminal();
 		if (!lt) {
-			term.write('\r\n\x1b[31mLocal terminal is only available in the ENOS desktop app.\x1b[0m\r\n');
+			writeTerminalError('Local terminal is only available in the ENOS desktop app.');
 			return;
 		}
 
@@ -67,7 +85,13 @@
 		// which sends a resize frame to the PTY, so the prompt/cursor render at the
 		// correct width — without ever gating startup on the (occasionally throwing)
 		// fit() call.
-		await lt.start(sessionId, folderId, term.cols, term.rows);
+		try {
+			await lt.start(sessionId, folderId, term.cols, term.rows);
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err ?? 'Unknown terminal error');
+			writeTerminalError(`Local terminal failed to start: ${message}`);
+			return;
+		}
 
 		term.onData((data) => {
 			if (sessionId) lt.write(sessionId, data);

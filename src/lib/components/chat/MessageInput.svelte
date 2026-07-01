@@ -72,7 +72,7 @@
 	import Tooltip from '../common/Tooltip.svelte';
 	import FileItem from '../common/FileItem.svelte';
 	import { pendingAnnotations, removeAnnotation, clearAnnotations } from '$lib/stores/annotations';
-	import { serializeAnnotations } from '$lib/enos/annotation';
+	import { annotationImageFile, serializeAnnotations } from '$lib/enos/annotation';
 	import Image from '../common/Image.svelte';
 	import Spinner from '../common/Spinner.svelte';
 	import PastedTextCard from './PastedTextCard.svelte';
@@ -146,19 +146,13 @@
 
 	// Browser annotations arrive via the pendingAnnotations store. Consume each
 	// Browser annotations live in the pendingAnnotations store and render as a
-	// chip on the composer (Codex style). On send, their actionable refs
-	// (selector + source:line + note) are prepended to the message for the
-	// coding agent; the screenshot stays display-only and is never serialized.
+	// chip on the composer. On send, metadata is prepended for the model and
+	// screenshots are attached as image files so the chat turn has vision context.
 	const submitWithAnnotations = () => {
 		const merged = serializeAnnotations($pendingAnnotations, prompt);
-		// SEE mode: a non-instrumented element (no source file) → attach its
-		// screenshot so the turn routes to the vision seat. EDIT mode (source
-		// present) stays text-only → the coding agent edits the file:line from
-		// the serialized metadata, no image needed.
-		for (const a of $pendingAnnotations) {
-			if (!a.source && a.image) {
-				files = [...files, { type: 'image', url: a.image, name: `annotation-${a.id}.png` }];
-			}
+		const annotationFiles = $pendingAnnotations.map(annotationImageFile).filter(Boolean);
+		if (annotationFiles.length > 0) {
+			files = [...files, ...annotationFiles];
 		}
 		clearAnnotations();
 		dispatch('submit', merged);
@@ -1335,9 +1329,20 @@
 							{/if}
 
 							{#if $pendingAnnotations.length > 0}
-								<div class="mx-2 mt-2.5 relative group w-fit">
+								<div class="mx-2 mt-2.5 relative group w-fit flex flex-col items-start gap-2">
+									{#if $pendingAnnotations.some((a) => a.image)}
+										<div class="flex items-center gap-1.5">
+											{#each $pendingAnnotations.filter((a) => a.image).slice(0, 3) as a (a.id)}
+												<img
+													src={a.image}
+													alt=""
+													class="h-14 w-20 shrink-0 rounded-xl object-cover border border-gray-100 dark:border-gray-800 shadow-sm"
+												/>
+											{/each}
+										</div>
+									{/if}
 									<div
-										class="flex items-center gap-1.5 pl-2 pr-1.5 py-1 rounded-lg text-sm font-medium border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-850 text-gray-700 dark:text-gray-200"
+										class="flex items-center gap-1.5 pl-2.5 pr-1.5 py-1.5 rounded-full text-sm font-medium border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 text-gray-700 dark:text-gray-100 shadow-sm"
 									>
 										<svg viewBox="0 0 16 16" fill="currentColor" class="size-4 text-gray-400">
 											<path d="M2.5 3A1.5 1.5 0 0 1 4 1.5h8A1.5 1.5 0 0 1 13.5 3v6A1.5 1.5 0 0 1 12 10.5H6.7l-2.9 2.4A.5.5 0 0 1 3 12.5V10.5A1.5 1.5 0 0 1 2.5 9V3Z" />

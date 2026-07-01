@@ -401,6 +401,19 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(nav).not.toContain('{deskTitleLabel()}');
 	});
 
+	test('desk tab requests are handled before project-file agent routing', () => {
+		const chat = read('src/lib/components/chat/Chat.svelte');
+		const intentIndex = chat.indexOf('const trayIntent = deskTrayIntentFromPrompt(userPrompt);');
+		const folderGateIndex = chat.indexOf('if (!$selectedFolder?.id)');
+		const agentLoopIndex = chat.indexOf('const outcome = await runDeskAgentLoop');
+
+		expect(chat).toContain("import { deskTrayIntentFromPrompt } from '$lib/enos/deskTrayIntent';");
+		expect(chat).toContain('requestTrayOpen(trayIntent);');
+		expect(intentIndex).toBeGreaterThan(-1);
+		expect(folderGateIndex).toBeGreaterThan(intentIndex);
+		expect(agentLoopIndex).toBeGreaterThan(intentIndex);
+	});
+
 	test('project menu stays project-scoped and does not expose GitHub plumbing', () => {
 		const menu = read('src/lib/components/enos/DeskProjectMenu.svelte');
 
@@ -884,6 +897,25 @@ describe('ENOS Desk UI source guardrails', () => {
 		// Browser entry is Electron-only.
 		expect(dock).toContain('getEnosDesktopBridge');
 		expect(dock).toMatch(/\{#if[^}]*hasBrowser[\s\S]*Browser/);
+
+		// The add-tab menu is measured against the viewport so it cannot clip against
+		// the narrow dock edge.
+		expect(dock).toContain('positionAddTabMenu');
+		expect(dock).toContain('getBoundingClientRect()');
+		expect(dock).toContain('position:fixed;left:');
+		const addTabMenuBlock =
+			dock.match(/\{#if showDropdown\}[\s\S]*?\{#if onClose\}/)?.[0] ?? '';
+		expect(addTabMenuBlock).toContain('style={addTabMenuStyle}');
+		expect(addTabMenuBlock).not.toContain('absolute right-0 top-full');
+	});
+
+	test('Desk dock repairs stale active tab state instead of showing the Open picker with tabs', () => {
+		const dock = read('src/lib/components/enos/DeskDock.svelte');
+
+		expect(dock).toContain('repairActiveTabState');
+		expect(dock).toContain('state.tabs.length > 0 && (showPicker || !activeTab)');
+		expect(dock).toMatch(/state\.tabs\[state\.tabs\.length - 1\]\?\.id/);
+		expect(dock).toContain('showPicker = false;');
 	});
 
 	test('Desk right-pane renders the DeskDock; web keeps the legacy tab bar', () => {
@@ -930,19 +962,23 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(local).toContain('getEnosDesktopBridge');
 		expect(local).toContain('.localTerminal');
 		expect(local).toContain('crypto.randomUUID()');
+		expect(local).toContain('writeTerminalError');
+		expect(local).toContain('Local terminal failed to start');
 		expect(local).not.toContain('new WebSocket');
 	});
 
-	test('dock terminal tab uses LocalTerminal for local projects, XTerminal otherwise', () => {
+	test('dock terminal tab uses LocalTerminal when no cloud terminal is selected', () => {
 		const dock = read('src/lib/components/enos/DeskDock.svelte');
 
 		expect(dock).toContain("import LocalTerminal from './LocalTerminal.svelte';");
-		expect(dock).toContain("import { selectedFolder } from '$lib/stores';");
-		// Local-project detection from the active folder's context source.
-		expect(dock).toContain("project_context_source?.kind === 'local'");
+		expect(dock).toContain("import { selectedFolder, selectedTerminalId } from '$lib/stores';");
+		// Desktop Local mode can have a bridge and a workspace even when older
+		// folder metadata lacks project_context_source.kind='local'.
+		expect(dock).toContain('hasBrowser && !$selectedTerminalId');
+		expect(dock).not.toContain("project_context_source?.kind === 'local'");
 		// Terminal arm branches local → LocalTerminal, else → XTerminal.
 		expect(dock).toMatch(
-			/tab\.type === 'terminal'[\s\S]*isLocalProject[\s\S]*<LocalTerminal[\s\S]*<XTerminal/
+			/tab\.type === 'terminal'[\s\S]*usesLocalTerminal[\s\S]*<LocalTerminal[\s\S]*<XTerminal/
 		);
 	});
 

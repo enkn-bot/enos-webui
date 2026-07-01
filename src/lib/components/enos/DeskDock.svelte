@@ -1,6 +1,6 @@
 <!-- src/lib/components/enos/DeskDock.svelte -->
 <script lang="ts">
-	import { getContext } from 'svelte';
+	import { getContext, tick } from 'svelte';
 	import { flip } from 'svelte/animate';
 	import type { Readable } from 'svelte/store';
 	import {
@@ -35,7 +35,7 @@
 	import ChevronRight from '$lib/components/icons/ChevronRight.svelte';
 	import EllipsisHorizontal from '$lib/components/icons/EllipsisHorizontal.svelte';
 	import ChevronDown from '$lib/components/icons/ChevronDown.svelte';
-	import { selectedFolder } from '$lib/stores';
+	import { selectedFolder, selectedTerminalId } from '$lib/stores';
 
 	type I18nStore = Readable<{ t: (key: string, options?: Record<string, unknown>) => string }>;
 
@@ -49,6 +49,10 @@
 	// Desktop's PaneResizer usage leaves this undefined: the header's panel toggle is
 	// always reachable there, and this button would be redundant chrome.
 	export let onClose: (() => void) | undefined = undefined;
+	export let openType: DeskDockTabType | null = null;
+	export let openToken = 0;
+	export let openUrl: string | null = null;
+	export let openUrlToken = 0;
 	// Recent-file rows only carry a path (project-relative) — actually reopening the
 	// file lives in LocalFileNav, a sibling slotted INTO this component by the caller
 	// (ChatControls), not a child we can reach directly. So a click here just switches
@@ -62,13 +66,17 @@
 	let openSectionExpanded = true;
 	let openMenuItemId: string | null = null;
 	let lastFolderId: string | null | undefined = undefined;
+	let lastOpenToken = 0;
+	let lastOpenUrlToken = 0;
+	let addTabButtonEl: HTMLButtonElement | null = null;
+	let addTabMenuStyle = '';
 
 	$: hasBrowser = Boolean(getEnosDesktopBridge());
 
-	// Local projects get a real local shell (LocalTerminal); cloud/configured
-	// projects keep the WebSocket-based XTerminal.
-	$: isLocalProject =
-		hasBrowser && $selectedFolder?.data?.project_context_source?.kind === 'local';
+	// Desktop Local mode has a real local shell even when older folder rows lack
+	// project_context_source.kind='local'. A selected terminal id means the user is
+	// intentionally using a cloud/configured terminal instead.
+	$: usesLocalTerminal = hasBrowser && !$selectedTerminalId;
 
 	// Load persisted state when the active project changes. Loose chats
 	// (folderId null) keep an in-memory dock that is never persisted.
@@ -101,6 +109,37 @@
 		showPicker = false;
 		showDropdown = false;
 		persist();
+	};
+
+	const openBrowserUrl = (url: string) => {
+		let next = addTab(state, 'browser');
+		const browserTab = next.tabs.find((t) => t.type === 'browser');
+		if (browserTab) {
+			next = setTabUrl(next, browserTab.id, url);
+		}
+		state = next;
+		showPicker = false;
+		showDropdown = false;
+		persist();
+	};
+
+	const positionAddTabMenu = () => {
+		if (typeof window === 'undefined' || !addTabButtonEl) return;
+		const rect = addTabButtonEl.getBoundingClientRect();
+		const width = 160;
+		const margin = 8;
+		const left = Math.min(Math.max(margin, rect.right - width), window.innerWidth - width - margin);
+		const top = Math.min(rect.bottom + 4, window.innerHeight - margin);
+		addTabMenuStyle = `position:fixed;left:${left}px;top:${top}px;width:${width}px;`;
+	};
+
+	const toggleAddTabMenu = async () => {
+		showDropdown = !showDropdown;
+		if (showDropdown) {
+			positionAddTabMenu();
+			await tick();
+			positionAddTabMenu();
+		}
 	};
 
 	const select = (id: string) => {
@@ -139,7 +178,29 @@
 	const tabLabel = (type: DeskDockTabType) =>
 		type === 'terminal' ? 'Terminal' : type === 'browser' ? 'Browser' : 'Files';
 
+	const repairActiveTabState = () => {
+		if (state.tabs.length === 0) return;
+		const nextActiveId = activeTab?.id ?? state.tabs[state.tabs.length - 1]?.id ?? null;
+		if (!nextActiveId) return;
+		if (state.activeId !== nextActiveId) {
+			state = { ...state, activeId: nextActiveId };
+		}
+		showPicker = false;
+		persist();
+	};
+
 	$: activeTab = state.tabs.find((t) => t.id === state.activeId) ?? null;
+	$: if (state.tabs.length > 0 && (showPicker || !activeTab)) {
+		repairActiveTabState();
+	}
+	$: if (openToken !== lastOpenToken && openType) {
+		lastOpenToken = openToken;
+		open(openType);
+	}
+	$: if (openUrlToken !== lastOpenUrlToken && openUrl) {
+		lastOpenUrlToken = openUrlToken;
+		openBrowserUrl(openUrl);
+	}
 
 	// Pointer-based tab reorder (NOT HTML5 drag-and-drop, which forces a flat
 	// ghost image without the tab's rounded corners). The real tab element
@@ -282,16 +343,20 @@
 			     normal "add another tab" behaviour. -->
 			<div class="relative">
 				<button
+					bind:this={addTabButtonEl}
 					type="button"
 					class="p-1 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-					on:click={() => { showDropdown = !showDropdown; }}
+					on:click={toggleAddTabMenu}
 					aria-label={$i18n.t('New tab')}
 				>
 					<Plus className="size-4" />
 				</button>
 				{#if showDropdown}
-					<div class="fixed inset-0 z-10" on:click={() => (showDropdown = false)} role="presentation" />
-					<div class="absolute right-0 top-full mt-1 z-20 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden py-1 min-w-[9rem]">
+					<div class="fixed inset-0 z-30" on:click={() => (showDropdown = false)} role="presentation" />
+					<div
+						class="z-40 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden py-1"
+						style={addTabMenuStyle}
+					>
 						{#if hasBrowser}
 							<button type="button" class="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" on:click={() => open('browser')}>{$i18n.t('Browser')}</button>
 						{/if}
@@ -304,7 +369,7 @@
 		{#if onClose}
 			<button
 				type="button"
-				class="ml-auto p-1 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 shrink-0"
+				class="ml-auto size-8 flex items-center justify-center rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 shrink-0"
 				on:click={onClose}
 				aria-label={$i18n.t('Close')}
 			>
@@ -457,7 +522,7 @@
 				class="absolute inset-0 {tab.id === state.activeId && !showPicker ? '' : 'hidden'}"
 			>
 				{#if tab.type === 'terminal'}
-					{#if isLocalProject}
+					{#if usesLocalTerminal}
 						<LocalTerminal folderId={$selectedFolder?.id ?? null} />
 					{:else}
 						<XTerminal {chatId} />

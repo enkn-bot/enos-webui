@@ -9,7 +9,7 @@ export type Annotation = {
 	rect: { x: number; y: number; w: number; h: number };
 	url: string;
 	note: string;
-	image?: string; // dataURL element screenshot — chip/card thumbnail only, never sent
+	image?: string; // dataURL element screenshot used as a chat image attachment
 };
 
 // Computed-CSS values that carry no signal — drop them from the model payload.
@@ -41,8 +41,21 @@ export const annotationRef = (a: Annotation): string => {
 	return `↳ ${a.selector}${src}${note}`;
 };
 
+export const annotationImageFile = (a: Annotation) =>
+	a.image
+		? {
+				type: 'image',
+				url: a.image,
+				name: `annotation-${a.id}.png`,
+				annotation: true,
+				annotationId: a.id,
+				annotationSelector: a.selector,
+				annotationNote: a.note
+			}
+		: null;
+
 // Prepend rich annotation blocks (text, model-actionable) to the user's draft on
-// send. The screenshot is NOT serialized — it's display-only in the chip.
+// send. The screenshot itself travels as an image file attachment.
 export const serializeAnnotations = (list: Annotation[], draft: string): string => {
 	if (list.length === 0) return draft;
 
@@ -62,5 +75,9 @@ export const serializeAnnotations = (list: Annotation[], draft: string): string 
 		})
 		.join('\n\n');
 
-	return draft ? `${blocks}\n\n${draft}` : blocks;
+	const payload = `<annotations>\n${blocks}\n</annotations>`;
+	return draft ? `${payload}\n\n${draft}` : payload;
 };
+
+export const stripSerializedAnnotationsForDisplay = (content = ''): string =>
+	content.replace(/^<annotations>\n[\s\S]*?\n<\/annotations>\s*/m, '').trimStart();

@@ -110,8 +110,16 @@ export const showLocalFilePath: Writable<string> = writable('.');
 export const showDeskFolderPicker: Writable<boolean> = writable(false);
 export const selectedTerminalId: Writable<string | null> = writable(null);
 export type ControlPaneTab = 'overview' | 'controls' | 'files';
-export type PendingTrayOpenTab = ControlPaneTab | 'default';
+export type DeskTrayTab = 'browser' | 'terminal';
+export type PendingTrayOpenTab = ControlPaneTab | DeskTrayTab | 'default';
 export const pendingTrayOpen: Writable<PendingTrayOpenTab | null> = writable(null);
+export type DeskTerminalInputRequest = { input: string; token: number };
+export type DeskBrowserUrlRequest = { url: string; token: number };
+export type DeskFileOpenPathRequest = { path: string; token: number };
+let deskActionRequestToken = 0;
+export const pendingDeskTerminalInput: Writable<DeskTerminalInputRequest | null> = writable(null);
+export const pendingDeskBrowserUrl: Writable<DeskBrowserUrlRequest | null> = writable(null);
+export const pendingDeskFileOpenPath: Writable<DeskFileOpenPathRequest | null> = writable(null);
 export const trayTabForSurface = (isDeskSurface: boolean): PendingTrayOpenTab =>
 	isDeskSurface ? 'files' : 'default';
 export const requestTrayOpen = (tab: PendingTrayOpenTab) => {
@@ -119,6 +127,15 @@ export const requestTrayOpen = (tab: PendingTrayOpenTab) => {
 };
 export const requestTrayOpenForSurface = (isDeskSurface: boolean) => {
 	requestTrayOpen(trayTabForSurface(isDeskSurface));
+};
+export const requestDeskTerminalInput = (input: string) => {
+	pendingDeskTerminalInput.set({ input, token: ++deskActionRequestToken });
+};
+export const requestDeskBrowserUrl = (url: string) => {
+	pendingDeskBrowserUrl.set({ url, token: ++deskActionRequestToken });
+};
+export const requestDeskFileOpenPath = (path: string) => {
+	pendingDeskFileOpenPath.set({ path, token: ++deskActionRequestToken });
 };
 
 export const artifactCode = writable(null);

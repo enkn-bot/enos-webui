@@ -258,8 +258,13 @@
 		fileLoading = true;
 		error = null;
 		try {
+			const parent = path.includes('/') ? path.split('/').slice(0, -1).join('/') : '.';
+			if (parent !== currentPath) {
+				await loadDir(parent || '.');
+			}
 			selectedFile = await bridge.readFile(path, folderId);
 			editContent = selectedFile.encoding === 'utf8' ? selectedFile.data : '';
+			onPreview(selectedFile.name, selectedFile.path);
 		} catch (e) {
 			selectedFile = null;
 			error = friendlyDesktopError(e);
@@ -671,7 +676,7 @@
 						<li
 							class="flex items-center gap-2 pl-3 pr-3 hover:bg-gray-50 dark:hover:bg-gray-800 {selectedFile?.path ===
 							entry.path
-								? 'bg-gray-50 dark:bg-gray-800'
+								? 'bg-gray-100 dark:bg-gray-800/90 ring-1 ring-inset ring-gray-200 dark:ring-gray-700'
 								: ''}"
 						>
 							<button

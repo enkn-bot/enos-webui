@@ -34,4 +34,12 @@ describe('pending tray open requests', () => {
 
 		expect(get(pendingTrayOpen)).toBe('overview');
 	});
+
+	test('allows explicit Desk dock tab requests', () => {
+		requestTrayOpen('terminal');
+		expect(get(pendingTrayOpen)).toBe('terminal');
+
+		requestTrayOpen('browser');
+		expect(get(pendingTrayOpen)).toBe('browser');
+	});
 });
