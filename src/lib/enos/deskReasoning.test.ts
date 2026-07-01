@@ -1,6 +1,47 @@
 import { describe, expect, test } from 'vitest';
 
-import { buildDeskReasoningBlock, composeDeskMessageContent, reasoningGist } from './deskReasoning';
+import {
+	buildDeskReasoningBlock,
+	composeDeskMessageContent,
+	extractReasoningText,
+	reasoningGist
+} from './deskReasoning';
+
+describe('extractReasoningText', () => {
+	test('no reasoning block -> empty', () => {
+		expect(extractReasoningText('Just the answer.')).toBe('');
+		expect(extractReasoningText('')).toBe('');
+	});
+
+	test('pulls CoT, strips summary + blockquote markers', () => {
+		const body =
+			'<details type="reasoning" done="true" duration="3">\n' +
+			'<summary>Thought for 3 seconds</summary>\n' +
+			'> We need to answer the question.\n' +
+			'> Source 2 says Canada. Ensure direct answer.\n' +
+			'</details>\n' +
+			'Morocco played Canada next.';
+		const out = extractReasoningText(body);
+		expect(out).toBe('We need to answer the question.\nSource 2 says Canada. Ensure direct answer.');
+		expect(out).not.toContain('<summary>');
+		expect(out).not.toContain('>');
+	});
+
+	test('decodes HTML entities (escaped blockquote + quotes/apostrophes)', () => {
+		const body =
+			'<details type="reasoning" done="true">\n' +
+			'<summary>Thought</summary>\n' +
+			'&gt; We need to answer: &quot;Who did Morocco play next?&quot;\n' +
+			'&gt; Morocco&#x27;s match. Ensure direct answer.\n' +
+			'</details>';
+		const out = extractReasoningText(body);
+		expect(out).toContain('We need to answer: "Who did Morocco play next?"');
+		expect(out).toContain("Morocco's match.");
+		expect(out).not.toContain('&gt;');
+		expect(out).not.toContain('&quot;');
+		expect(out).not.toContain('&#x27;');
+	});
+});
 
 describe('reasoningGist', () => {
 	test('empty in, empty out', () => {

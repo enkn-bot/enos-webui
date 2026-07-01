@@ -13,8 +13,15 @@
 	export let compactDesk = false;
 	export let modelId = null;
 	export let answerPresent = false;
+	// Chat surface only: the model's chain-of-thought, lifted out of the message
+	// body by ResponseMessage so it nests INSIDE this one status tray instead of
+	// rendering its own competing "Ensure direct answer." header. '' on Desk.
+	export let reasoningText = '';
 
 	let showHistory = true;
+	let showReasoning = false;
+
+	$: hasReasoning = !!(reasoningText && reasoningText.trim());
 
 	// Restrained "who is acting" color: tint ONLY the live (in-progress) indicator dot
 	// to the active mind's orb tone (Subconscious/Conscious/Ego). Null for unknown/idle
@@ -102,8 +109,8 @@
 	$: headerDone = answerPresent || status?.done === true;
 </script>
 
-{#if history && history.length > 0 && status}
-	{#if status?.hidden !== true}
+{#if (history && history.length > 0 && status) || hasReasoning}
+	{#if status?.hidden !== true || hasReasoning}
 		{#if compactDesk}
 			{#if !answerPresent}
 			<!-- Desk, live: always-visible operational feed WHILE the turn streams, so a
@@ -180,20 +187,36 @@
 				</div>
 			{/if}
 		{:else}
+			{@const expandable = feedHistory.length > 1 || hasReasoning}
+			<!-- Chat: ONE tray. Top header = the status outcome ("Retrieved 5 sources"),
+			     or "Thought process" when the turn only reasoned. The model's full
+			     chain-of-thought is nested INSIDE on expand (not a second header). -->
 			<div class="text-sm flex flex-col w-full">
 				<button
-					class="w-full"
+					class="w-full flex items-center gap-1.5 text-left"
 					aria-label={$i18n.t('Toggle status history')}
 					aria-expanded={showHistory}
 					on:click={() => {
 						showHistory = !showHistory;
 					}}
 				>
-					<StatusItem {status} done={headerDone} />
+					{#if status}
+						<StatusItem {status} done={headerDone} />
+					{:else}
+						<span class="text-gray-500 dark:text-gray-500 text-base">{$i18n.t('Thought process')}</span>
+					{/if}
+					{#if expandable}
+						<ChevronDown
+							className="size-3.5 shrink-0 text-gray-400 dark:text-gray-600 transition-transform {showHistory
+								? 'rotate-180'
+								: ''}"
+							strokeWidth="2.5"
+						/>
+					{/if}
 				</button>
 
-				{#if showHistory}
-					<div class="flex flex-row">
+				{#if showHistory && expandable}
+					<div class="mt-1 flex flex-col gap-1">
 						{#if feedHistory.length > 1}
 							<div class="w-full">
 								{#each displayHistory as historyItem, idx}
@@ -221,6 +244,41 @@
 									</div>
 								{/each}
 							</div>
+						{/if}
+
+						{#if hasReasoning}
+							{#if status}
+								<!-- nested sub-collapsible only when a status header is present;
+								     reasoning-only turns already say "Thought process" on top. -->
+								<div class="ml-1">
+									<button
+										class="flex items-center gap-1.5 text-left text-gray-500 dark:text-gray-500"
+										aria-expanded={showReasoning}
+										on:click={() => (showReasoning = !showReasoning)}
+									>
+										<span class="text-sm">{$i18n.t('Thought process')}</span>
+										<ChevronDown
+											className="size-3 shrink-0 text-gray-400 dark:text-gray-600 transition-transform {showReasoning
+												? 'rotate-180'
+												: ''}"
+											strokeWidth="2.5"
+										/>
+									</button>
+									{#if showReasoning}
+										<div
+											class="mt-1 whitespace-pre-wrap text-gray-500 dark:text-gray-500 text-sm leading-relaxed max-h-80 overflow-y-auto pr-2"
+										>
+											{reasoningText}
+										</div>
+									{/if}
+								</div>
+							{:else}
+								<div
+									class="whitespace-pre-wrap text-gray-500 dark:text-gray-500 text-sm leading-relaxed max-h-80 overflow-y-auto pr-2"
+								>
+									{reasoningText}
+								</div>
+							{/if}
 						{/if}
 					</div>
 				{/if}

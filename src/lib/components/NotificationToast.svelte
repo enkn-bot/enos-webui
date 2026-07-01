@@ -10,6 +10,7 @@
 	const dispatch = createEventDispatcher();
 
 	export let onClick: Function = () => {};
+	export let onClose: Function = () => {};
 	export let title: string = 'HI';
 	export let content: string;
 	export let action: { label: string; onClick: () => Promise<void> | void } | null = null;
@@ -23,10 +24,12 @@
 
 	const clickHandler = () => {
 		onClick();
+		onClose();
 		dispatch('closeToast');
 	};
 
 	const closeHandler = () => {
+		onClose();
 		dispatch('closeToast');
 	};
 
@@ -97,8 +100,10 @@
 </script>
 
 <div
-	role="status"
+	role="button"
 	aria-live="polite"
+	aria-label={title ? `Open notification: ${title}` : 'Open notification'}
+	tabindex="0"
 	class="group relative flex gap-2.5 text-left min-w-[var(--width)] w-full dark:bg-gray-850 dark:text-white bg-white text-black border border-gray-100 dark:border-gray-800 rounded-3xl px-4 py-3.5 cursor-pointer select-none"
 	on:dragstart|preventDefault
 	on:pointerdown={onPointerDown}

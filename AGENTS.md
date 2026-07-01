@@ -79,6 +79,39 @@ Evolving state (roadmap, latest live changes) is in `../enos/ENOS_DESK_PLAN.md` 
 
 ---
 
+## 3a. Concurrency: more than one session/agent may be in this tree
+
+This repo is worked from **multiple Claude/Codex sessions in parallel**, often in the
+same checkout. Editing the same working tree concurrently is fine — the danger is
+**building and deploying** from it: `npm run build` bundles whatever is on disk at that
+moment (yours AND anyone else's uncommitted edits), and `rsync --delete` to `soraia-a1`
+overwrites the previous deploy outright. Two sessions racing to build+deploy from the
+same tree is how a finished, verified fix gets silently replaced by a stale or
+half-finished one — it happened (2026-07-01: an unrelated in-progress notification-system
+change got bundled into a deploy of Desk dock work by a different session, then a third
+build overwrote *that*; no source was lost, but two live deploys were briefly wrong).
+
+**Before you build+deploy, always check first:**
+```
+git status --short        # anything you didn't touch? someone else is in this tree.
+git worktree list         # already-isolated sessions show up here
+```
+- If `git status` is clean except your own files → building from the main tree is fine.
+- If it shows files you don't recognize → **do not** `npm run build`/rsync from here.
+  Isolate: `git worktree add --detach <tmp-path> HEAD`, copy *only your* changed files
+  into it (`cp` each one — worktrees start from a commit, not the dirty working tree),
+  build + rsync from there. Leaves the shared tree and the other session's edits
+  completely untouched.
+- Committing your work as soon as it's verified (small, atomic, per §0/§4) shrinks the
+  window where it's sitting uncommitted and vulnerable to being swept into someone
+  else's build — it doesn't prevent a race, but it means recovery is `git diff`, not
+  reconstruction.
+- After deploying, don't just trust the `rsync` exit code — confirm the live hash
+  actually matches what you built: compare `grep -oE 'start\.[A-Za-z0-9_-]+\.js'` between
+  your local `build/index.html` and `curl -s https://<host>/` (see incident above for why).
+
+---
+
 ## 4. Definition of Done
 
 - [ ] Tests pass (and written for new logic — TDD).
@@ -97,6 +130,8 @@ If any box is unchecked, it is **not done** — report what remains.
 - **Mutation-capability gate** that broke Desk file creation — the dialog is the gate.
 - **Duplicate agent loop** — there is exactly one (`deskAgentLoop.ts`).
 - **Half-finished, uncommitted multi-file changes** a reviewer had to triage. Finish or clean up.
+- **Building/deploying from a shared dirty tree** — a concurrent session's uncommitted
+  work got bundled into a deploy, then overwritten by a third build. See §3a.
 
 ---
 

@@ -66,6 +66,7 @@
 	import FullHeightIframe from '$lib/components/common/FullHeightIframe.svelte';
 	import OutputEditView from './OutputEditView.svelte';
 	import { isDeskHostname } from '$lib/enos/deskRuntime';
+	import { extractReasoningText } from '$lib/enos/deskReasoning';
 
 	interface MessageType {
 		id: string;
@@ -195,7 +196,17 @@
 	let showRateComment = false;
 
 	$: displayFiles = message.files?.filter((f) => ['image', 'file'].includes(f.type)) ?? [];
-	$: displayContent = (message.content ?? '').replaceAll(RESEARCH_OFFER_MARKER, '');
+	// Chat surface: lift the model's reasoning OUT of the message body so it does
+	// not render its own second collapsible header ("Ensure direct answer." — the
+	// trailing-sentence gist) stacked under the status tray. Instead it is nested
+	// INSIDE the status tray (see StatusHistory reasoningText), leaving exactly one
+	// clean top line ("Retrieved 5 sources"). Desk keeps the inline reasoning block.
+	$: reasoningText = isDeskSurface ? '' : extractReasoningText(message.content ?? '');
+	$: displayContent = (() => {
+		let c = (message.content ?? '').replaceAll(RESEARCH_OFFER_MARKER, '');
+		if (reasoningText) c = removeDetails(c, ['reasoning']);
+		return c;
+	})();
 	$: hasOffer = (message.content ?? '').includes(RESEARCH_OFFER_MARKER) && message.done === true;
 	$: usageTooltipContent = (message as any).usage
 		? `<pre>${sanitizeResponseContent(
@@ -719,6 +730,7 @@
 									compactDesk={isDeskSurface}
 									modelId={message?.model}
 									answerPresent={message?.done === true}
+									{reasoningText}
 								/>
 							{/if}
 
