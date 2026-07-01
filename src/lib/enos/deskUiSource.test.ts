@@ -918,6 +918,15 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(dock).toContain('showPicker = false;');
 	});
 
+	test('Desk dock picker does not reserve tab-strip space and keeps title-case labels', () => {
+		const dock = read('src/lib/components/enos/DeskDock.svelte');
+
+		expect(dock).toContain('{#if state.tabs.length > 0 || onClose}');
+		expect(dock).toContain("{$i18n.t('Open')}</span>");
+		expect(dock).toContain("{$i18n.t('Recent')}");
+		expect(dock).not.toContain('uppercase tracking-widest');
+	});
+
 	test('Desk right-pane renders the DeskDock; web keeps the legacy tab bar', () => {
 		const chatControls = read('src/lib/components/chat/ChatControls.svelte');
 		const fileNav = read('src/lib/components/chat/FileNav.svelte');

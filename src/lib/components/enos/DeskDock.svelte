@@ -302,7 +302,8 @@
 
 <div class="flex flex-col h-full min-h-0">
 	<!-- Tab strip -->
-	<div class="flex items-center gap-1 px-2 pt-2 pb-2 shrink-0">
+	{#if state.tabs.length > 0 || onClose}
+		<div class="flex items-center gap-1 px-2 pt-2 pb-2 shrink-0">
 		<div class="flex gap-1 min-w-0 scrollbar-hidden" style:overflow-x={dragId ? 'clip' : 'auto'}>
 			{#each state.tabs as tab (tab.id)}
 				<div
@@ -376,7 +377,8 @@
 				<XMark className="size-4" strokeWidth="1.5" />
 			</button>
 		{/if}
-	</div>
+		</div>
+	{/if}
 
 	<!-- Body -->
 	<div class="flex-1 min-h-0 relative">
@@ -386,7 +388,7 @@
 					<div class="flex flex-col gap-1">
 						<button
 							type="button"
-							class="w-full flex items-center gap-2 px-1 py-1 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest"
+							class="w-full flex items-center gap-2 px-1 py-1 text-xs font-medium text-gray-400 dark:text-gray-500"
 							on:click={() => (openSectionExpanded = !openSectionExpanded)}
 							aria-expanded={openSectionExpanded}
 						>
@@ -454,7 +456,7 @@
 					{#if recentItems.length > 0}
 						<div class="flex flex-col gap-1">
 							<div class="flex items-center justify-between px-1">
-								<p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+								<p class="text-xs font-medium text-gray-400 dark:text-gray-500">
 									{$i18n.t('Recent')}
 								</p>
 								<button
