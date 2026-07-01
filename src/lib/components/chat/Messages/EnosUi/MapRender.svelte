@@ -6,6 +6,7 @@
 
 	let container;
 	let mapInstance = null;
+	let resizeObserver = null;
 	let error = '';
 
 	const SDK_VERSION = '6.25.0';
@@ -55,6 +56,14 @@
 				zoom: typeof data?.zoom === 'number' ? data.zoom : 14
 			});
 			mapInstance.addControl(new tt.NavigationControl());
+			// The block renders mid-stream, so the container often has no final
+			// height at init and TomTom paints an empty tile grid. Resize on load
+			// and whenever the container settles to its real dimensions.
+			mapInstance.on('load', () => mapInstance && mapInstance.resize());
+			if (typeof ResizeObserver !== 'undefined') {
+				resizeObserver = new ResizeObserver(() => mapInstance && mapInstance.resize());
+				resizeObserver.observe(container);
+			}
 			const markers =
 				Array.isArray(data?.markers) && data.markers.length
 					? data.markers
@@ -70,6 +79,12 @@
 	});
 
 	onDestroy(() => {
+		if (resizeObserver) {
+			try {
+				resizeObserver.disconnect();
+			} catch (e) {}
+			resizeObserver = null;
+		}
 		if (mapInstance) {
 			try {
 				mapInstance.remove();
