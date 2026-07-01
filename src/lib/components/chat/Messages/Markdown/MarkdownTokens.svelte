@@ -26,6 +26,14 @@
 	import HtmlToken from './HTMLToken.svelte';
 	import Clipboard from '$lib/components/icons/Clipboard.svelte';
 	import ColonFenceBlock from './ColonFenceBlock.svelte';
+	import { isChatSurface } from '$lib/enos/deskRuntime';
+
+	// On the chat surface, the model's RAW reasoning ("Structuring the JSON output",
+	// tool/JSON mechanics) must never surface — users see only the contextual status
+	// summaries (Searching/Reading/Composing…), not internal process. Desk/Terminal
+	// (coding surfaces) keep reasoning visible. Status phrases are separate events,
+	// unaffected by this.
+	const HIDE_REASONING = isChatSurface();
 
 	export let id: string;
 	export let tokens: Token[];
@@ -56,7 +64,13 @@
 		return 'h' + depth;
 	};
 
-	const GROUPABLE_DETAIL_TYPES = new Set(['tool_calls', 'reasoning', 'code_interpreter']);
+	const GROUPABLE_DETAIL_TYPES = new Set(
+		HIDE_REASONING ? ['tool_calls', 'code_interpreter'] : ['tool_calls', 'reasoning', 'code_interpreter']
+	);
+
+	// True for a details token carrying raw model reasoning we suppress on chat.
+	const isHiddenReasoning = (t: any) =>
+		HIDE_REASONING && t?.type === 'details' && t?.attributes?.type === 'reasoning';
 
 	const isGroupableDetailToken = (token: Token & { attributes?: { type?: string } }) => {
 		return token?.type === 'details' && GROUPABLE_DETAIL_TYPES.has(token?.attributes?.type ?? '');
@@ -434,6 +448,8 @@
 				{/each}
 			</div>
 		</ConsecutiveDetailsGroup>
+	{:else if token.type === 'details' && isHiddenReasoning(token)}
+		<!-- raw model reasoning suppressed on the chat surface (see HIDE_REASONING) -->
 	{:else if token.type === 'details'}
 		{@const textContent = getDetailTextContent(token)}
 
