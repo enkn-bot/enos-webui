@@ -21,6 +21,65 @@ describe('projectContextSourceFromDigest', () => {
 			skippedCount: 1
 		});
 	});
+
+	it('preserves a known cloud home when returning to local', () => {
+		const result = projectContextSourceFromDigest(
+			{
+				rootName: 'Codex',
+				fileCount: 3,
+				sampledFileCount: 2,
+				skippedCount: 1,
+				text: '..',
+				generatedAt: 0
+			},
+			{
+				name: 'Codex',
+				rootDisplay: '/Users/ernestnyarko/Projects/Codex',
+				selectedAt: '2026-06-29T12:00:00.000Z'
+			},
+			{
+				kind: 'cloud',
+				rootName: 'Codex',
+				cloudPath: '/home/user/Codex',
+				workspaceId: 'ws-123',
+				importedBytes: 1234,
+				linkedHomes: {
+					local: {
+						rootName: 'Codex',
+						rootDisplay: '/Users/ernestnyarko/Projects/Codex'
+					},
+					cloud: {
+						rootName: 'Codex',
+						cloudPath: '/home/user/Codex',
+						workspaceId: 'ws-123',
+						importedBytes: 1234
+					}
+				}
+			}
+		);
+
+		expect(result).toEqual({
+			kind: 'local',
+			rootName: 'Codex',
+			rootDisplay: '/Users/ernestnyarko/Projects/Codex',
+			fileCount: 3,
+			sampledFileCount: 2,
+			skippedCount: 1,
+			linkedHomes: {
+				local: {
+					rootName: 'Codex',
+					rootDisplay: '/Users/ernestnyarko/Projects/Codex',
+					selectedAt: '2026-06-29T12:00:00.000Z'
+				},
+				cloud: {
+					rootName: 'Codex',
+					cloudPath: '/home/user/Codex',
+					workspaceId: 'ws-123',
+					importedBytes: 1234
+				}
+			}
+		});
+	});
 });
 
 describe('githubProjectContextSource', () => {

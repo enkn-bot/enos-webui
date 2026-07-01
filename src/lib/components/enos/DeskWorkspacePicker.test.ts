@@ -79,7 +79,7 @@ describe('Desk workspace picker source contract', () => {
 		expect(picker).toContain("isLocalActive = currentLocation === 'local'");
 		// The trigger chip reads the SAME reactive currentLocation via deskBadgeKind,
 		// exposed as a slot prop — one source feeds both menu checkmark and chip.
-		expect(picker).toContain('triggerKind = deskBadgeKind({ location: currentLocation');
+		expect(picker).toMatch(/triggerKind = deskBadgeKind\(\{[\s\S]*location: currentLocation/);
 		expect(picker).toContain('<slot {triggerKind}');
 		expect(picker).toMatch(/\{#if isLocalActive\}[\s\S]*<Check/);
 		expect(picker).not.toMatch(/\{#if isLocalBound\}[\s\S]*<Check/);
@@ -90,12 +90,26 @@ describe('Desk workspace picker source contract', () => {
 		const chat = read('src/lib/components/chat/Chat.svelte');
 
 		expect(picker).toContain('notifyDesktopBridgeActive');
-		expect(picker).toMatch(/selectLocal[\s\S]*notifyDesktopBridgeActive\(\)[\s\S]*await deactivateCloudWorkspace\(\)/);
+		expect(picker).toContain('restoreLocalWorkspaceToFolder');
+		expect(picker).toContain('chooseLocalWorkspaceForFolder');
+		expect(picker).toMatch(
+			/selectLocal[\s\S]*notifyDesktopBridgeActive\(\)[\s\S]*await deactivateCloudWorkspace\(\)/
+		);
 		expect(picker).toContain('deactivateCloudWorkspace');
 		expect(picker).toMatch(/selectLocal[\s\S]*await deactivateCloudWorkspace\(\)/);
 		expect(picker).toMatch(/deactivateCloudWorkspace[\s\S]*selectedTerminalId\.set\(null\)/);
 		expect(chat).toContain('handleDesktopBridgeActive');
 		expect(chat).toContain("window.addEventListener('enos:desktop-bridge-active'");
+	});
+
+	test('cloud-to-local switching does not use the generic rebind confirmation copy', () => {
+		const picker = read('src/lib/components/enos/DeskWorkspacePicker.svelte');
+
+		expect(picker).not.toContain('Work locally?');
+		expect(picker).not.toContain(
+			'ENOS Cloud files stay in ENOS Cloud until a local copy is added.'
+		);
+		expect(picker).toContain('Local folder not found');
 	});
 
 	test('project menu does not expose GitHub account or clone plumbing', () => {

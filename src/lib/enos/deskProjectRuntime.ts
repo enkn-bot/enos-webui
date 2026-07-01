@@ -7,6 +7,7 @@ type FolderLike = {
 	data?: {
 		project_context_source?: {
 			kind?: unknown;
+			workspaceId?: unknown;
 			[key: string]: unknown;
 		} | null;
 		[key: string]: unknown;
@@ -33,7 +34,12 @@ export const resolveDeskProjectFileRuntime = (
 		// Bug 1: opening a chat inside a cloud project must re-select its workspace — not
 		// just on folder-select — or the Files panel falls to the "select a project"
 		// empty state even though the project is active.
-		const workspaceId = args.cloudWorkspaceId ? String(args.cloudWorkspaceId) : null;
+		const sourceWorkspaceId =
+			typeof source?.workspaceId === 'string' && source.workspaceId.trim()
+				? source.workspaceId.trim()
+				: null;
+		const workspaceId =
+			sourceWorkspaceId ?? (args.cloudWorkspaceId ? String(args.cloudWorkspaceId) : null);
 		return {
 			kind: 'cloud',
 			...(folderId ? { folderId } : {}),
