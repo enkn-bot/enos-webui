@@ -52,7 +52,8 @@
 		showLocalFileFolderId,
 		showLocalFilePath,
 		chatRequestQueues,
-		desktopEvent
+		desktopEvent,
+		requestTrayOpen
 	} from '$lib/stores';
 
 	import { WEBUI_API_BASE_URL } from '$lib/constants';
@@ -154,6 +155,7 @@
 	import { applyDeskProjectFileRuntime } from '$lib/enos/deskProjectRuntime';
 	import { maybeGenerateDeskChatTitle } from '$lib/enos/deskTitle';
 	import { normalizeChatTitleEventData } from '$lib/enos/chatTitleEvents';
+	import { deskTrayIntentFromPrompt } from '$lib/enos/deskTrayIntent';
 
 	export let chatIdProp = '';
 
@@ -2389,6 +2391,16 @@
 	const handleProjectChatAction = async (userPrompt) => {
 		try {
 			if (!isDeskSurface()) return false;
+
+			const trayIntent = deskTrayIntentFromPrompt(userPrompt);
+			if (trayIntent) {
+				requestTrayOpen(trayIntent);
+				await createLocalProjectActionMessage(
+					userPrompt,
+					`Opened the ${trayIntent === 'terminal' ? 'Terminal' : trayIntent === 'browser' ? 'Browser' : 'Files'} tab.`
+				);
+				return true;
+			}
 
 			// F2: the welcome IS the empty state — Desk no longer pre-creates a project.
 			// When the first message lands with no project selected, create + select it

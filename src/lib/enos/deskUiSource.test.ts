@@ -401,6 +401,19 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(nav).not.toContain('{deskTitleLabel()}');
 	});
 
+	test('desk tab requests are handled before project-file agent routing', () => {
+		const chat = read('src/lib/components/chat/Chat.svelte');
+		const intentIndex = chat.indexOf('const trayIntent = deskTrayIntentFromPrompt(userPrompt);');
+		const folderGateIndex = chat.indexOf('if (!$selectedFolder?.id)');
+		const agentLoopIndex = chat.indexOf('const outcome = await runDeskAgentLoop');
+
+		expect(chat).toContain("import { deskTrayIntentFromPrompt } from '$lib/enos/deskTrayIntent';");
+		expect(chat).toContain('requestTrayOpen(trayIntent);');
+		expect(intentIndex).toBeGreaterThan(-1);
+		expect(folderGateIndex).toBeGreaterThan(intentIndex);
+		expect(agentLoopIndex).toBeGreaterThan(intentIndex);
+	});
+
 	test('project menu stays project-scoped and does not expose GitHub plumbing', () => {
 		const menu = read('src/lib/components/enos/DeskProjectMenu.svelte');
 
@@ -546,13 +559,39 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(modal).not.toContain('Open in the desktop app to create local projects.');
 	});
 
-	test('Projects header does not show a hover-fill button background', () => {
+	test('Projects and Chats headers do not show a hover-fill button background', () => {
 		const sidebar = read('src/lib/components/layout/Sidebar.svelte');
 		const folder = read('src/lib/components/common/Folder.svelte');
+		const folderHeaderById = (id: string) => {
+			const idIndex = sidebar.indexOf(`id="${id}"`);
+			if (idIndex === -1) return '';
+			return sidebar.slice(sidebar.lastIndexOf('<Folder', idIndex), sidebar.indexOf('>', idIndex) + 1);
+		};
+		const projectsHeader = folderHeaderById('sidebar-folders');
+		const deskChatsHeader = folderHeaderById('desk-chats');
+		const chatSurfaceChatsHeader = folderHeaderById('sidebar-chats');
 
 		expect(folder).toContain('export let headerHover = true;');
 		expect(folder).toMatch(/headerHover[\s\S]*hover:bg-gray-100 dark:hover:bg-gray-900/);
-		expect(sidebar).toMatch(/name=\{\$i18n\.t\('Projects'\)\}[\s\S]*headerHover=\{false\}/);
+		expect(projectsHeader).toContain('name={$i18n.t(\'Projects\')}');
+		expect(projectsHeader).toContain('headerHover={false}');
+		expect(deskChatsHeader).toContain('name={$i18n.t(DESK_CHATS_GROUP_NAME)}');
+		expect(deskChatsHeader).toContain('headerHover={false}');
+		expect(chatSurfaceChatsHeader).toContain("name={$i18n.t('Chats')}");
+		expect(chatSurfaceChatsHeader).toContain('headerHover={false}');
+	});
+
+	test('Desk navbar hides Controls button while the right pane is open', () => {
+		const navbar = read('src/lib/components/chat/Navbar.svelte');
+
+		expect(navbar).toContain('isDeskSurface && !$showControls &&');
+	});
+
+	test('root layout imports the Electron app data store it writes to', () => {
+		const layout = read('src/routes/+layout.svelte');
+
+		expect(layout).toMatch(/appData,[\s\S]*\} from '\$lib\/stores';/);
+		expect(layout).toContain('appData.set(data);');
 	});
 
 	test('project menu uses session language on Desk', () => {
@@ -884,6 +923,46 @@ describe('ENOS Desk UI source guardrails', () => {
 		// Browser entry is Electron-only.
 		expect(dock).toContain('getEnosDesktopBridge');
 		expect(dock).toMatch(/\{#if[^}]*hasBrowser[\s\S]*Browser/);
+
+		// The add-tab menu is measured against the viewport so it cannot clip against
+		// the narrow dock edge.
+		expect(dock).toContain('positionAddTabMenu');
+		expect(dock).toContain('getBoundingClientRect()');
+		expect(dock).toContain('position:fixed;left:');
+		const addTabMenuBlock =
+			dock.match(/\{#if showDropdown\}[\s\S]*?\{#if onClose\}/)?.[0] ?? '';
+		expect(addTabMenuBlock).toContain('style={addTabMenuStyle}');
+		expect(addTabMenuBlock).not.toContain('absolute right-0 top-full');
+	});
+
+	test('Desk dock Open picker keeps advanced entries and recent-file affordances', () => {
+		const chatControls = read('src/lib/components/chat/ChatControls.svelte');
+		const dock = read('src/lib/components/enos/DeskDock.svelte');
+
+		// The empty dock should be the rich Open picker, not the old sparse text list.
+		expect(dock).toContain("import GlobeAlt from '$lib/components/icons/GlobeAlt.svelte';");
+		expect(dock).toContain("import Document from '$lib/components/icons/Document.svelte';");
+		expect(dock).toContain("import Terminal from '$lib/components/icons/Terminal.svelte';");
+		expect(dock).toContain(
+			"import ChevronRight from '$lib/components/icons/ChevronRight.svelte';"
+		);
+		expect(dock).toContain("import ChevronDown from '$lib/components/icons/ChevronDown.svelte';");
+		expect(dock).toContain('openSectionExpanded');
+		expect(dock).toContain("{$i18n.t('Web access for research, docs, and live data.')}");
+		expect(dock).toContain(
+			"{$i18n.t('Search, preview, and reference files in your workspace.')}"
+		);
+		expect(dock).toContain("{$i18n.t('Run commands, scripts, and manage your environment.')}");
+		expect(dock).toContain('{#if state.tabs.length > 0}');
+
+		// Recent previews make the pane useful after opening files.
+		expect(dock).toContain('recentActivityStore');
+		expect(dock).toContain('formatRelativeTime');
+		expect(dock).toContain('onRecentItemClick');
+		expect(chatControls).toContain('pushRecentActivityShared');
+		expect(chatControls).toContain('onPreview={handleDeskFilePreview}');
+		expect(chatControls).toContain('openPath={pendingFileOpenPath}');
+		expect(chatControls).toContain('onOpenFile={handleDeskOpenFile}');
 	});
 
 	test('Desk right-pane renders the DeskDock; web keeps the legacy tab bar', () => {

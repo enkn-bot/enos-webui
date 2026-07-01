@@ -1949,6 +1949,7 @@
 						className="px-2 mt-0.5"
 						name={$i18n.t(DESK_CHATS_GROUP_NAME)}
 						chevron={false}
+						headerHover={false}
 						dragAndDrop={false}
 						addIcon={PencilSquare}
 						onAdd={() => {
@@ -1994,6 +1995,7 @@
 						className="px-2 mt-0.5"
 						name={$i18n.t('Chats')}
 						chevron={false}
+						headerHover={false}
 						addIcon={PencilSquare}
 						onAdd={() => {
 							startNewChatHandler();

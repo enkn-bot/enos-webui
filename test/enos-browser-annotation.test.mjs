@@ -32,6 +32,15 @@ test('MessageInput serializes annotations into the message on send', () => {
 test('MessageInput renders the annotation chip with count', () => {
 	assert.match(mi, /\$pendingAnnotations\.length\} annotation/);
 });
-test('MessageInput does not attach annotation screenshots as files', () => {
-	assert.doesNotMatch(mi, /dataUrlToFile/);
+test('MessageInput attaches annotation screenshots as image files', () => {
+	assert.match(mi, /annotationImageFile/);
+	assert.match(mi, /annotationFiles/);
+});
+
+const userMessage = readFileSync('src/lib/components/chat/Messages/UserMessage.svelte', 'utf8');
+
+test('UserMessage renders annotation image attachments as compact annotation cards', () => {
+	assert.match(userMessage, /isAnnotationFile/);
+	assert.match(userMessage, /annotationFiles\.length/);
+	assert.match(userMessage, /stripSerializedAnnotationsForDisplay/);
 });

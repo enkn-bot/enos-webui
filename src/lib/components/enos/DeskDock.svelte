@@ -1,6 +1,6 @@
 <!-- src/lib/components/enos/DeskDock.svelte -->
 <script lang="ts">
-	import { getContext } from 'svelte';
+	import { getContext, tick } from 'svelte';
 	import { flip } from 'svelte/animate';
 	import type { Readable } from 'svelte/store';
 	import {
@@ -49,6 +49,8 @@
 	// Desktop's PaneResizer usage leaves this undefined: the header's panel toggle is
 	// always reachable there, and this button would be redundant chrome.
 	export let onClose: (() => void) | undefined = undefined;
+	export let openType: DeskDockTabType | null = null;
+	export let openToken = 0;
 	// Recent-file rows only carry a path (project-relative) — actually reopening the
 	// file lives in LocalFileNav, a sibling slotted INTO this component by the caller
 	// (ChatControls), not a child we can reach directly. So a click here just switches
@@ -62,6 +64,9 @@
 	let openSectionExpanded = true;
 	let openMenuItemId: string | null = null;
 	let lastFolderId: string | null | undefined = undefined;
+	let lastOpenToken = 0;
+	let addTabButtonEl: HTMLButtonElement | null = null;
+	let addTabMenuStyle = '';
 
 	$: hasBrowser = Boolean(getEnosDesktopBridge());
 
@@ -103,6 +108,25 @@
 		persist();
 	};
 
+	const positionAddTabMenu = () => {
+		if (typeof window === 'undefined' || !addTabButtonEl) return;
+		const rect = addTabButtonEl.getBoundingClientRect();
+		const width = 160;
+		const margin = 8;
+		const left = Math.min(Math.max(margin, rect.right - width), window.innerWidth - width - margin);
+		const top = Math.min(rect.bottom + 4, window.innerHeight - margin);
+		addTabMenuStyle = `position:fixed;left:${left}px;top:${top}px;width:${width}px;`;
+	};
+
+	const toggleAddTabMenu = async () => {
+		showDropdown = !showDropdown;
+		if (showDropdown) {
+			positionAddTabMenu();
+			await tick();
+			positionAddTabMenu();
+		}
+	};
+
 	const select = (id: string) => {
 		state = activateTab(state, id);
 		showPicker = false;
@@ -140,6 +164,10 @@
 		type === 'terminal' ? 'Terminal' : type === 'browser' ? 'Browser' : 'Files';
 
 	$: activeTab = state.tabs.find((t) => t.id === state.activeId) ?? null;
+	$: if (openToken !== lastOpenToken && openType) {
+		lastOpenToken = openToken;
+		open(openType);
+	}
 
 	// Pointer-based tab reorder (NOT HTML5 drag-and-drop, which forces a flat
 	// ghost image without the tab's rounded corners). The real tab element
@@ -282,16 +310,20 @@
 			     normal "add another tab" behaviour. -->
 			<div class="relative">
 				<button
+					bind:this={addTabButtonEl}
 					type="button"
 					class="p-1 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-					on:click={() => { showDropdown = !showDropdown; }}
+					on:click={toggleAddTabMenu}
 					aria-label={$i18n.t('New tab')}
 				>
 					<Plus className="size-4" />
 				</button>
 				{#if showDropdown}
-					<div class="fixed inset-0 z-10" on:click={() => (showDropdown = false)} role="presentation" />
-					<div class="absolute right-0 top-full mt-1 z-20 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden py-1 min-w-[9rem]">
+					<div class="fixed inset-0 z-30" on:click={() => (showDropdown = false)} role="presentation" />
+					<div
+						class="z-40 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden py-1"
+						style={addTabMenuStyle}
+					>
 						{#if hasBrowser}
 							<button type="button" class="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" on:click={() => open('browser')}>{$i18n.t('Browser')}</button>
 						{/if}
@@ -304,7 +336,7 @@
 		{#if onClose}
 			<button
 				type="button"
-				class="ml-auto p-1 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 shrink-0"
+				class="ml-auto size-8 flex items-center justify-center rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 shrink-0"
 				on:click={onClose}
 				aria-label={$i18n.t('Close')}
 			>

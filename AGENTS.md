@@ -11,6 +11,9 @@ lives in the sibling repo at `../enos/AGENTS.md`; the prime directives are ident
 
 ## 0. Prime directives (non-negotiable)
 
+0. **Read this file before touching source, building, or deploying.** If you discover it
+   mid-task, stop and re-anchor against the latest user request, current dirty state, and
+   running processes before continuing.
 1. **No half-finishing.** "Done" = tests pass → `npm run build` succeeds → deployed +
    verified (if it ships) → committed → working tree clean → docs updated. If you
    can't finish, say so and leave the tree clean. See §4.
