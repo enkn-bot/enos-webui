@@ -20,6 +20,8 @@
 	import CodeEditor from '$lib/components/common/CodeEditor.svelte';
 	import SvgPanZoom from '$lib/components/common/SVGPanZoom.svelte';
 	import EnosUiRender from './EnosUi/EnosUiRender.svelte';
+	import EnosHtmlRender from './EnosUi/EnosHtmlRender.svelte';
+	import { isChatSurface } from '$lib/enos/deskRuntime';
 	import { jsonrepair } from 'jsonrepair';
 
 	import ChevronUp from '$lib/components/icons/ChevronUp.svelte';
@@ -50,6 +52,12 @@
 	export let className = '';
 	export let editorClassName = '';
 	export let stickyButtonsClassName = 'top-0';
+
+	// ENOS generative-UI supplement: the explicit ```enos-html fence renders through
+	// the theme wrapper everywhere; a bare ```html block is beautified inline ONLY
+	// on the chat surface (Desk/coding surfaces keep raw html artifacts). One alias,
+	// same renderer — not a parallel system; markdown stays base OWUI.
+	$: renderAsEnosHtml = lang === 'enos-html' || (lang === 'html' && isChatSurface());
 
 	let localPyodideWorker = null;
 
@@ -485,6 +493,13 @@
 					class="p-4 text-sm text-gray-400 dark:text-gray-500 italic animate-pulse"
 				>rendering…</div>
 			{/if}
+		{:else if renderAsEnosHtml}
+			<!-- The generative-UI supplement: model-authored semantic HTML, sanitized +
+			     theme-wrapped by us. Shimmer while the fence is still open (streaming). -->
+			<EnosHtmlRender
+				html={code}
+				streaming={!(token?.raw ?? '').trimEnd().endsWith('```')}
+			/>
 		{:else}
 			<div
 				class="sticky {stickyButtonsClassName} left-0 right-0 py-1.5 px-3.5 gap-2 flex items-center justify-end w-full z-10 text-xs text-black dark:text-white bg-white dark:bg-black rounded-t-2xl"

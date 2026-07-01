@@ -1,7 +1,7 @@
 <script>
 	import { onMount, onDestroy } from 'svelte';
 
-	/** @type {{ key?: string, center?: number[], zoom?: number, markers?: {lng:number,lat:number,label?:string}[], title?: string }} */
+	/** @type {{ key?: string, center?: number[], zoom?: number, markers?: {lng:number,lat:number,label?:string}[], title?: string, route?: number[][] }} */
 	export let data = {};
 
 	let container;
@@ -56,6 +56,29 @@
 				zoom: typeof data?.zoom === 'number' ? data.zoom : 14
 			});
 			mapInstance.addControl(new tt.NavigationControl());
+			// Optional route line (directions): draw once the style is ready. Coords
+			// are [lng, lat] pairs from the maps tool, downsampled server-side.
+			const route = Array.isArray(data?.route) && data.route.length > 1 ? data.route : null;
+			if (route) {
+				const drawRoute = () => {
+					if (!mapInstance || mapInstance.getSource('enos-route')) return;
+					mapInstance.addLayer({
+						id: 'enos-route',
+						type: 'line',
+						source: {
+							type: 'geojson',
+							data: {
+								type: 'Feature',
+								geometry: { type: 'LineString', coordinates: route }
+							}
+						},
+						layout: { 'line-join': 'round', 'line-cap': 'round' },
+						paint: { 'line-color': '#e07a3f', 'line-width': 4, 'line-opacity': 0.85 }
+					});
+				};
+				if (mapInstance.isStyleLoaded && mapInstance.isStyleLoaded()) drawRoute();
+				else mapInstance.on('load', drawRoute);
+			}
 			// The block renders mid-stream, so the map's initial tile paint often
 			// doesn't fire even though the container is already sized. An explicit
 			// resize() kicks the tile fetch/repaint; call it on load, on a short

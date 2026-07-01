@@ -122,7 +122,7 @@
 		canUseEnosLocalPi,
 		getEnosDesktopBridge
 	} from '$lib/enos/desktopBridge';
-	import { isDeskHostname } from '$lib/enos/deskRuntime';
+	import { isDeskHostname, isChatSurface } from '$lib/enos/deskRuntime';
 	import { buildProjectActionContext } from '$lib/enos/projectActions';
 	import { runDeskAgentLoop } from '$lib/enos/deskAgentLoop';
 	import { composeDeskMessageContent } from '$lib/enos/deskReasoning';
@@ -1206,7 +1206,11 @@
 					message.content
 				);
 
-				if (htmlGroups && htmlGroups.length > 0) {
+				// On the chat surface a ```html block renders INLINE via the ENOS html
+				// wrapper (a supplement to base markdown), so it must NOT also spawn the
+				// OWUI artifacts side-panel — that would be a parallel, duplicate surface.
+				// Desk/coding surfaces keep html artifacts. SVG still artifacts everywhere.
+				if (htmlGroups && htmlGroups.length > 0 && !isChatSurface()) {
 					htmlGroups.forEach((group) => {
 						const renderedContent = `
                         <!DOCTYPE html>

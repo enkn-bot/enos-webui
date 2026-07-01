@@ -7,8 +7,16 @@
 	// Drop tiles whose image fails to load (hotlink-blocked / 404) so the grid
 	// never shows broken-image placeholders.
 	let broken = {};
+	// Track load completion per tile so each image FADES IN over its skeleton
+	// instead of popping in after the link renders — that "links first, picture
+	// after" jank read as non-premium. A pulsing skeleton holds the square until
+	// the image is decoded, then it cross-fades in.
+	let loaded = {};
 	const onError = (src) => {
 		broken = { ...broken, [src]: true };
+	};
+	const onLoad = (src) => {
+		loaded = { ...loaded, [src]: true };
 	};
 	$: visible = images.filter((i) => !broken[i.src]);
 </script>
@@ -27,7 +35,11 @@
 						href={img.src}
 						target="_blank"
 						rel="noopener noreferrer"
-						class="block aspect-square overflow-hidden rounded-xl bg-gray-50 dark:bg-gray-900/50"
+						class="block aspect-square overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-900/50 {loaded[
+							img.src
+						]
+							? ''
+							: 'animate-pulse'}"
 					>
 						<img
 							src={img.src}
@@ -35,7 +47,13 @@
 							loading="lazy"
 							referrerpolicy="no-referrer"
 							on:error={() => onError(img.src)}
-							class="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
+							on:load={() => onLoad(img.src)}
+							class="w-full h-full object-cover hover:scale-105 transition-transform duration-200 transition-opacity ease-out {loaded[
+								img.src
+							]
+								? 'opacity-100'
+								: 'opacity-0'}"
+							style="transition-duration: 200ms, 500ms;"
 						/>
 					</a>
 				{/if}

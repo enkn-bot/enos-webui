@@ -21,3 +21,15 @@ export const isDeskHostname = (): boolean => {
 	if (typeof window === 'undefined') return false;
 	return window.location.hostname === DESK_HOSTNAME;
 };
+
+/**
+ * True on the loose-chat surface (everything that is NOT the project-first Desk
+ * host). Used to decide where a bare ```html block is beautified inline via the
+ * ENOS html render wrapper (a SUPPLEMENT to base markdown) instead of falling
+ * through to OWUI's raw code/artifact preview. Desk keeps raw html artifacts —
+ * that is a coding surface where JS/preview demos are wanted. SSR-safe.
+ */
+export const isChatSurface = (): boolean => {
+	if (typeof window === 'undefined') return false;
+	return !isDeskHostname();
+};
