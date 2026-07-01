@@ -136,6 +136,18 @@
 
 	const BREAKPOINT = 768;
 	const DISCONNECT_TOAST_DELAY_MS = 2000;
+	const toastOptions = {
+		classes: {
+			title: 'text-[13px] font-medium leading-snug',
+			description: 'text-xs font-normal text-gray-700 dark:text-gray-300 leading-snug',
+			closeButton:
+				'!bg-gray-50 dark:!bg-gray-800 hover:!bg-gray-100 dark:hover:!bg-gray-700 !text-gray-500 dark:!text-gray-400 hover:!text-gray-700 dark:hover:!text-gray-200 !border-gray-100 dark:!border-gray-700',
+			actionButton:
+				'!rounded-full !bg-gray-900 !text-white dark:!bg-white dark:!text-gray-900 hover:!opacity-80',
+			cancelButton:
+				'!rounded-full !bg-gray-100 !text-gray-700 dark:!bg-gray-800 dark:!text-gray-200'
+		}
+	};
 
 	const setupSocket = async (enableWebsocket) => {
 		const _socket = io(`${WEBUI_BASE_URL}` || undefined, {
@@ -1330,4 +1342,5 @@
 	richColors
 	position="top-right"
 	closeButton
+	toastOptions={toastOptions}
 />

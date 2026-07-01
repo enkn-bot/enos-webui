@@ -302,6 +302,27 @@ select {
 	pointer-events: none;
 }
 
+/* Default Sonner toasts use the NotificationToast card surface. Custom toasts
+   render their own surface, so avoid styling their outer Sonner wrapper. */
+[data-sonner-toast][data-styled='true'] {
+	border: 1px solid var(--color-gray-100) !important;
+	border-radius: 1.5rem !important;
+	background: #fff !important;
+	color: #000 !important;
+	gap: 0.625rem !important;
+	padding: 0.875rem 1rem !important;
+	text-align: left;
+	box-shadow:
+		0 10px 15px -3px rgb(0 0 0 / 0.1),
+		0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
+}
+
+.dark [data-sonner-toast][data-styled='true'] {
+	background: var(--color-gray-850) !important;
+	border-color: var(--color-gray-800) !important;
+	color: #fff !important;
+}
+
 .katex-mathml {
 	display: none;
 }
