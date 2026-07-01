@@ -23,6 +23,9 @@
     info: 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
   };
   const RATIO = { square: 'aspect-square', video: 'aspect-video', auto: '' };
+  // Optional width cap for standalone images (e.g. generated images) so a 1024²
+  // render doesn't fill the whole message. Omitted -> full width (grid cells etc).
+  const SIZE = { sm: 'max-w-[256px]', md: 'max-w-[384px]', lg: 'max-w-[512px]' };
 
   $: comp = node && typeof node === 'object' ? node.component : null;
   $: kids = Array.isArray(node?.children) ? node.children.filter((c) => c && typeof c === 'object') : [];
@@ -93,9 +96,11 @@
   <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {BADGE[node.variant] ?? BADGE.neutral}">{node.text}</span>
 {:else if comp === 'image' && node.src}
   {#if !broken[node.src]}
-    <img src={node.src} alt={node.alt ?? ''} loading="lazy" referrerpolicy="no-referrer"
-      on:error={() => (broken = { ...broken, [node.src]: true })}
-      class="w-full {RATIO[node.ratio] ?? ''} object-cover rounded-xl bg-gray-50 dark:bg-gray-900/50" />
+    <div class={SIZE[node.size] ?? ''}>
+      <img src={node.src} alt={node.alt ?? ''} loading="lazy" referrerpolicy="no-referrer"
+        on:error={() => (broken = { ...broken, [node.src]: true })}
+        class="w-full {RATIO[node.ratio] ?? ''} object-cover rounded-xl bg-gray-50 dark:bg-gray-900/50" />
+    </div>
   {/if}
 {:else if comp === 'divider'}
   <hr class="border-gray-100/30 dark:border-gray-850/30" />
