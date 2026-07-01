@@ -1,8 +1,13 @@
 <script>
 	import { onMount, onDestroy } from 'svelte';
 
-	/** @type {{ key?: string, center?: number[], zoom?: number, markers?: {lng:number,lat:number,label?:string}[], title?: string, route?: number[][] }} */
+	/** @type {{ key?: string, center?: number[], zoom?: number, markers?: {lng:number,lat:number,label?:string}[], title?: string, route?: number[][], summary?: {modeVerb?:string,distance?:string,duration?:string,via?:string}, steps?: string[], places?: {name:string,category?:string,distance?:string,address?:string,hours?:string,lng:number,lat:number}[] }} */
 	export let data = {};
+
+	// Nearby variant: server-authored `places` (TomTom POI fields only — no
+	// photos/ratings by decision). Rendered as numbered pins + a floating
+	// results panel (static list below the map on small screens).
+	$: places = Array.isArray(data?.places) ? data.places.filter((p) => p?.name) : [];
 
 	let container;
 	let mapInstance = null;
@@ -100,6 +105,18 @@
 				const marker = new tt.Marker().setLngLat([m.lng, m.lat]).addTo(mapInstance);
 				if (m.label) marker.setPopup(new tt.Popup({ offset: 30 }).setHTML(m.label));
 			}
+			// Numbered pins for nearby places, matching the panel card order.
+			places.forEach((p, i) => {
+				if (typeof p?.lng !== 'number' || typeof p?.lat !== 'number') return;
+				const el = document.createElement('div');
+				el.textContent = String(i + 1);
+				el.style.cssText =
+					'width:26px;height:26px;border-radius:50%;background:#e07a3f;color:#fff;' +
+					'font:600 13px system-ui,sans-serif;display:flex;align-items:center;' +
+					'justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.35);cursor:pointer';
+				const marker = new tt.Marker({ element: el }).setLngLat([p.lng, p.lat]).addTo(mapInstance);
+				marker.setPopup(new tt.Popup({ offset: 20 }).setHTML(p.name));
+			});
 		} catch (e) {
 			error = 'failed to load map';
 		}
@@ -122,7 +139,8 @@
 </script>
 
 <div class="rounded-2xl border border-gray-100/30 dark:border-gray-850/30 overflow-hidden flex flex-col">
-	{#if data?.title}
+	{#if data?.title && !places.length}
+		<!-- nearby: the floating panel (or mobile list) carries the title instead -->
 		<div class="px-4 py-3 border-b border-gray-100/30 dark:border-gray-850/30">
 			<h2
 				class="text-base font-semibold text-black dark:text-white"
@@ -136,7 +154,48 @@
 		<div class="p-4 text-sm text-gray-400 dark:text-gray-500 italic">{error}</div>
 	{:else}
 		<div class="relative">
-			<div bind:this={container} class="w-full" style="height: 360px;"></div>
+			<div bind:this={container} class="w-full" style="height: {places.length ? 440 : 360}px;"></div>
+			{#if places.length}
+				<!-- floating results panel (nearby) — hidden on small screens, where
+				     the static list below the map takes over -->
+				<div
+					class="absolute top-3 right-3 bottom-3 w-[300px] hidden sm:flex flex-col overflow-hidden rounded-2xl border border-gray-100/60 dark:border-gray-850/60 bg-white/95 dark:bg-black/85 shadow-sm backdrop-blur"
+				>
+					<h3
+						class="m-0 px-4 pt-4 pb-2 text-[17px] font-semibold text-black dark:text-white"
+						style="font-family: 'ENOS Serif', Georgia, serif;"
+					>
+						{data?.title ?? 'Nearby'}
+					</h3>
+					<div class="flex-1 overflow-y-auto px-3 pb-3 flex flex-col gap-2.5">
+						{#each places as p, i}
+							<div
+								class="flex gap-3 rounded-xl border border-gray-100/60 dark:border-gray-850/60 bg-white dark:bg-gray-900 p-2.5"
+							>
+								<div
+									class="w-6 h-6 flex-none rounded-full bg-[#e07a3f] text-white text-xs font-semibold flex items-center justify-center mt-0.5"
+								>
+									{i + 1}
+								</div>
+								<div class="min-w-0">
+									<div class="font-semibold text-[14px] leading-tight text-black dark:text-white">
+										{p.name}
+									</div>
+									<div class="text-[12.5px] text-gray-400 mt-0.5">
+										{[p.category, p.distance].filter(Boolean).join(' · ')}
+									</div>
+									{#if p.address}
+										<div class="text-[12.5px] text-gray-400 truncate">{p.address}</div>
+									{/if}
+									{#if p.hours}
+										<div class="text-[12.5px] text-gray-400">{p.hours}</div>
+									{/if}
+								</div>
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/if}
 			{#if data?.summary}
 				<!-- floating distance/time pill (directions) -->
 				<div
@@ -173,6 +232,39 @@
 						{data.summary.via}
 					</div>
 				{/if}
+			</div>
+		{/if}
+		{#if places.length}
+			<!-- static place list under the map (small screens only) -->
+			<div class="sm:hidden border-t border-gray-100/30 dark:border-gray-850/30">
+				{#if data?.title}
+					<h3
+						class="m-0 px-4 pt-3 pb-1 text-[16px] font-semibold text-black dark:text-white"
+						style="font-family: 'ENOS Serif', Georgia, serif;"
+					>
+						{data.title}
+					</h3>
+				{/if}
+				{#each places as p, i}
+					<div
+						class="flex gap-3 items-start px-4 py-3 border-b border-gray-100/30 dark:border-gray-850/30 last:border-b-0"
+					>
+						<div
+							class="w-6 h-6 flex-none rounded-full bg-[#e07a3f] text-white text-xs font-semibold flex items-center justify-center mt-0.5"
+						>
+							{i + 1}
+						</div>
+						<div class="min-w-0">
+							<div class="font-semibold text-[14px] text-black dark:text-white">{p.name}</div>
+							<div class="text-[12.5px] text-gray-400">
+								{[p.category, p.distance, p.hours].filter(Boolean).join(' · ')}
+							</div>
+							{#if p.address}
+								<div class="text-[12.5px] text-gray-400 truncate">{p.address}</div>
+							{/if}
+						</div>
+					</div>
+				{/each}
 			</div>
 		{/if}
 		{#if data?.steps?.length}
