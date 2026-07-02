@@ -11,10 +11,7 @@ export type DeskStreamEvent =
 
 /** Parse an SSE text chunk into the JSON event objects on its `data:` lines. Pure;
  * carries a buffer for lines split across network chunks. */
-export const parseSseChunk = (
-	buffer: string,
-	chunk: string
-): { events: any[]; buffer: string } => {
+export const parseSseChunk = (buffer: string, chunk: string): { events: any[]; buffer: string } => {
 	const events: any[] = [];
 	let buf = buffer + chunk;
 	let nl: number;
@@ -45,7 +42,12 @@ export const normalizePiEvent = (event: any): DeskStreamEvent | null => {
 		return { kind: 'error', message: String(event?.error ?? 'Engine error') };
 	}
 	if (t === 'tool_execution_start') {
-		return { kind: 'tool_start', callId: event.toolCallId, tool: event.toolName, input: event.args };
+		return {
+			kind: 'tool_start',
+			callId: event.toolCallId,
+			tool: event.toolName,
+			input: event.args
+		};
 	}
 	if (t === 'tool_execution_end') {
 		return {
@@ -90,11 +92,17 @@ export class DeskStreamState {
 	}
 
 	content(): string {
-		return this.order.map((id) => this.text.get(id)).filter(Boolean).join('');
+		return this.order
+			.map((id) => this.text.get(id))
+			.filter(Boolean)
+			.join('');
 	}
 
 	reasoning(): string {
-		return this.order.map((id) => this.reason.get(id)).filter(Boolean).join('');
+		return this.order
+			.map((id) => this.reason.get(id))
+			.filter(Boolean)
+			.join('');
 	}
 }
 
@@ -196,10 +204,7 @@ const consumeDeskSseEvents = async (
 	}
 };
 
-export const desktopPiTransport = (
-	pi: EnosDesktopPiBridge,
-	folderId: string
-): DeskPiTransport => ({
+export const desktopPiTransport = (pi: EnosDesktopPiBridge, folderId: string): DeskPiTransport => ({
 	createSession: async () => {
 		await pi.start(folderId);
 	},

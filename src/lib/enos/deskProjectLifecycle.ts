@@ -1,5 +1,9 @@
 import { resolveDeskProjectFileRuntime } from './deskProjectRuntime';
-import { isProjectAvailableInDeskRuntime, surfaceFromIsDesk, type EnosSurface } from './surfaceScope';
+import {
+	isProjectAvailableInDeskRuntime,
+	surfaceFromIsDesk,
+	type EnosSurface
+} from './surfaceScope';
 import { systemCloudWorkspaceId } from './workspaceBadge';
 
 type FolderLike = {
@@ -28,7 +32,11 @@ type ChatLike = {
 
 const projectFolderIdFromChat = (source: ChatLike): string | null => {
 	const folderId =
-		source?.folder_id ?? source?.folderId ?? source?.chat?.folder_id ?? source?.chat?.folderId ?? null;
+		source?.folder_id ??
+		source?.folderId ??
+		source?.chat?.folder_id ??
+		source?.chat?.folderId ??
+		null;
 	return folderId == null ? null : String(folderId);
 };
 
@@ -36,7 +44,8 @@ export const activeDeskProjectFolderId = (args: {
 	selectedFolderId: string | null;
 	showLocalFileFolderId: string | null;
 	chatFolderId: string | null;
-}): string | null => args.selectedFolderId ?? args.showLocalFileFolderId ?? args.chatFolderId ?? null;
+}): string | null =>
+	args.selectedFolderId ?? args.showLocalFileFolderId ?? args.chatFolderId ?? null;
 
 export const isFolderAvailableHereIntent = (args: {
 	folder: FolderLike | null | undefined;
@@ -104,8 +113,16 @@ export const repairDeskLooseChatSurfaceIntent = (args: {
 } => {
 	const idValue = args.source?.id ?? args.source?.chat?.id ?? args.chatId ?? null;
 	const id = idValue == null ? null : String(idValue);
-	const existingMeta = (args.source?.meta ?? args.source?.chat?.meta ?? {}) as Record<string, unknown>;
-	if (args.surface !== 'desk' || args.temporaryChatEnabled || !id || args.repairedDeskLooseChatIds.has(id)) {
+	const existingMeta = (args.source?.meta ?? args.source?.chat?.meta ?? {}) as Record<
+		string,
+		unknown
+	>;
+	if (
+		args.surface !== 'desk' ||
+		args.temporaryChatEnabled ||
+		!id ||
+		args.repairedDeskLooseChatIds.has(id)
+	) {
 		return { repair: false, id, existingMeta };
 	}
 	if (projectFolderIdFromChat(args.source)) return { repair: false, id, existingMeta };

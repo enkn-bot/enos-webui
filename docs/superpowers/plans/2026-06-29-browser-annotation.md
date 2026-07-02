@@ -25,18 +25,18 @@
 
 ## File Map
 
-| Status | Repo | Path | Responsibility |
-|--------|------|------|----------------|
-| **Create** | enos-webui | `src/lib/enos/annotation.ts` | `Annotation` type + `serializeAnnotations(list, draft)` pure fn |
-| **Create** | enos-webui | `src/lib/enos/annotation.test.ts` | Vitest unit tests for serializer |
-| **Create** | enos-webui | `src/lib/stores/annotations.ts` | `pendingAnnotations: Writable<Annotation[]>` + helpers |
-| **Create** | enos-webui | `src/lib/stores/annotations.test.ts` | Vitest unit tests for store helpers |
-| **Modify** | enos-webui | `src/lib/components/enos/BrowserView.svelte` | Annotate toggle button + ⌘. + `ipc-message` listener |
-| **Modify** | enos-webui | `src/lib/components/chat/MessageInput.svelte` | annotation chip + serialize-on-submit |
-| **Create** | enos-webui | `test/enos-browser-annotation.test.mjs` | Static-analysis tests (node:test) |
-| **Create** | enos-desktop | `src/webview-annotate.js` | Guest preload: picker overlay, inspector, payload, `sendToHost` |
-| **Modify** | enos-desktop | `src/main.mjs` | `will-attach-webview` → attach guest preload |
-| **Create** | enos-desktop | `test/webview-annotate.test.mjs` | Static-analysis tests (node:test) |
+| Status     | Repo         | Path                                          | Responsibility                                                  |
+| ---------- | ------------ | --------------------------------------------- | --------------------------------------------------------------- |
+| **Create** | enos-webui   | `src/lib/enos/annotation.ts`                  | `Annotation` type + `serializeAnnotations(list, draft)` pure fn |
+| **Create** | enos-webui   | `src/lib/enos/annotation.test.ts`             | Vitest unit tests for serializer                                |
+| **Create** | enos-webui   | `src/lib/stores/annotations.ts`               | `pendingAnnotations: Writable<Annotation[]>` + helpers          |
+| **Create** | enos-webui   | `src/lib/stores/annotations.test.ts`          | Vitest unit tests for store helpers                             |
+| **Modify** | enos-webui   | `src/lib/components/enos/BrowserView.svelte`  | Annotate toggle button + ⌘. + `ipc-message` listener            |
+| **Modify** | enos-webui   | `src/lib/components/chat/MessageInput.svelte` | annotation chip + serialize-on-submit                           |
+| **Create** | enos-webui   | `test/enos-browser-annotation.test.mjs`       | Static-analysis tests (node:test)                               |
+| **Create** | enos-desktop | `src/webview-annotate.js`                     | Guest preload: picker overlay, inspector, payload, `sendToHost` |
+| **Modify** | enos-desktop | `src/main.mjs`                                | `will-attach-webview` → attach guest preload                    |
+| **Create** | enos-desktop | `test/webview-annotate.test.mjs`              | Static-analysis tests (node:test)                               |
 
 **Shared payload contract** (guest preload produces, host consumes — keep identical in both repos):
 
@@ -59,10 +59,12 @@ Annotation = {
 ### Task 1: Annotation type + serializer (enos-webui)
 
 **Files:**
+
 - Create: `enos-webui_link/src/lib/enos/annotation.ts`
 - Create: `enos-webui_link/src/lib/enos/annotation.test.ts`
 
 **Interfaces:**
+
 - Produces: `type Annotation` (shape above); `serializeAnnotations(list: Annotation[], draft: string): string` — used by Task 6 (MessageInput).
 
 - [ ] **Step 1: Write the failing test**
@@ -173,10 +175,12 @@ git commit -m "feat(annotation): Annotation type + serializeAnnotations"
 ### Task 2: pendingAnnotations store (enos-webui)
 
 **Files:**
+
 - Create: `enos-webui_link/src/lib/stores/annotations.ts`
 - Create: `enos-webui_link/src/lib/stores/annotations.test.ts`
 
 **Interfaces:**
+
 - Consumes: `type Annotation` from `$lib/enos/annotation`.
 - Produces: `pendingAnnotations: Writable<Annotation[]>`; `addAnnotation(a: Annotation): void`; `removeAnnotation(id: string): void`; `clearAnnotations(): void` — used by Tasks 5 (BrowserView) and 6 (MessageInput).
 
@@ -275,10 +279,12 @@ git commit -m "feat(annotation): pendingAnnotations store + add/remove/clear"
 ### Task 3: Guest preload picker (enos-desktop)
 
 **Files:**
+
 - Create: `apps/enos-desktop/src/webview-annotate.js`
 - Create: `apps/enos-desktop/test/webview-annotate.test.mjs`
 
 **Interfaces:**
+
 - Produces: a CommonJS preload module that (a) listens for `ipcRenderer.on('enos:annotate-mode', (_e, on))` to toggle the picker, and (b) on element click sends `ipcRenderer.sendToHost('enos:annotation', payload)` where `payload` matches the shared Annotation contract minus `id` (host assigns `id`). It must export a pure `buildPayload(el, loc)` for testing.
 
 > Note: this file is loaded as a `<webview>` preload. With `contextIsolation:true` (the window default) a preload still has Node `require` and runs in an isolated world but shares the DOM. Use `require('electron')`. The picker overlay uses absolutely-positioned DOM nodes with `z-index: 2147483647`.
@@ -364,7 +370,7 @@ const cssSelector = (el) => {
 		const cls = (el.className || '').toString().trim().split(/\s+/).filter(Boolean).slice(0, 2);
 		return el.tagName.toLowerCase() + (cls.length ? '.' + cls.join('.') : '');
 	} catch {
-		return (el && el.tagName ? el.tagName.toLowerCase() : 'element');
+		return el && el.tagName ? el.tagName.toLowerCase() : 'element';
 	}
 };
 
@@ -410,7 +416,11 @@ function buildPayload(el, loc, getStyles) {
 
 	const getStyles = (el) => {
 		const cs = window.getComputedStyle(el);
-		return { color: cs.color, fontSize: cs.fontSize, fontFamily: cs.fontFamily.split(',')[0].replace(/["']/g, '') };
+		return {
+			color: cs.color,
+			fontSize: cs.fontSize,
+			fontFamily: cs.fontFamily.split(',')[0].replace(/["']/g, '')
+		};
 	};
 
 	const paint = (el) => {
@@ -478,9 +488,11 @@ git commit -m "feat(annotate): guest webview preload picker + buildPayload"
 ### Task 4: Attach guest preload via will-attach-webview (enos-desktop)
 
 **Files:**
+
 - Modify: `apps/enos-desktop/src/main.mjs`
 
 **Interfaces:**
+
 - Consumes: `src/webview-annotate.js` (Task 3) by absolute path.
 - Produces: every `<webview>` in the main window loads `webview-annotate.js` as its preload.
 
@@ -515,21 +527,19 @@ Expected: the 2 new tests FAIL (no `will-attach-webview` in main.mjs)
 Find the line that creates the main window: `mainWindow = new BrowserWindow(winOptions);` (around line 904). Immediately AFTER it, add:
 
 ```javascript
-  // Attach the annotation picker preload to every <webview> guest. Electron
-  // requires preload paths as file:// URLs here. Selecting an element posts
-  // `enos:annotation` to the host renderer via ipcRenderer.sendToHost.
-  mainWindow.webContents.on("will-attach-webview", (_event, webPreferences) => {
-    webPreferences.preload = pathToFileURL(
-      path.join(__dirname, "webview-annotate.js")
-    ).href;
-    webPreferences.contextIsolation = false;
-  });
+// Attach the annotation picker preload to every <webview> guest. Electron
+// requires preload paths as file:// URLs here. Selecting an element posts
+// `enos:annotation` to the host renderer via ipcRenderer.sendToHost.
+mainWindow.webContents.on('will-attach-webview', (_event, webPreferences) => {
+	webPreferences.preload = pathToFileURL(path.join(__dirname, 'webview-annotate.js')).href;
+	webPreferences.contextIsolation = false;
+});
 ```
 
 Then ensure `pathToFileURL` is imported. Find the existing `url` import near the top of `main.mjs`. If `import { pathToFileURL } from "node:url";` is not present, add it after the `electron` import line (line 1):
 
 ```javascript
-import { pathToFileURL } from "node:url";
+import { pathToFileURL } from 'node:url';
 ```
 
 > Why `contextIsolation:false` on the guest: the preload uses `require('electron')` + shares the page DOM directly, which is the simplest reliable picker. The guest still has no `nodeIntegration` in the page itself. This is scoped to the webview guest only, not the host window.
@@ -554,9 +564,11 @@ git commit -m "feat(annotate): attach guest preload via will-attach-webview"
 ### Task 5: BrowserView Annotate toggle + ipc-message listener (enos-webui)
 
 **Files:**
+
 - Modify: `enos-webui_link/src/lib/components/enos/BrowserView.svelte`
 
 **Interfaces:**
+
 - Consumes: `addAnnotation` from `$lib/stores/annotations`; `type Annotation` from `$lib/enos/annotation`.
 - Produces: an Annotate toggle button in the toolbar; `⌘.` keyboard shortcut; on `ipc-message` channel `enos:annotation`, builds an `Annotation` (assigning `id = crypto.randomUUID()`) and calls `addAnnotation`.
 
@@ -600,14 +612,14 @@ Expected: 4 FAIL
 After the existing imports (around line 6) add:
 
 ```typescript
-	import { addAnnotation } from '$lib/stores/annotations';
-	import type { Annotation } from '$lib/enos/annotation';
+import { addAnnotation } from '$lib/stores/annotations';
+import type { Annotation } from '$lib/enos/annotation';
 ```
 
 After the existing `let loading = false;` declaration (around line 17) add:
 
 ```typescript
-	let annotating = false;
+let annotating = false;
 ```
 
 - [ ] **Step 4: Add the toggle + key handler functions**
@@ -615,17 +627,17 @@ After the existing `let loading = false;` declaration (around line 17) add:
 After the `forward` function (around line 43) add:
 
 ```typescript
-	const setAnnotate = (on: boolean) => {
-		annotating = on;
-		webviewEl?.send?.('enos:annotate-mode', on);
-	};
-	const toggleAnnotate = () => setAnnotate(!annotating);
-	const onAnnotateKey = (e: KeyboardEvent) => {
-		if ((e.metaKey || e.ctrlKey) && e.key === '.') {
-			e.preventDefault();
-			toggleAnnotate();
-		}
-	};
+const setAnnotate = (on: boolean) => {
+	annotating = on;
+	webviewEl?.send?.('enos:annotate-mode', on);
+};
+const toggleAnnotate = () => setAnnotate(!annotating);
+const onAnnotateKey = (e: KeyboardEvent) => {
+	if ((e.metaKey || e.ctrlKey) && e.key === '.') {
+		e.preventDefault();
+		toggleAnnotate();
+	}
+};
 ```
 
 - [ ] **Step 5: Receive annotations in the webview action**
@@ -633,20 +645,20 @@ After the `forward` function (around line 43) add:
 Inside `webviewListeners` (the action starting around line 93), after the existing `node.addEventListener('found-in-page', onFound);` line, add:
 
 ```typescript
-		const onIpc = (e: any) => {
-			if (e.channel !== 'enos:annotation') return;
-			const p = e.args?.[0];
-			if (!p) return;
-			const annotation: Annotation = { id: crypto.randomUUID(), ...p };
-			addAnnotation(annotation);
-		};
-		node.addEventListener('ipc-message', onIpc);
+const onIpc = (e: any) => {
+	if (e.channel !== 'enos:annotation') return;
+	const p = e.args?.[0];
+	if (!p) return;
+	const annotation: Annotation = { id: crypto.randomUUID(), ...p };
+	addAnnotation(annotation);
+};
+node.addEventListener('ipc-message', onIpc);
 ```
 
 And in the same action's `destroy()` cleanup, after `node.removeEventListener('found-in-page', onFound);` add:
 
 ```typescript
-			node.removeEventListener('ipc-message', onIpc);
+node.removeEventListener('ipc-message', onIpc);
 ```
 
 - [ ] **Step 6: Bind the global key listener**
@@ -662,16 +674,16 @@ Add to the markup (anywhere at the top level of the template, e.g. just before t
 Find the 3-dots menu button block (around line 182, the `<div class="relative">`). Immediately BEFORE that `<div class="relative">`, add:
 
 ```svelte
-		<button
-			type="button"
-			class="px-2 py-1 rounded-md text-xs font-medium transition {annotating
-				? 'bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400'
-				: 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}"
-			on:click={toggleAnnotate}
-			title="Annotate (⌘.)"
-		>
-			{annotating ? 'Annotating' : 'Annotate'}
-		</button>
+<button
+	type="button"
+	class="px-2 py-1 rounded-md text-xs font-medium transition {annotating
+		? 'bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400'
+		: 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}"
+	on:click={toggleAnnotate}
+	title="Annotate (⌘.)"
+>
+	{annotating ? 'Annotating' : 'Annotate'}
+</button>
 ```
 
 - [ ] **Step 8: Run static-analysis test to confirm it passes**
@@ -694,9 +706,11 @@ git commit -m "feat(annotate): BrowserView toggle + ipc-message → store"
 ### Task 6: MessageInput annotation chip + serialize-on-submit (enos-webui)
 
 **Files:**
+
 - Modify: `enos-webui_link/src/lib/components/chat/MessageInput.svelte`
 
 **Interfaces:**
+
 - Consumes: `pendingAnnotations`, `removeAnnotation`, `clearAnnotations` from `$lib/stores/annotations`; `serializeAnnotations` from `$lib/enos/annotation`.
 - Produces: a chip showing `{N} annotation(s)` above the textarea when the store is non-empty; on submit, the prompt dispatched is `serializeAnnotations($pendingAnnotations, prompt)` and the store is cleared.
 
@@ -735,12 +749,8 @@ Expected: the 4 new tests FAIL
 After the last existing import in the `<script>` (use the InputMenu/FileItem import region around lines 68–73), add:
 
 ```typescript
-	import {
-		pendingAnnotations,
-		removeAnnotation,
-		clearAnnotations
-	} from '$lib/stores/annotations';
-	import { serializeAnnotations } from '$lib/enos/annotation';
+import { pendingAnnotations, removeAnnotation, clearAnnotations } from '$lib/stores/annotations';
+import { serializeAnnotations } from '$lib/enos/annotation';
 ```
 
 - [ ] **Step 4: Add a submit helper that folds in annotations**
@@ -748,11 +758,11 @@ After the last existing import in the `<script>` (use the InputMenu/FileItem imp
 Near the other handler functions (top of the `<script>` is fine), add:
 
 ```typescript
-	const submitWithAnnotations = () => {
-		const merged = serializeAnnotations($pendingAnnotations, prompt);
-		clearAnnotations();
-		dispatch('submit', merged);
-	};
+const submitWithAnnotations = () => {
+	const merged = serializeAnnotations($pendingAnnotations, prompt);
+	clearAnnotations();
+	dispatch('submit', merged);
+};
 ```
 
 - [ ] **Step 5: Route both submit sites through the helper**
@@ -760,13 +770,13 @@ Near the other handler functions (top of the `<script>` is fine), add:
 There are two `dispatch('submit', prompt);` calls (around lines 1238 and 1247). Replace BOTH occurrences of:
 
 ```typescript
-									dispatch('submit', prompt);
+dispatch('submit', prompt);
 ```
 
 with:
 
 ```typescript
-									submitWithAnnotations();
+submitWithAnnotations();
 ```
 
 (The indentation differs slightly between the two sites — match each site's existing indentation; the call text is the same.)
@@ -776,31 +786,35 @@ with:
 Immediately BEFORE the `{#if files.length > 0}` block (around line 1315), add:
 
 ```svelte
-								{#if $pendingAnnotations.length > 0}
-									<div class="mx-2 mt-2.5 flex items-center flex-wrap gap-2">
-										{#each $pendingAnnotations as a (a.id)}
-											<div
-												class="flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
-												title={a.source ?? a.selector}
-											>
-												<svg viewBox="0 0 16 16" fill="currentColor" class="size-3.5">
-													<path d="M2.5 3A1.5 1.5 0 0 1 4 1.5h8A1.5 1.5 0 0 1 13.5 3v6A1.5 1.5 0 0 1 12 10.5H6.7l-2.9 2.4A.5.5 0 0 1 3 12.5V10.5A1.5 1.5 0 0 1 2.5 9V3Z" />
-												</svg>
-												<span>{a.selector}</span>
-												<button
-													type="button"
-													class="p-0.5 rounded hover:bg-blue-100 dark:hover:bg-blue-500/25"
-													on:click={() => removeAnnotation(a.id)}
-													title="Remove annotation"
-												>
-													<svg viewBox="0 0 20 20" fill="currentColor" class="size-3">
-														<path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-													</svg>
-												</button>
-											</div>
-										{/each}
-									</div>
-								{/if}
+{#if $pendingAnnotations.length > 0}
+	<div class="mx-2 mt-2.5 flex items-center flex-wrap gap-2">
+		{#each $pendingAnnotations as a (a.id)}
+			<div
+				class="flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
+				title={a.source ?? a.selector}
+			>
+				<svg viewBox="0 0 16 16" fill="currentColor" class="size-3.5">
+					<path
+						d="M2.5 3A1.5 1.5 0 0 1 4 1.5h8A1.5 1.5 0 0 1 13.5 3v6A1.5 1.5 0 0 1 12 10.5H6.7l-2.9 2.4A.5.5 0 0 1 3 12.5V10.5A1.5 1.5 0 0 1 2.5 9V3Z"
+					/>
+				</svg>
+				<span>{a.selector}</span>
+				<button
+					type="button"
+					class="p-0.5 rounded hover:bg-blue-100 dark:hover:bg-blue-500/25"
+					on:click={() => removeAnnotation(a.id)}
+					title="Remove annotation"
+				>
+					<svg viewBox="0 0 20 20" fill="currentColor" class="size-3">
+						<path
+							d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"
+						/>
+					</svg>
+				</button>
+			</div>
+		{/each}
+	</div>
+{/if}
 ```
 
 - [ ] **Step 7: Run static-analysis test to confirm it passes**
@@ -831,6 +845,7 @@ git commit -m "feat(annotate): MessageInput annotation chip + serialize-on-submi
 ## Self-Review
 
 **Spec coverage:**
+
 - Toggle Annotate mode (button + ⌘.): Task 5 ✓
 - Devtools picker overlay + inspector inside guest: Task 3 ✓
 - Reliable guest→host channel (sendToHost / ipc-message): Tasks 3, 4, 5 ✓
@@ -843,6 +858,7 @@ git commit -m "feat(annotate): MessageInput annotation chip + serialize-on-submi
 **Placeholder scan:** none — every code step shows complete code.
 
 **Type consistency:**
+
 - `Annotation` shape identical in `annotation.ts` (Task 1), store (Task 2), preload payload (Task 3, minus `id`), BrowserView `id` assignment (Task 5). Host assigns `id`; preload omits it. ✓
 - `serializeAnnotations(list, draft)` defined Task 1, called Task 6. ✓
 - `addAnnotation` / `removeAnnotation` / `clearAnnotations` defined Task 2, used Tasks 5/6. ✓
@@ -851,8 +867,8 @@ git commit -m "feat(annotate): MessageInput annotation chip + serialize-on-submi
 **Cross-repo note:** Tasks 3–4 run in `apps/enos-desktop` (commands `cd apps/enos-desktop`); Tasks 1–2, 5–6 in `enos-webui_link`. Commits use repo-relative `git add` paths from each repo root.
 
 **Deferred (not in Slice 1):**
+
 - `data-enos-source` Vite/Babel stamping plugin on user dev apps (Slice 2).
 - Inline per-element note pill ("can you make this bigger?" captured at pick time) — Slice 3; `note` field exists in the contract and serializer already, defaults to `''`.
 - Multi-annotation edit, non-instrumented-page fallback messaging — Slice 3.
 - Rebuild + redeploy of the desktop app and webui bundle — done once after Slice 1 review.
-

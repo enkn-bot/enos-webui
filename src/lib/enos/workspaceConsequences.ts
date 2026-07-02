@@ -17,7 +17,10 @@ export const consequenceLines = (args: {
 			return ['Runs on ENOS’s always-on machine', 'Reachable from any device'];
 		case 'github': {
 			const repo = String(args.repo ?? '').trim();
-			return [repo ? `Backed by GitHub · ${repo}` : 'Backed by GitHub', 'Open it Local or in Cloud'];
+			return [
+				repo ? `Backed by GitHub · ${repo}` : 'Backed by GitHub',
+				'Open it Local or in Cloud'
+			];
 		}
 		default:
 			return [];

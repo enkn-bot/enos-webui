@@ -86,7 +86,12 @@ describe('deskProjectRuntime', () => {
 		const selectedTerminalId = writable<string | null>(null);
 
 		applyDeskProjectFileRuntime(
-			{ kind: 'cloud', folderId: 'folder-cloud', cloudPath: '/home/user/ENOS/', workspaceId: 'ws-77' },
+			{
+				kind: 'cloud',
+				folderId: 'folder-cloud',
+				cloudPath: '/home/user/ENOS/',
+				workspaceId: 'ws-77'
+			},
 			{ showLocalFileFolderId, showFileNavDir, showFileNavPath, selectedTerminalId }
 		);
 

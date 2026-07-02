@@ -65,7 +65,9 @@
 	};
 
 	const GROUPABLE_DETAIL_TYPES = new Set(
-		HIDE_REASONING ? ['tool_calls', 'code_interpreter'] : ['tool_calls', 'reasoning', 'code_interpreter']
+		HIDE_REASONING
+			? ['tool_calls', 'code_interpreter']
+			: ['tool_calls', 'reasoning', 'code_interpreter']
 	);
 
 	// True for a details token carrying raw model reasoning we suppress on chat.

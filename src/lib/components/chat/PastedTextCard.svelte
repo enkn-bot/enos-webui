@@ -2,11 +2,7 @@
 	import { createEventDispatcher } from 'svelte';
 
 	import XMark from '$lib/components/icons/XMark.svelte';
-	import {
-		getPastedTextContent,
-		getPastedTextPreview,
-		getTextStats
-	} from '$lib/enos/pastedText';
+	import { getPastedTextContent, getPastedTextPreview, getTextStats } from '$lib/enos/pastedText';
 	import { formatFileSize } from '$lib/utils';
 
 	const dispatch = createEventDispatcher();
@@ -24,7 +20,9 @@
 	$: text = content || getPastedTextContent(item);
 	$: stats = getTextStats(text);
 	$: displayTitle =
-		title || (String(item?.name ?? '').startsWith('Pasted_Text_') ? 'Pasted text' : item?.name) || 'Pasted text';
+		title ||
+		(String(item?.name ?? '').startsWith('Pasted_Text_') ? 'Pasted text' : item?.name) ||
+		'Pasted text';
 	$: preview = item?.pastedTextPreview || getPastedTextPreview(text || displayTitle);
 	$: displayedSize = size ?? item?.size ?? null;
 
@@ -79,7 +77,6 @@
 
 	{#if expanded && text}
 		<pre
-			class="mt-2 max-h-96 overflow-auto whitespace-pre-wrap rounded-2xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-900 px-3.5 py-3 text-sm leading-6 text-gray-800 dark:text-gray-200"
-		>{text}</pre>
+			class="mt-2 max-h-96 overflow-auto whitespace-pre-wrap rounded-2xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-900 px-3.5 py-3 text-sm leading-6 text-gray-800 dark:text-gray-200">{text}</pre>
 	{/if}
 </div>

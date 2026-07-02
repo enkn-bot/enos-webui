@@ -22,16 +22,22 @@
 			<WebSearchResults {status}>
 				<div class="flex flex-col justify-center -space-y-0.5">
 					<div
-						class="{(done || status?.done) === false ? 'shimmer' : ''} text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
+						class="{(done || status?.done) === false
+							? 'shimmer'
+							: ''} text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
 					>
-						{(done || status?.done) === true ? `Read ${n} ${n === 1 ? 'source' : 'sources'}` : 'Checking web'}
+						{(done || status?.done) === true
+							? `Read ${n} ${n === 1 ? 'source' : 'sources'}`
+							: 'Checking web'}
 					</div>
 				</div>
 			</WebSearchResults>
 		{:else if status?.action === 'knowledge_search'}
 			<div class="flex flex-col justify-center -space-y-0.5">
 				<div
-					class="{(done || status?.done) === false ? 'shimmer' : ''} text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
+					class="{(done || status?.done) === false
+						? 'shimmer'
+						: ''} text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
 				>
 					{$i18n.t(`Searching Knowledge for "{{searchQuery}}"`, { searchQuery: status.query })}
 				</div>
@@ -39,13 +45,17 @@
 		{:else if (status?.action === 'web_search_queries_generated' || status?.action === 'queries_generated') && status?.queries}
 			<div class="flex flex-col justify-center -space-y-0.5">
 				<div
-					class="{(done || status?.done) === false ? 'shimmer' : ''} text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
+					class="{(done || status?.done) === false
+						? 'shimmer'
+						: ''} text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
 				>
 					{(done || status?.done) === true ? 'Searched web' : 'Searching web'}
 				</div>
 				<div class="flex gap-1 flex-wrap mt-2">
 					{#each status.queries as query (query)}
-						<div class="bg-gray-50 dark:bg-gray-850 flex rounded-lg py-1 px-2 items-center gap-1 text-xs">
+						<div
+							class="bg-gray-50 dark:bg-gray-850 flex rounded-lg py-1 px-2 items-center gap-1 text-xs"
+						>
 							<div><Search className="size-3" /></div>
 							<span class="line-clamp-1">{query}</span>
 						</div>
@@ -59,7 +69,9 @@
 				<!-- Primary line = the model's own reasoning gist (WHAT it thought),
 				     falling back to Thinking/Thought when no gist is available. -->
 				<div
-					class="{(done || status?.done) === false ? 'shimmer' : ''} text-gray-500 dark:text-gray-500 text-base line-clamp-2 text-wrap"
+					class="{(done || status?.done) === false
+						? 'shimmer'
+						: ''} text-gray-500 dark:text-gray-500 text-base line-clamp-2 text-wrap"
 				>
 					{#if gist}
 						{gist}
@@ -81,7 +93,9 @@
 		{:else if status?.action === 'sources_retrieved' && status?.count !== undefined}
 			<div class="flex flex-col justify-center -space-y-0.5">
 				<div
-					class="{(done || status?.done) === false ? 'shimmer' : ''} text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
+					class="{(done || status?.done) === false
+						? 'shimmer'
+						: ''} text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
 				>
 					{#if status.count === 0}
 						{$i18n.t('No sources found')}
@@ -97,7 +111,9 @@
 		{:else}
 			<div class="flex flex-col justify-center -space-y-0.5">
 				<div
-					class="{(done || status?.done) === false ? 'shimmer' : ''} text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
+					class="{(done || status?.done) === false
+						? 'shimmer'
+						: ''} text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
 				>
 					{formatDeskStatusLabel(status, (done || status?.done) === true)}
 				</div>
@@ -109,8 +125,8 @@
 	     web-search query-generation on every turn (web-search-primary), so for
 	     non-search answers (known facts) the query step returns empty and base
 	     would surface this noise. Real searches still render normally. -->
-		<div class="status-description flex items-center gap-2 py-0.5 w-full text-left">
-			{#if status?.action === 'web_search' && (status?.urls || status?.items)}
+	<div class="status-description flex items-center gap-2 py-0.5 w-full text-left">
+		{#if status?.action === 'web_search' && (status?.urls || status?.items)}
 			<WebSearchResults {status}>
 				<div class="flex flex-col justify-center -space-y-0.5">
 					<div
@@ -200,24 +216,24 @@
 				</div>
 			</div>
 		{:else if status?.action === 'reasoning' || status?.action === 'thinking'}
-	<div class="flex flex-col justify-center -space-y-0.5">
-		<div
-			class="{(done || status?.done) === false
-				? 'shimmer'
-				: ''} text-base line-clamp-1 text-wrap"
-		>
-			{#if (done || status?.done) === false}
-				Thinking
-			{:else if status?.duration && Number(status.duration) >= 1}
-				Thought for {Number(status.duration) < 60
-					? `${Math.round(Number(status.duration))}s`
-					: `${Math.floor(Number(status.duration) / 60)}m ${Math.round(Number(status.duration) % 60)}s`}
-			{:else}
-				Thought
-			{/if}
-		</div>
-	</div>
-	{:else if status?.action === 'sources_retrieved' && status?.count !== undefined}
+			<div class="flex flex-col justify-center -space-y-0.5">
+				<div
+					class="{(done || status?.done) === false
+						? 'shimmer'
+						: ''} text-base line-clamp-1 text-wrap"
+				>
+					{#if (done || status?.done) === false}
+						Thinking
+					{:else if status?.duration && Number(status.duration) >= 1}
+						Thought for {Number(status.duration) < 60
+							? `${Math.round(Number(status.duration))}s`
+							: `${Math.floor(Number(status.duration) / 60)}m ${Math.round(Number(status.duration) % 60)}s`}
+					{:else}
+						Thought
+					{/if}
+				</div>
+			</div>
+		{:else if status?.action === 'sources_retrieved' && status?.count !== undefined}
 			<div class="flex flex-col justify-center -space-y-0.5">
 				<div
 					class="{(done || status?.done) === false

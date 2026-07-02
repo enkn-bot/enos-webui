@@ -15,7 +15,11 @@ export const nextProjectFolderName = (
 	const usedNames = new Set(
 		folders
 			.filter((folder) => normalizeParentId(folder?.parent_id) === targetParent)
-			.map((folder) => String(folder?.name ?? '').trim().toLowerCase())
+			.map((folder) =>
+				String(folder?.name ?? '')
+					.trim()
+					.toLowerCase()
+			)
 			.filter(Boolean)
 	);
 

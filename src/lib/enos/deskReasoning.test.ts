@@ -22,7 +22,9 @@ describe('extractReasoningText', () => {
 			'</details>\n' +
 			'Morocco played Canada next.';
 		const out = extractReasoningText(body);
-		expect(out).toBe('We need to answer the question.\nSource 2 says Canada. Ensure direct answer.');
+		expect(out).toBe(
+			'We need to answer the question.\nSource 2 says Canada. Ensure direct answer.'
+		);
 		expect(out).not.toContain('<summary>');
 		expect(out).not.toContain('>');
 	});

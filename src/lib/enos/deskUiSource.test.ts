@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 const read = (path: string) => readFileSync(path, 'utf8');
 
@@ -849,7 +849,7 @@ describe('ENOS Desk UI source guardrails', () => {
 
 	test('Desk browser tab uses an isolated webview and Electron enables webviewTag', () => {
 		const browserView = read('src/lib/components/enos/BrowserView.svelte');
-		const electronMain = read('../enos-desktop/src/main.mjs');
+		const electronMainPath = '../enos-desktop/src/main.mjs';
 
 		// Component reuses the shared URL normalizer and renders an isolated webview.
 		expect(browserView).toContain("import { normalizeUrl } from '$lib/enos/browserUrl';");
@@ -858,7 +858,10 @@ describe('ENOS Desk UI source guardrails', () => {
 		expect(browserView).toContain("{$i18n.t('Start browsing')}");
 
 		// Electron main window opts into <webview> support (additive).
-		expect(electronMain).toMatch(/webPreferences:\s*\{[\s\S]*webviewTag:\s*true/);
+		if (existsSync(electronMainPath)) {
+			const electronMain = read(electronMainPath);
+			expect(electronMain).toMatch(/webPreferences:\s*\{[\s\S]*webviewTag:\s*true/);
+		}
 	});
 
 	test('Desk dock manages tabs via tabDock and gates the browser entry to Electron', () => {
@@ -950,7 +953,9 @@ describe('ENOS Desk UI source guardrails', () => {
 		const contentRenderer = read('src/lib/components/chat/Messages/ContentRenderer.svelte');
 		const markdown = read('src/lib/components/chat/Messages/Markdown.svelte');
 		const markdownTokens = read('src/lib/components/chat/Messages/Markdown/MarkdownTokens.svelte');
-		const inlineTokens = read('src/lib/components/chat/Messages/Markdown/MarkdownInlineTokens.svelte');
+		const inlineTokens = read(
+			'src/lib/components/chat/Messages/Markdown/MarkdownInlineTokens.svelte'
+		);
 		const colonFenceBlock = read(
 			'src/lib/components/chat/Messages/Markdown/ColonFenceBlock.svelte'
 		);
@@ -967,19 +972,13 @@ describe('ENOS Desk UI source guardrails', () => {
 			/export let sourcePreviews:\s*EnosCitationRecord\[\]\s*=\s*\[\];/
 		);
 		expect(markdownTokens).toContain('{sourcePreviews}');
-		expect(markdownTokens).toMatch(
-			/<ColonFenceBlock[\s\S]*\{sourceIds\}[\s\S]*\{sourcePreviews\}/
-		);
-		expect(inlineTokens).toMatch(
-			/export let sourcePreviews:\s*EnosCitationRecord\[\]\s*=\s*\[\];/
-		);
+		expect(markdownTokens).toMatch(/<ColonFenceBlock[\s\S]*\{sourceIds\}[\s\S]*\{sourcePreviews\}/);
+		expect(inlineTokens).toMatch(/export let sourcePreviews:\s*EnosCitationRecord\[\]\s*=\s*\[\];/);
 		expect(inlineTokens).toContain('<SourceToken {id} {token} {sourceIds} {sourcePreviews}');
 		expect(colonFenceBlock).toMatch(
 			/export let sourcePreviews:\s*EnosCitationRecord\[\]\s*=\s*\[\];/
 		);
-		expect(colonFenceBlock).toMatch(
-			/<MarkdownTokens[\s\S]*\{sourceIds\}[\s\S]*\{sourcePreviews\}/
-		);
+		expect(colonFenceBlock).toMatch(/<MarkdownTokens[\s\S]*\{sourceIds\}[\s\S]*\{sourcePreviews\}/);
 		expect(sourceToken).toMatch(/export let sourcePreviews(?::\s*SourcePreview\[\])?\s*=\s*\[\];/);
 	});
 

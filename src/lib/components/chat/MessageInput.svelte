@@ -56,11 +56,7 @@
 	import { getSessionUser } from '$lib/apis/auths';
 
 	import { WEBUI_BASE_URL, WEBUI_API_BASE_URL, PASTED_TEXT_CHARACTER_LIMIT } from '$lib/constants';
-	import {
-		getPastedTextPreview,
-		getTextStats,
-		isPastedTextFile
-	} from '$lib/enos/pastedText';
+	import { getPastedTextPreview, getTextStats, isPastedTextFile } from '$lib/enos/pastedText';
 
 	import { createNoteHandler } from '../notes/utils';
 	import { getSuggestionRenderer } from '../common/RichTextInput/suggestions';
@@ -202,8 +198,7 @@
 
 	const legacyProfileFromAccessMode = (
 		mode: EnosDesktopAccessMode
-	): EnosDesktopPermissionProfile =>
-		mode === 'read-only' ? 'ask' : 'approve_safe_project_edits';
+	): EnosDesktopPermissionProfile => (mode === 'read-only' ? 'ask' : 'approve_safe_project_edits');
 
 	const normalizeProjectAccessMode = (mode: unknown): EnosDesktopAccessMode => {
 		if (mode === 'read-only' || mode === 'auto' || mode === 'full') {
@@ -1120,7 +1115,6 @@
 				dropzoneElement.addEventListener('drop', onDrop, true);
 				dropzoneElement.addEventListener('dragleave', onDragLeave);
 			}
-
 		};
 		initialize();
 
@@ -1140,7 +1134,6 @@
 			}
 		};
 	});
-
 </script>
 
 <InputVariablesModal
@@ -1340,9 +1333,15 @@
 										class="flex items-center gap-1.5 pl-2 pr-1.5 py-1 rounded-lg text-sm font-medium border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-850 text-gray-700 dark:text-gray-200"
 									>
 										<svg viewBox="0 0 16 16" fill="currentColor" class="size-4 text-gray-400">
-											<path d="M2.5 3A1.5 1.5 0 0 1 4 1.5h8A1.5 1.5 0 0 1 13.5 3v6A1.5 1.5 0 0 1 12 10.5H6.7l-2.9 2.4A.5.5 0 0 1 3 12.5V10.5A1.5 1.5 0 0 1 2.5 9V3Z" />
+											<path
+												d="M2.5 3A1.5 1.5 0 0 1 4 1.5h8A1.5 1.5 0 0 1 13.5 3v6A1.5 1.5 0 0 1 12 10.5H6.7l-2.9 2.4A.5.5 0 0 1 3 12.5V10.5A1.5 1.5 0 0 1 2.5 9V3Z"
+											/>
 										</svg>
-										<span>{$pendingAnnotations.length} annotation{$pendingAnnotations.length > 1 ? 's' : ''}</span>
+										<span
+											>{$pendingAnnotations.length} annotation{$pendingAnnotations.length > 1
+												? 's'
+												: ''}</span
+										>
 										<button
 											type="button"
 											class="ml-0.5 p-0.5 rounded-full opacity-0 group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
@@ -1350,7 +1349,9 @@
 											title="Clear annotations"
 										>
 											<svg viewBox="0 0 20 20" fill="currentColor" class="size-3.5">
-												<path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+												<path
+													d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"
+												/>
 											</svg>
 										</button>
 									</div>
@@ -1358,7 +1359,9 @@
 										class="hidden group-hover:block absolute left-0 bottom-full mb-2 z-30 w-72 max-h-72 overflow-y-auto p-2 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xl"
 									>
 										{#each $pendingAnnotations as a (a.id)}
-											<div class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-850">
+											<div
+												class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-850"
+											>
 												{#if a.image}
 													<img
 														src={a.image}
@@ -1368,7 +1371,9 @@
 												{/if}
 												<div class="min-w-0 flex-1">
 													<div class="flex items-center gap-1.5">
-														<span class="px-1.5 py-0.5 rounded-md text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+														<span
+															class="px-1.5 py-0.5 rounded-md text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+														>
 															{a.selector}
 														</span>
 														<button
@@ -1377,16 +1382,26 @@
 															on:click={() => removeAnnotation(a.id)}
 															title="Remove"
 														>
-															<svg viewBox="0 0 20 20" fill="currentColor" class="size-3 text-gray-400">
-																<path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+															<svg
+																viewBox="0 0 20 20"
+																fill="currentColor"
+																class="size-3 text-gray-400"
+															>
+																<path
+																	d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"
+																/>
 															</svg>
 														</button>
 													</div>
 													{#if a.source}
-														<div class="mt-0.5 text-xs font-mono text-gray-400 truncate">{a.source}</div>
+														<div class="mt-0.5 text-xs font-mono text-gray-400 truncate">
+															{a.source}
+														</div>
 													{/if}
 													{#if a.note}
-														<div class="mt-1 text-sm text-gray-700 dark:text-gray-200 break-words">{a.note}</div>
+														<div class="mt-1 text-sm text-gray-700 dark:text-gray-200 break-words">
+															{a.note}
+														</div>
 													{/if}
 												</div>
 											</div>
@@ -1416,10 +1431,14 @@
 														/>
 														<span
 															class="absolute bottom-0.5 left-0.5 text-[10px] leading-none px-1 py-0.5 rounded bg-black/50 text-white font-medium pointer-events-none"
-														>annotation</span>
+															>annotation</span
+														>
 													</div>
 													<button
-														class="absolute -top-1 -right-1 bg-white text-black border border-white rounded-full {($settings?.highContrastMode ?? false) ? '' : 'outline-hidden focus:outline-hidden group-hover:visible invisible transition'}"
+														class="absolute -top-1 -right-1 bg-white text-black border border-white rounded-full {($settings?.highContrastMode ??
+														false)
+															? ''
+															: 'outline-hidden focus:outline-hidden group-hover:visible invisible transition'}"
 														type="button"
 														aria-label={$i18n.t('Remove file')}
 														on:click={() => {
@@ -1431,39 +1450,41 @@
 													</button>
 												</div>
 											{:else}
-											<div class=" relative group">
-												<div class="relative flex items-center">
-													<Image
-														src={fileUrl}
-														alt=""
-														imageClassName=" size-10 rounded-xl object-cover"
-													/>
-													{#if atSelectedModel ? visionCapableModels.length === 0 : selectedModels.length !== visionCapableModels.length}
-														<Tooltip
-															className=" absolute top-1 left-1"
-															content={$i18n.t('{{ models }}', {
-																models: [...(atSelectedModel ? [atSelectedModel] : selectedModels)]
-																	.filter((id) => !visionCapableModels.includes(id))
-																	.join(', ')
-															})}
-														>
-															<svg
-																xmlns="http://www.w3.org/2000/svg"
-																viewBox="0 0 24 24"
-																fill="currentColor"
-																aria-hidden="true"
-																class="size-4 fill-yellow-300"
+												<div class=" relative group">
+													<div class="relative flex items-center">
+														<Image
+															src={fileUrl}
+															alt=""
+															imageClassName=" size-10 rounded-xl object-cover"
+														/>
+														{#if atSelectedModel ? visionCapableModels.length === 0 : selectedModels.length !== visionCapableModels.length}
+															<Tooltip
+																className=" absolute top-1 left-1"
+																content={$i18n.t('{{ models }}', {
+																	models: [
+																		...(atSelectedModel ? [atSelectedModel] : selectedModels)
+																	]
+																		.filter((id) => !visionCapableModels.includes(id))
+																		.join(', ')
+																})}
 															>
-																<path
-																	fill-rule="evenodd"
-																	d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"
-																	clip-rule="evenodd"
-																/>
-															</svg>
-														</Tooltip>
-													{/if}
-												</div>
-												<div class=" absolute -top-1 -right-1">
+																<svg
+																	xmlns="http://www.w3.org/2000/svg"
+																	viewBox="0 0 24 24"
+																	fill="currentColor"
+																	aria-hidden="true"
+																	class="size-4 fill-yellow-300"
+																>
+																	<path
+																		fill-rule="evenodd"
+																		d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"
+																		clip-rule="evenodd"
+																	/>
+																</svg>
+															</Tooltip>
+														{/if}
+													</div>
+													<div class=" absolute -top-1 -right-1">
 														<button
 															class=" bg-white text-black border border-white rounded-full {($settings?.highContrastMode ??
 															false)
@@ -1478,8 +1499,8 @@
 														>
 															<XMark className="size-4" />
 														</button>
+													</div>
 												</div>
-											</div>
 											{/if}
 										{:else if isPastedTextFile(file)}
 											<PastedTextCard
@@ -1849,7 +1870,9 @@
 													<div class="min-w-0 flex-1">
 														<div class="text-sm font-medium">{$i18n.t('Auto')}</div>
 														<div class="text-xs text-gray-500 dark:text-gray-400 leading-snug">
-															{$i18n.t('Approve for me. Edits in this project apply; risky actions still ask.')}
+															{$i18n.t(
+																'Approve for me. Edits in this project apply; risky actions still ask.'
+															)}
 														</div>
 													</div>
 													{#if projectAccessMode === 'auto'}
@@ -1878,15 +1901,17 @@
 													{/if}
 												</button>
 												<div class="px-3 pt-1 pb-2 text-[11px] text-gray-400 dark:text-gray-500">
-													{$i18n.t('Read-only disables edits. Auto keeps edits in this project. Full access removes prompts.')}
+													{$i18n.t(
+														'Read-only disables edits. Auto keeps edits in this project. Full access removes prompts.'
+													)}
 												</div>
 											</div>
 										</Dropdown>
 									{/if}
 
-										<ModelPicker
-											value={selectedModels[0] ?? 'enos.conscious'}
-											onSelect={(id) => {
+									<ModelPicker
+										value={selectedModels[0] ?? 'enos.conscious'}
+										onSelect={(id) => {
 											persistComposerModel(id);
 										}}
 									/>
@@ -1906,10 +1931,10 @@
 												>
 													<Knobs className="size-4" strokeWidth="1.5" />
 												</button>
-												</Tooltip>
-											</div>
-										{/if}
-									</div>
+											</Tooltip>
+										</div>
+									{/if}
+								</div>
 
 								<div class="self-end flex space-x-1 mr-1 shrink-0 gap-[0.5px]">
 									{#if isActive && prompt === '' && files.length === 0}
@@ -1954,8 +1979,8 @@
 											</Tooltip>
 										{/if}
 
-											{#if !history?.currentId || history.messages[history.currentId]?.done == true}
-												{#if $_user?.role === 'admin' || ($_user?.permissions?.chat?.stt ?? true)}
+										{#if !history?.currentId || history.messages[history.currentId]?.done == true}
+											{#if $_user?.role === 'admin' || ($_user?.permissions?.chat?.stt ?? true)}
 												<!-- {$i18n.t('Record voice')} -->
 												<Tooltip content={$i18n.t('Dictate')}>
 													<button

@@ -126,7 +126,6 @@
 							)}
 						</div>
 					</div>
-
 				</div>
 
 				<hr class="border-gray-100/50 dark:border-gray-850/50 my-4" />
@@ -142,7 +141,6 @@
 								'Connect to Open Terminal instances to browse files and use them as always-on tools. Only one can be active at a time.'
 							)}
 						</div>
-
 					</div>
 				</div>
 			</div>

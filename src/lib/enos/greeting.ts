@@ -22,7 +22,11 @@ export function composeWelcomeGreeting(
 	} else if (hour >= 12 && hour < 17) {
 		pool.push(withName('Good afternoon.'), 'Where should we start?', 'What needs attention?');
 	} else if (hour >= 17 && hour < 22) {
-		pool.push(withName('Good evening.'), 'What are we advancing?', 'Evening. What needs attention?');
+		pool.push(
+			withName('Good evening.'),
+			'What are we advancing?',
+			'Evening. What needs attention?'
+		);
 	} else {
 		pool.push(
 			'Late session. What needs attention?',

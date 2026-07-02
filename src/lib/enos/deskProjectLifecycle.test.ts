@@ -15,7 +15,9 @@ const localFolder = {
 
 const cloudFolder = {
 	id: 'cloud-1',
-	data: { project_context_source: { kind: 'cloud', rootName: 'proj-a', cloudPath: '/home/user/proj-a/' } }
+	data: {
+		project_context_source: { kind: 'cloud', rootName: 'proj-a', cloudPath: '/home/user/proj-a/' }
+	}
 };
 
 describe('isFolderAvailableHereIntent', () => {

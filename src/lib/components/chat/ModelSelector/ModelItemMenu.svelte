@@ -143,7 +143,6 @@
 
 				<div class="flex items-center">{$i18n.t('Copy Link')}</div>
 			</button>
-
 		</div>
 	</div>
 </Dropdown>

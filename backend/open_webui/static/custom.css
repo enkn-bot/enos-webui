@@ -1,68 +1,90 @@
 @font-face {
-  font-family: "Anthropic Sans";
-  src: url("/static/fonts/enos/AnthropicSansText-Regular.woff2") format("woff2");
-  font-weight: 100 900;
-  font-style: normal;
-  font-display: swap;
+	font-family: 'Anthropic Sans';
+	src: url('/static/fonts/enos/AnthropicSansText-Regular.woff2') format('woff2');
+	font-weight: 100 900;
+	font-style: normal;
+	font-display: swap;
 }
 @font-face {
-  font-family: "Anthropic Sans";
-  src: url("/static/fonts/enos/AnthropicSansText-Italic.woff2") format("woff2");
-  font-weight: 100 900;
-  font-style: italic;
-  font-display: swap;
+	font-family: 'Anthropic Sans';
+	src: url('/static/fonts/enos/AnthropicSansText-Italic.woff2') format('woff2');
+	font-weight: 100 900;
+	font-style: italic;
+	font-display: swap;
 }
 @font-face {
-  font-family: "Anthropic Serif";
-  src: url("/static/fonts/enos/AnthropicSerifText-Light.woff2") format("woff2");
-  font-weight: 300 500;
-  font-style: normal;
-  font-display: swap;
+	font-family: 'Anthropic Serif';
+	src: url('/static/fonts/enos/AnthropicSerifText-Light.woff2') format('woff2');
+	font-weight: 300 500;
+	font-style: normal;
+	font-display: swap;
 }
 @font-face {
-  font-family: "Anthropic Serif";
-  src: url("/static/fonts/enos/AnthropicSerifText-LightItalic.woff2") format("woff2");
-  font-weight: 300 500;
-  font-style: italic;
-  font-display: swap;
+	font-family: 'Anthropic Serif';
+	src: url('/static/fonts/enos/AnthropicSerifText-LightItalic.woff2') format('woff2');
+	font-weight: 300 500;
+	font-style: italic;
+	font-display: swap;
 }
 @font-face {
-  font-family: "Anthropic Mono";
-  src: url("/static/fonts/enos/AnthropicMono-Regular.woff2") format("woff2");
-  font-weight: 100 900;
-  font-style: normal;
-  font-display: swap;
+	font-family: 'Anthropic Mono';
+	src: url('/static/fonts/enos/AnthropicMono-Regular.woff2') format('woff2');
+	font-weight: 100 900;
+	font-style: normal;
+	font-display: swap;
 }
 
 /* 1. UI chrome: calm sans */
-html, body, button, input, textarea, select {
-  font-family: "Anthropic Sans", -apple-system, BlinkMacSystemFont, Inter,
-    ui-sans-serif, system-ui, sans-serif !important;
+html,
+body,
+button,
+input,
+textarea,
+select {
+	font-family:
+		'Anthropic Sans',
+		-apple-system,
+		BlinkMacSystemFont,
+		Inter,
+		ui-sans-serif,
+		system-ui,
+		sans-serif !important;
 }
 
 /* 2. Assistant prose: serif reading voice */
 .markdown-prose {
-  font-family: "Anthropic Serif", Georgia, "Times New Roman", serif !important;
-  line-height: 1.75;
+	font-family: 'Anthropic Serif', Georgia, 'Times New Roman', serif !important;
+	line-height: 1.75;
 }
 
 /* User bubbles stay sans */
-.user-message, .user-message * {
-  font-family: "Anthropic Sans", -apple-system, BlinkMacSystemFont, Inter,
-    ui-sans-serif, system-ui, sans-serif !important;
+.user-message,
+.user-message * {
+	font-family:
+		'Anthropic Sans',
+		-apple-system,
+		BlinkMacSystemFont,
+		Inter,
+		ui-sans-serif,
+		system-ui,
+		sans-serif !important;
 }
 
 /* Code keeps monospace */
-.markdown-prose code, .markdown-prose pre, code, pre {
-  font-family: "Anthropic Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+.markdown-prose code,
+.markdown-prose pre,
+code,
+pre {
+	font-family:
+		'Anthropic Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
 }
 
 /* 3. Sidebar ENOS wordmark */
 #sidebar-webui-name {
-  font-family: "Anthropic Sans", Inter, sans-serif !important;
-  font-size: 1.25rem !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.01em;
+	font-family: 'Anthropic Sans', Inter, sans-serif !important;
+	font-size: 1.25rem !important;
+	font-weight: 600 !important;
+	letter-spacing: 0.01em;
 }
 
 /* 4. RESTORED (de-nerf 2026-06-20): integration menu + Available Tools toggle
@@ -71,11 +93,11 @@ html, body, button, input, textarea, select {
 
 /* 5. Hide assistant response orb and model name header */
 img.assistant-message-profile-image {
-  display: none !important;
+	display: none !important;
 }
-[id="response-message-model-name"],
-.font-semibold:has([id="response-message-model-name"]) {
-  display: none !important;
+[id='response-message-model-name'],
+.font-semibold:has([id='response-message-model-name']) {
+	display: none !important;
 }
 
 /* 6. RESTORED (de-nerf 2026-06-20): Controls pane + User menu are base controls.

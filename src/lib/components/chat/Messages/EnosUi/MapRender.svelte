@@ -168,7 +168,9 @@
 	});
 </script>
 
-<div class="rounded-2xl border border-gray-100/30 dark:border-gray-850/30 overflow-hidden flex flex-col">
+<div
+	class="rounded-2xl border border-gray-100/30 dark:border-gray-850/30 overflow-hidden flex flex-col"
+>
 	{#if data?.title && !places.length}
 		<!-- nearby: the floating panel (or mobile list) carries the title instead -->
 		<div class="px-4 py-3 border-b border-gray-100/30 dark:border-gray-850/30">
@@ -184,7 +186,11 @@
 		<div class="p-4 text-sm text-gray-400 dark:text-gray-500 italic">{error}</div>
 	{:else}
 		<div class="relative">
-			<div bind:this={container} class="w-full" style="height: {places.length ? 440 : 360}px;"></div>
+			<div
+				bind:this={container}
+				class="w-full"
+				style="height: {places.length ? 440 : 360}px;"
+			></div>
 			{#if places.length}
 				<!-- floating results panel (nearby) — hidden on small screens, where
 				     the static list below the map takes over -->

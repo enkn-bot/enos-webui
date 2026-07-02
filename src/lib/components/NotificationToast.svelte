@@ -129,7 +129,11 @@
 	</button>
 
 	<div class="shrink-0 self-top -translate-y-0.5">
-		<img src="{WEBUI_BASE_URL}/static/favicon.png?v=enos-20260614-flat-logo-v2" alt="ENOS" class="size-6 rounded-full" />
+		<img
+			src="{WEBUI_BASE_URL}/static/favicon.png?v=enos-20260614-flat-logo-v2"
+			alt="ENOS"
+			class="size-6 rounded-full"
+		/>
 	</div>
 
 	<div class="flex-1 min-w-0">

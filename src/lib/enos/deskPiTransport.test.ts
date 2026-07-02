@@ -90,7 +90,10 @@ describe('runDeskPiTurn', () => {
 			delta: ' More.',
 			partial: {
 				role: 'assistant',
-				content: [{ type: 'text', text: 'Done.' }, { type: 'text', text: ' More.' }]
+				content: [
+					{ type: 'text', text: 'Done.' },
+					{ type: 'text', text: ' More.' }
+				]
 			}
 		}
 	};
@@ -103,7 +106,12 @@ describe('runDeskPiTurn', () => {
 			partial: { role: 'assistant', content: [{ type: 'thinking', thinking: 'The plan' }] }
 		}
 	};
-	const piToolStart = { type: 'tool_execution_start', toolCallId: 'c1', toolName: 'write', args: { path: 'r.js' } };
+	const piToolStart = {
+		type: 'tool_execution_start',
+		toolCallId: 'c1',
+		toolName: 'write',
+		args: { path: 'r.js' }
+	};
 	const piToolEnd = {
 		type: 'tool_execution_end',
 		toolCallId: 'c1',

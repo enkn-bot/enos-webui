@@ -13,6 +13,7 @@
 ### Task 1: Guard Tests
 
 **Files:**
+
 - Modify: `src/lib/enos/deskUiSource.test.ts`
 
 - [x] **Step 1: Add failing source guard tests**
@@ -32,6 +33,7 @@ Expected: fails before implementation.
 ### Task 2: Project Menu Detail
 
 **Files:**
+
 - Modify: `src/lib/components/enos/DeskProjectMenu.svelte`
 
 - [x] **Step 1: Hide duplicate detail**
@@ -41,6 +43,7 @@ Show project detail only when it exists and differs from the visible project nam
 ### Task 3: Lean New Project Modal
 
 **Files:**
+
 - Modify: `src/lib/components/layout/Sidebar/Folders/FolderModal.svelte`
 
 - [x] **Step 1: Add environment state**
@@ -58,6 +61,7 @@ Submit still returns `{ name, meta, data, localWorkspace, projectEnvironment, pa
 ### Task 4: Cloud Project Root
 
 **Files:**
+
 - Modify: `src/lib/components/layout/Sidebar.svelte`
 - Modify: `src/lib/enos/deskUiSource.test.ts`
 
@@ -72,6 +76,7 @@ When create mode submits `projectEnvironment === 'cloud'`, create `/home/user/<P
 ### Task 5: Verification
 
 **Files:**
+
 - Test: `src/lib/enos/deskUiSource.test.ts`
 - Test: `src/lib/components/enos/DeskWorkspacePicker.test.ts`
 

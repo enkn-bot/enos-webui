@@ -57,8 +57,7 @@
 	--font-primary:
 		'Anthropic Sans', -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui, sans-serif;
 	--font-secondary: 'Anthropic Serif', Georgia, 'Times New Roman', serif;
-	--font-mono:
-		'Anthropic Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	--font-mono: 'Anthropic Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
 	/* Present metadata as structured data: mono, muted, compact. */
 	#response-message-model-name,

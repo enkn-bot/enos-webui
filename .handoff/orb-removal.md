@@ -10,7 +10,7 @@
 
 Remove `EnosOrb` from `Skeleton.svelte` and revert to base v0.9.6's clean animated pulsing dot.
 
-User instruction: *"take our orbs so we have clean and work strictly from base, add shimmer to 'active' -ing states... don't want to over engineer, want this clean and improvement to base."*
+User instruction: _"take our orbs so we have clean and work strictly from base, add shimmer to 'active' -ing states... don't want to over engineer, want this clean and improvement to base."_
 
 ---
 
@@ -38,6 +38,7 @@ All changes committed and pushed to `origin/m13-electron-desktop-bridge`.
 **`src/lib/components/chat/Messages/Skeleton.svelte`** — replace EnosOrb with base pulsing dot.
 
 ### Current content (ENOS-modified)
+
 ```svelte
 <script lang="ts">
 	import EnosOrb from '$lib/components/common/EnosOrb.svelte';
@@ -53,27 +54,49 @@ All changes committed and pushed to `origin/m13-electron-desktop-bridge`.
 			? 'size-6'
 			: 'size-7'} -mx-1.5"
 >
-	<EnosOrb
-		{modelId}
-		className={size === 'md' ? 'size-9' : size === 'xs' ? 'size-6' : 'size-7'}
-	/>
+	<EnosOrb {modelId} className={size === 'md' ? 'size-9' : size === 'xs' ? 'size-6' : 'size-7'} />
 </span>
 ```
 
 ### Target content (base v0.9.6 — verified from upstream)
+
 ```svelte
 <script lang="ts">
 	export let size = 'md';
 </script>
 
-<span class="relative flex {size === 'md' ? 'size-3 my-2' : size === 'xs' ? 'size-1.5 my-1' : 'size-2 my-1'} mx-1">
-	<span class="absolute inline-flex h-full w-full animate-pulse rounded-full bg-gray-700 dark:bg-gray-200 opacity-75"></span>
-	<span class="relative inline-flex {size === 'md' ? 'size-3' : size === 'xs' ? 'size-1.5' : 'size-2'} rounded-full bg-black dark:bg-white animate-size"></span>
+<span
+	class="relative flex {size === 'md'
+		? 'size-3 my-2'
+		: size === 'xs'
+			? 'size-1.5 my-1'
+			: 'size-2 my-1'} mx-1"
+>
+	<span
+		class="absolute inline-flex h-full w-full animate-pulse rounded-full bg-gray-700 dark:bg-gray-200 opacity-75"
+	></span>
+	<span
+		class="relative inline-flex {size === 'md'
+			? 'size-3'
+			: size === 'xs'
+				? 'size-1.5'
+				: 'size-2'} rounded-full bg-black dark:bg-white animate-size"
+	></span>
 </span>
 
 <style>
-	@keyframes size { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.25); } }
-	.animate-size { animation: size 1.5s ease-in-out infinite; }
+	@keyframes size {
+		0%,
+		100% {
+			transform: scale(1);
+		}
+		50% {
+			transform: scale(1.25);
+		}
+	}
+	.animate-size {
+		animation: size 1.5s ease-in-out infinite;
+	}
 </style>
 ```
 

@@ -372,7 +372,6 @@
 									placeholder={`e.g.) /api/v1/messages, /api/v1/channels`}
 									bind:value={adminConfig.API_KEYS_ALLOWED_ENDPOINTS}
 								/>
-
 							</div>
 						{/if}
 					{/if}

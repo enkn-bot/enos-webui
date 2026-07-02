@@ -70,7 +70,6 @@
 							</a>
 						{/if}
 					</div>
-
 				</div>
 
 				{#if $config?.features?.enable_version_update_check}

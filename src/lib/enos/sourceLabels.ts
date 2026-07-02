@@ -32,7 +32,12 @@ const domainFromUrl = (value: string): string => {
 		const hostname = new URL(value).hostname;
 		return hostname.startsWith('www.') ? hostname.slice(4) : hostname;
 	} catch {
-		return value.replace(/^https?:\/\//, '').replace(/^www\./, '').split(/[/?#]/)[0] || value;
+		return (
+			value
+				.replace(/^https?:\/\//, '')
+				.replace(/^www\./, '')
+				.split(/[/?#]/)[0] || value
+		);
 	}
 };
 
@@ -48,7 +53,13 @@ export const getEnosCitationUrl = (
 	source: SourceLike | null | undefined,
 	metadata: MetadataLike | null | undefined
 ): string | null => {
-	for (const value of [metadata?.url, metadata?.link, metadata?.source, source?.url, source?.name]) {
+	for (const value of [
+		metadata?.url,
+		metadata?.link,
+		metadata?.source,
+		source?.url,
+		source?.name
+	]) {
 		if (isHttpUrl(value)) return clean(value);
 	}
 	return null;
@@ -74,10 +85,16 @@ export const getEnosCitationId = (
 ): string => {
 	const url = getEnosCitationUrl(source, metadata);
 	if (url) return url;
-	return firstReadable(metadata?.source, metadata?.name, metadata?.title, source?.id, source?.name) ?? 'N/A';
+	return (
+		firstReadable(metadata?.source, metadata?.name, metadata?.title, source?.id, source?.name) ??
+		'N/A'
+	);
 };
 
-export const getEnosSourceIds = (sources: any[] | null | undefined, citationsEnabled = true): string[] => {
+export const getEnosSourceIds = (
+	sources: any[] | null | undefined,
+	citationsEnabled = true
+): string[] => {
 	const result: string[] = [];
 	for (const source of sources ?? []) {
 		for (let index = 0; index < (source?.document ?? []).length; index++) {

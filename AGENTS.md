@@ -3,7 +3,7 @@
 You are an implementation agent on the **ENOS frontend** — a customized Open WebUI
 fork (FastAPI backend + Svelte frontend). This file is your grounding: hard rules,
 architecture, deploy reality, and definition of done. A reviewer (Claude) specs work
-and reviews your output against *this contract*. **Horsepower is assumed — discipline
+and reviews your output against _this contract_. **Horsepower is assumed — discipline
 and completion are the bar.** The companion contract for the backend pipe/core/Desk-app
 lives in the sibling repo at `../enos/AGENTS.md`; the prime directives are identical.
 
@@ -89,16 +89,18 @@ overwrites the previous deploy outright. Two sessions racing to build+deploy fro
 same tree is how a finished, verified fix gets silently replaced by a stale or
 half-finished one — it happened (2026-07-01: an unrelated in-progress notification-system
 change got bundled into a deploy of Desk dock work by a different session, then a third
-build overwrote *that*; no source was lost, but two live deploys were briefly wrong).
+build overwrote _that_; no source was lost, but two live deploys were briefly wrong).
 
 **Before you build+deploy, always check first:**
+
 ```
 git status --short        # anything you didn't touch? someone else is in this tree.
 git worktree list         # already-isolated sessions show up here
 ```
+
 - If `git status` is clean except your own files → building from the main tree is fine.
 - If it shows files you don't recognize → **do not** `npm run build`/rsync from here.
-  Isolate: `git worktree add --detach <tmp-path> HEAD`, copy *only your* changed files
+  Isolate: `git worktree add --detach <tmp-path> HEAD`, copy _only your_ changed files
   into it (`cp` each one — worktrees start from a commit, not the dirty working tree),
   build + rsync from there. Leaves the shared tree and the other session's edits
   completely untouched.

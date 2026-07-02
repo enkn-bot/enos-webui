@@ -44,6 +44,7 @@ RUN npm run build
 
 ######## WebUI backend ########
 FROM python:3.11-slim-bookworm AS base
+LABEL org.opencontainers.image.source="https://github.com/enkn-bot/enos-webui"
 
 # Use args
 ARG USE_CUDA

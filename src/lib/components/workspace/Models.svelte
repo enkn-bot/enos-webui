@@ -79,11 +79,16 @@
 	let enosRoutingExpanded = false;
 	let enosRouting = {
 		ROUTER_MODEL: 'google/gemini-2.5-flash-lite',
-		SUBCONSCIOUS_CHAIN: 'qwen/qwen3-30b-a3b-instruct-2507,z-ai/glm-4.7-flash,google/gemini-2.5-flash-lite',
-		SUBCONSCIOUS_TOOL_CHAIN: 'google/gemini-2.5-flash-lite,z-ai/glm-4.7-flash,qwen/qwen3-30b-a3b-instruct-2507',
-		STANDARD_CHAIN: 'deepseek/deepseek-v4-flash,inclusionai/ring-2.6-1t,qwen/qwen3.7-plus,minimax/minimax-m3,google/gemini-3.1-flash-lite',
-		TOOL_CHAIN: 'qwen/qwen3.7-plus,minimax/minimax-m3,google/gemini-3.1-flash-lite,deepseek/deepseek-v4-flash',
-		PRO_CHAIN: 'deepseek/deepseek-v4-pro,z-ai/glm-5.2,z-ai/glm-5.1,qwen/qwen3.7-max,moonshotai/kimi-k2.7-code,openrouter/auto',
+		SUBCONSCIOUS_CHAIN:
+			'qwen/qwen3-30b-a3b-instruct-2507,z-ai/glm-4.7-flash,google/gemini-2.5-flash-lite',
+		SUBCONSCIOUS_TOOL_CHAIN:
+			'google/gemini-2.5-flash-lite,z-ai/glm-4.7-flash,qwen/qwen3-30b-a3b-instruct-2507',
+		STANDARD_CHAIN:
+			'deepseek/deepseek-v4-flash,inclusionai/ring-2.6-1t,qwen/qwen3.7-plus,minimax/minimax-m3,google/gemini-3.1-flash-lite',
+		TOOL_CHAIN:
+			'qwen/qwen3.7-plus,minimax/minimax-m3,google/gemini-3.1-flash-lite,deepseek/deepseek-v4-flash',
+		PRO_CHAIN:
+			'deepseek/deepseek-v4-pro,z-ai/glm-5.2,z-ai/glm-5.1,qwen/qwen3.7-max,moonshotai/kimi-k2.7-code,openrouter/auto',
 		DEEP_TOOL_CHAIN: 'qwen/qwen3.7-max,z-ai/glm-5.2,minimax/minimax-m3,deepseek/deepseek-v4-pro',
 		JUDGE_CHAIN: 'google/gemini-2.5-flash-lite,deepseek/deepseek-v4-flash',
 		DEEP_REVIEW_CHAIN: 'z-ai/glm-5.2,qwen/qwen3.7-max',
@@ -115,7 +120,9 @@
 				enosRouting = {
 					...enosRouting,
 					...Object.fromEntries(
-						Object.entries(valves).filter(([, value]) => value !== undefined && value !== null && value !== '')
+						Object.entries(valves).filter(
+							([, value]) => value !== undefined && value !== null && value !== ''
+						)
 					)
 				};
 			}
@@ -486,7 +493,9 @@
 		class="py-2 bg-white dark:bg-gray-900 rounded-3xl border border-gray-100/30 dark:border-gray-850/30"
 	>
 		{#if $user?.role === 'admin'}
-			<div class="mx-3 mb-3 rounded-2xl border border-gray-100 dark:border-gray-850 bg-gray-50/70 dark:bg-gray-950/40 p-4">
+			<div
+				class="mx-3 mb-3 rounded-2xl border border-gray-100 dark:border-gray-850 bg-gray-50/70 dark:bg-gray-950/40 p-4"
+			>
 				<button
 					class="w-full flex items-center justify-between"
 					on:click={() => (enosRoutingExpanded = !enosRoutingExpanded)}
@@ -494,112 +503,167 @@
 					<div class="flex flex-col gap-1 text-left">
 						<div class="text-sm font-semibold text-gray-900 dark:text-gray-100">ENOS routing</div>
 						<div class="text-xs text-gray-500 dark:text-gray-400">
-							Subconscious, Conscious, and Ego are product tiers. The rows under them are provider fallback chains, not extra user-facing models.
+							Subconscious, Conscious, and Ego are product tiers. The rows under them are provider
+							fallback chains, not extra user-facing models.
 						</div>
 					</div>
 					<svg
-						class="size-5 text-gray-500 dark:text-gray-400 transition-transform duration-200 {enosRoutingExpanded ? 'rotate-180' : ''}"
+						class="size-5 text-gray-500 dark:text-gray-400 transition-transform duration-200 {enosRoutingExpanded
+							? 'rotate-180'
+							: ''}"
 						viewBox="0 0 20 20"
 						fill="currentColor"
 					>
-						<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+						<path
+							fill-rule="evenodd"
+							d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+							clip-rule="evenodd"
+						/>
 					</svg>
 				</button>
 
 				{#if enosRoutingExpanded}
 					<div class="grid gap-2 md:grid-cols-2 xl:grid-cols-3 mt-3">
-					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
-						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Subconscious text</div>
-						<div class="flex flex-col gap-1">
-							{#each chainItems(enosRouting.SUBCONSCIOUS_CHAIN) as model}
-								<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">{model}</div>
-							{/each}
+						<div
+							class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3"
+						>
+							<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+								Subconscious text
+							</div>
+							<div class="flex flex-col gap-1">
+								{#each chainItems(enosRouting.SUBCONSCIOUS_CHAIN) as model}
+									<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">
+										{model}
+									</div>
+								{/each}
+							</div>
+						</div>
+
+						<div
+							class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3"
+						>
+							<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+								Subconscious tools/RAG
+							</div>
+							<div class="flex flex-col gap-1">
+								{#each chainItems(enosRouting.SUBCONSCIOUS_TOOL_CHAIN) as model}
+									<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">
+										{model}
+									</div>
+								{/each}
+							</div>
+						</div>
+
+						<div
+							class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3"
+						>
+							<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+								Conscious text
+							</div>
+							<div class="flex flex-col gap-1">
+								{#each chainItems(enosRouting.STANDARD_CHAIN) as model}
+									<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">
+										{model}
+									</div>
+								{/each}
+							</div>
+						</div>
+
+						<div
+							class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3"
+						>
+							<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+								Conscious tools/RAG
+							</div>
+							<div class="flex flex-col gap-1">
+								{#each chainItems(enosRouting.TOOL_CHAIN) as model}
+									<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">
+										{model}
+									</div>
+								{/each}
+							</div>
+						</div>
+
+						<div
+							class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3"
+						>
+							<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Ego text</div>
+							<div class="flex flex-col gap-1">
+								{#each chainItems(enosRouting.PRO_CHAIN) as model}
+									<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">
+										{model}
+									</div>
+								{/each}
+							</div>
+						</div>
+
+						<div
+							class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3"
+						>
+							<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+								Ego tools/RAG
+							</div>
+							<div class="flex flex-col gap-1">
+								{#each chainItems(enosRouting.DEEP_TOOL_CHAIN) as model}
+									<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">
+										{model}
+									</div>
+								{/each}
+							</div>
+						</div>
+
+						<div
+							class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3"
+						>
+							<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Router</div>
+							<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">
+								{enosRouting.ROUTER_MODEL}
+							</div>
+							<div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+								Dispatch and lightweight classification. Timeout: {enosRouting.ROUTER_TIMEOUT_S}s.
+							</div>
+						</div>
+
+						<div
+							class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3"
+						>
+							<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Judge</div>
+							<div class="flex flex-col gap-1">
+								{#each chainItems(enosRouting.JUDGE_CHAIN) as model}
+									<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">
+										{model}
+									</div>
+								{/each}
+							</div>
+							<div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+								Normal evidence checks.
+							</div>
+						</div>
+
+						<div
+							class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3"
+						>
+							<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+								Deep review / council
+							</div>
+							<div class="flex flex-col gap-1">
+								{#each [...chainItems(enosRouting.DEEP_REVIEW_CHAIN), ...chainItems(enosRouting.COUNCIL_CHAIN)] as model}
+									<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">
+										{model}
+									</div>
+								{/each}
+							</div>
+							<div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+								Escalation only; not normal chat routing.
+							</div>
 						</div>
 					</div>
 
-					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
-						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Subconscious tools/RAG</div>
-						<div class="flex flex-col gap-1">
-							{#each chainItems(enosRouting.SUBCONSCIOUS_TOOL_CHAIN) as model}
-								<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">{model}</div>
-							{/each}
-						</div>
+					<div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
+						Desk tiers are terminal-capable bindings to <span class="font-mono">enos-m11</span>. The
+						old <span class="font-mono">enos.desk</span> bridge is retained for compatibility but hidden
+						from this view.
 					</div>
-
-					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
-						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Conscious text</div>
-						<div class="flex flex-col gap-1">
-							{#each chainItems(enosRouting.STANDARD_CHAIN) as model}
-								<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">{model}</div>
-							{/each}
-						</div>
-					</div>
-
-					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
-						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Conscious tools/RAG</div>
-						<div class="flex flex-col gap-1">
-							{#each chainItems(enosRouting.TOOL_CHAIN) as model}
-								<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">{model}</div>
-							{/each}
-						</div>
-					</div>
-
-					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
-						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Ego text</div>
-						<div class="flex flex-col gap-1">
-							{#each chainItems(enosRouting.PRO_CHAIN) as model}
-								<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">{model}</div>
-							{/each}
-						</div>
-					</div>
-
-					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
-						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Ego tools/RAG</div>
-						<div class="flex flex-col gap-1">
-							{#each chainItems(enosRouting.DEEP_TOOL_CHAIN) as model}
-								<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">{model}</div>
-							{/each}
-						</div>
-					</div>
-
-					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
-						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Router</div>
-						<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">
-							{enosRouting.ROUTER_MODEL}
-						</div>
-						<div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-							Dispatch and lightweight classification. Timeout: {enosRouting.ROUTER_TIMEOUT_S}s.
-						</div>
-					</div>
-
-					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
-						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Judge</div>
-						<div class="flex flex-col gap-1">
-							{#each chainItems(enosRouting.JUDGE_CHAIN) as model}
-								<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">{model}</div>
-							{/each}
-						</div>
-						<div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-							Normal evidence checks.
-						</div>
-					</div>
-
-					<div class="rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-850 p-3">
-						<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Deep review / council</div>
-						<div class="flex flex-col gap-1">
-							{#each [...chainItems(enosRouting.DEEP_REVIEW_CHAIN), ...chainItems(enosRouting.COUNCIL_CHAIN)] as model}
-								<div class="truncate text-xs font-mono text-gray-800 dark:text-gray-200">{model}</div>
-							{/each}
-						</div>
-						<div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-							Escalation only; not normal chat routing.
-						</div>
-					</div>
-				</div>
-
-				<div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
-					Desk tiers are terminal-capable bindings to <span class="font-mono">enos-m11</span>. The old <span class="font-mono">enos.desk</span> bridge is retained for compatibility but hidden from this view.
-				</div>
 				{/if}
 			</div>
 		{/if}

@@ -86,7 +86,9 @@ const ACTION_ALIASES: Record<string, string> = {
 
 /** Map a raw status action token to a canonical cognition verb key. */
 export const normalizeAction = (action: string | null | undefined): keyof typeof VERBS => {
-	const raw = String(action ?? '').trim().toLowerCase();
+	const raw = String(action ?? '')
+		.trim()
+		.toLowerCase();
 	if (raw in ACTION_ALIASES) return ACTION_ALIASES[raw] as keyof typeof VERBS;
 	if (raw in VERBS) return raw as keyof typeof VERBS;
 	// Heuristic for unmapped tool actions (e.g. 'git_status', 'rename').

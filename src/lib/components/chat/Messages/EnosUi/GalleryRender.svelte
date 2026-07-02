@@ -22,7 +22,9 @@
 </script>
 
 {#if visible.length > 0}
-	<div class="rounded-2xl border border-gray-100/30 dark:border-gray-850/30 overflow-hidden flex flex-col">
+	<div
+		class="rounded-2xl border border-gray-100/30 dark:border-gray-850/30 overflow-hidden flex flex-col"
+	>
 		{#if data?.title}
 			<div class="px-4 py-3 border-b border-gray-100/30 dark:border-gray-850/30">
 				<h2 class="text-sm font-semibold text-black dark:text-white capitalize">{data.title}</h2>

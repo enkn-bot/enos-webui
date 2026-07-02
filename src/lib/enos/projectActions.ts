@@ -33,7 +33,9 @@ const formatEntry = (entry: EnosDesktopEntry) =>
 		: `- ${entry.path} (${entry.size ?? 'unknown'} bytes)`;
 
 const shouldReadSummaryFiles = (prompt = '') =>
-	/\b(project|folder|files?|readme|package|what.*about|what.*in|structure|contents?)\b/i.test(prompt);
+	/\b(project|folder|files?|readme|package|what.*about|what.*in|structure|contents?)\b/i.test(
+		prompt
+	);
 
 const selectSummaryEntries = (listing: EnosDesktopProjectDirectoryListing) =>
 	listing.entries

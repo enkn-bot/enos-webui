@@ -42,8 +42,7 @@
 		'Archivo', 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Inter', ui-sans-serif, system-ui,
 		'Segoe UI', Roboto, sans-serif;
 	--font-secondary: 'InstrumentSerif', Georgia, 'Times New Roman', serif;
-	--font-mono:
-		'JetBrainsMono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+	--font-mono: 'JetBrainsMono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
 }
 
 html {

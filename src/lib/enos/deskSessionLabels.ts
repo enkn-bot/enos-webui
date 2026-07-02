@@ -2,10 +2,7 @@ import type { EnosSurface } from '$lib/enos/surfaceScope';
 
 export type DeskSurfaceLabelKind = 'new' | 'collection' | 'empty' | 'rename';
 
-export const deskSurfaceLabel = (
-	kind: DeskSurfaceLabelKind,
-	surface: EnosSurface
-): string => {
+export const deskSurfaceLabel = (kind: DeskSurfaceLabelKind, surface: EnosSurface): string => {
 	if (surface === 'desk') {
 		if (kind === 'new') return 'New Session';
 		if (kind === 'collection') return 'Sessions';

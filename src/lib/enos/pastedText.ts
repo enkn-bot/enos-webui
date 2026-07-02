@@ -5,9 +5,9 @@ const PASTED_TEXT_NAME_PATTERN = /^Pasted_Text_\d+\.txt$/;
 export const isPastedTextFile = (file: any) =>
 	Boolean(
 		file?.isPastedText ||
-			(file?.type === 'file' &&
-				PASTED_TEXT_NAME_PATTERN.test(String(file?.name ?? '')) &&
-				(file?.content_type === 'text/plain' || file?.context === 'full'))
+		(file?.type === 'file' &&
+			PASTED_TEXT_NAME_PATTERN.test(String(file?.name ?? '')) &&
+			(file?.content_type === 'text/plain' || file?.context === 'full'))
 	);
 
 export const getPastedTextContent = (file: any) =>

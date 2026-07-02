@@ -40,7 +40,9 @@
 
 		const lt = localTerminal();
 		if (!lt) {
-			term.write('\r\n\x1b[31mLocal terminal is only available in the ENOS desktop app.\x1b[0m\r\n');
+			term.write(
+				'\r\n\x1b[31mLocal terminal is only available in the ENOS desktop app.\x1b[0m\r\n'
+			);
 			return;
 		}
 

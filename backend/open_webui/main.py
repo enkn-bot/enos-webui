@@ -1900,11 +1900,7 @@ async def chat_completion(
                                 # into the meta column (_row_meta_from_chat). Foldered/chat
                                 # chats are unaffected (filterChatsBySurface uses folder
                                 # authority for foldered chats; 'chat' is the default).
-                                **(
-                                    {'meta': {'surface': metadata['surface']}}
-                                    if metadata.get('surface')
-                                    else {}
-                                ),
+                                **({'meta': {'surface': metadata['surface']}} if metadata.get('surface') else {}),
                             },
                             folder_id=metadata.get('folder_id'),
                         ),
