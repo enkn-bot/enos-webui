@@ -46,12 +46,12 @@ describe('CLI browser auth helpers', () => {
 	});
 
 	test('uses localStorage token before falling back to OWUI token cookie', () => {
-		expect(getCliAuthToken({ localStorageToken: ' local-token ', cookie: 'token=cookie-token' })).toBe(
-			'local-token'
-		);
-		expect(getCliAuthToken({ localStorageToken: '', cookie: 'theme=dark; token=cookie-token' })).toBe(
-			'cookie-token'
-		);
+		expect(
+			getCliAuthToken({ localStorageToken: ' local-token ', cookie: 'token=cookie-token' })
+		).toBe('local-token');
+		expect(
+			getCliAuthToken({ localStorageToken: '', cookie: 'theme=dark; token=cookie-token' })
+		).toBe('cookie-token');
 		expect(getCliAuthToken({ localStorageToken: '', cookie: 'theme=dark' })).toBe('');
 	});
 });

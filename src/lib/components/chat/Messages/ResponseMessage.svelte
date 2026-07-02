@@ -724,15 +724,15 @@
 			<div>
 				<div class="chat-{message.role} w-full min-w-full markdown-prose">
 					<div>
-							{#if model?.info?.meta?.capabilities?.status_updates ?? true}
-								<StatusHistory
-									statusHistory={message?.statusHistory}
-									compactDesk={isDeskSurface}
-									modelId={message?.model}
-									answerPresent={message?.done === true}
-									{reasoningText}
-								/>
-							{/if}
+						{#if model?.info?.meta?.capabilities?.status_updates ?? true}
+							<StatusHistory
+								statusHistory={message?.statusHistory}
+								compactDesk={isDeskSurface}
+								modelId={message?.model}
+								answerPresent={message?.done === true}
+								{reasoningText}
+							/>
+						{/if}
 
 						{#if displayFiles.length > 0}
 							<div
@@ -861,8 +861,8 @@
 							class="w-full flex flex-col relative {edit ? 'hidden' : ''}"
 							id="response-content-container"
 						>
-								{#if message.content === '' && !message.done && !message.error && !hasVisibleStatus}
-									<Skeleton modelId={message.model} />
+							{#if message.content === '' && !message.done && !message.error && !hasVisibleStatus}
+								<Skeleton modelId={message.model} />
 							{:else if message.content && message.error !== true}
 								<!-- always show message contents even if there's an error -->
 								<!-- unless message.error === true which is legacy error handling, where the error message is stored in message.content -->
@@ -1182,10 +1182,7 @@
 								{/if}
 
 								{#if message.usage}
-									<Tooltip
-										content={usageTooltipContent}
-										placement="bottom"
-									>
+									<Tooltip content={usageTooltipContent} placement="bottom">
 										<button
 											aria-hidden="true"
 											class=" {isLastMessage || ($settings?.highContrastMode ?? false)

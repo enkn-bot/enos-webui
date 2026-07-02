@@ -1341,5 +1341,5 @@
 			: 'light'}
 	position="top-right"
 	closeButton
-	toastOptions={toastOptions}
+	{toastOptions}
 />

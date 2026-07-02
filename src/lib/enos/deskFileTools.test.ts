@@ -15,8 +15,7 @@ import {
 	type DeskToolName
 } from '$lib/enos/deskFileTools';
 
-const toolByName = (name: DeskToolName) =>
-	DESK_FILE_TOOLS.find((t) => t.function.name === name);
+const toolByName = (name: DeskToolName) => DESK_FILE_TOOLS.find((t) => t.function.name === name);
 
 describe('describeDeskTool label honesty', () => {
 	test('successful delete shows the done label', () => {
@@ -30,12 +29,18 @@ describe('describeDeskTool label honesty', () => {
 	});
 
 	test('failed write/edit render a failure label, not success', () => {
-		expect(describeDeskTool('write_file', { path: 'a.ts' }, 'end', false)).toBe("Couldn't write a.ts");
-		expect(describeDeskTool('edit_file', { path: 'a.ts' }, 'end', false)).toBe("Couldn't edit a.ts");
+		expect(describeDeskTool('write_file', { path: 'a.ts' }, 'end', false)).toBe(
+			"Couldn't write a.ts"
+		);
+		expect(describeDeskTool('edit_file', { path: 'a.ts' }, 'end', false)).toBe(
+			"Couldn't edit a.ts"
+		);
 	});
 
 	test('start phase is unaffected by outcome', () => {
-		expect(describeDeskTool('delete_entry', { path: 'x.png' }, 'start', false)).toBe('Deleting x.png');
+		expect(describeDeskTool('delete_entry', { path: 'x.png' }, 'start', false)).toBe(
+			'Deleting x.png'
+		);
 	});
 
 	test('web_search narration includes the query for context', () => {
@@ -73,7 +78,13 @@ const fakeBridge = (overrides: Record<string, any> = {}) =>
 		writeProjectFile: vi.fn(async (_f: string, path: string, _c: string, opts: any) =>
 			opts?.confirmed
 				? { action: 'writeProjectFile', status: 'written', path, bytes: 5 }
-				: { action: 'writeProjectFile', status: 'requires_confirmation', path, bytes: 5, preview: 'x' }
+				: {
+						action: 'writeProjectFile',
+						status: 'requires_confirmation',
+						path,
+						bytes: 5,
+						preview: 'x'
+					}
 		),
 		createProjectFolder: vi.fn(async (_f: string, path: string) => ({
 			action: 'createProjectFolder',
@@ -89,7 +100,13 @@ const fakeBridge = (overrides: Record<string, any> = {}) =>
 		deleteProjectEntry: vi.fn(async (_f: string, path: string, opts: any) =>
 			opts?.confirmed
 				? { action: 'deleteProjectEntry', status: 'trashed', path }
-				: { action: 'deleteProjectEntry', status: 'requires_confirmation', path, bytes: 0, preview: '' }
+				: {
+						action: 'deleteProjectEntry',
+						status: 'requires_confirmation',
+						path,
+						bytes: 0,
+						preview: ''
+					}
 		),
 		revealProjectEntry: vi.fn(async (_f: string, path: string) => ({
 			action: 'revealProjectEntry',
@@ -277,7 +294,9 @@ describe('executeDeskFileTool', () => {
 			args: { path: 'a.md', content: 'new' },
 			confirmed: true
 		});
-		expect(bridge.writeProjectFile).toHaveBeenLastCalledWith('F', 'a.md', 'new', { confirmed: true });
+		expect(bridge.writeProjectFile).toHaveBeenLastCalledWith('F', 'a.md', 'new', {
+			confirmed: true
+		});
 		expect(done.status).toBe('ok');
 	});
 
@@ -291,12 +310,9 @@ describe('executeDeskFileTool', () => {
 			confirmed: true
 		});
 		expect(bridge.readProjectFile).toHaveBeenCalledWith('F', 'a.md');
-		expect(bridge.writeProjectFile).toHaveBeenLastCalledWith(
-			'F',
-			'a.md',
-			'goodbye world',
-			{ confirmed: true }
-		);
+		expect(bridge.writeProjectFile).toHaveBeenLastCalledWith('F', 'a.md', 'goodbye world', {
+			confirmed: true
+		});
 		expect(res.status).toBe('ok');
 	});
 
@@ -508,7 +524,9 @@ describe('executeDeskFileTool', () => {
 			args: {}
 		});
 		expect(res.status).toBe('error');
-		expect(res.status === 'error' && res.message.toLowerCase()).toContain('unsupported git operation');
+		expect(res.status === 'error' && res.message.toLowerCase()).toContain(
+			'unsupported git operation'
+		);
 		expect(res.status === 'error' && res.message).toContain('git_clone');
 		expect(res.status === 'error' && res.message).toContain('git_diff');
 	});
@@ -546,9 +564,7 @@ describe('executeDeskFileTool web_search', () => {
 			queryCollectionMock.mock.invocationCallOrder[0]
 		);
 		expect(res.status).toBe('ok');
-		expect(res.status === 'ok' && String(res.data)).toContain(
-			'Belgium won 2-1 in stoppage time.'
-		);
+		expect(res.status === 'ok' && String(res.data)).toContain('Belgium won 2-1 in stoppage time.');
 		expect(res.status === 'ok' && String(res.data)).toContain('https://x.com/a');
 	});
 

@@ -29,7 +29,11 @@ const meaningfulStyles = (styles: Record<string, string>): [string, string][] =>
 	Object.entries(styles).filter(([k, v]) => {
 		if (STYLE_DEFAULTS[k] === v) return false;
 		// Drop borders that aren't visible (0-width or transparent).
-		if (k === 'border' && (/^0px/.test(v) || v.includes('none') || /rgba\([^)]*,\s*0\)\s*$/.test(v))) return false;
+		if (
+			k === 'border' &&
+			(/^0px/.test(v) || v.includes('none') || /rgba\([^)]*,\s*0\)\s*$/.test(v))
+		)
+			return false;
 		return true;
 	});
 

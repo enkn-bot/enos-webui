@@ -2,7 +2,12 @@
 <html lang="en" data-fonts="anthropic">
 	<head>
 		<meta charset="utf-8" />
-		<link rel="icon" type="image/png" href="/static/favicon.png?v=enos-20260614-flat-logo-v2" crossorigin="use-credentials" />
+		<link
+			rel="icon"
+			type="image/png"
+			href="/static/favicon.png?v=enos-20260614-flat-logo-v2"
+			crossorigin="use-credentials"
+		/>
 		<link
 			rel="icon"
 			type="image/png"
@@ -16,14 +21,22 @@
 			href="/static/favicon.svg?v=enos-20260614-flat-logo-v2"
 			crossorigin="use-credentials"
 		/>
-		<link rel="shortcut icon" href="/static/favicon.ico?v=enos-20260614-flat-logo-v2" crossorigin="use-credentials" />
+		<link
+			rel="shortcut icon"
+			href="/static/favicon.ico?v=enos-20260614-flat-logo-v2"
+			crossorigin="use-credentials"
+		/>
 		<link
 			rel="apple-touch-icon"
 			sizes="180x180"
 			href="/static/apple-touch-icon.png?v=enos-20260614-flat-logo-v2"
 			crossorigin="use-credentials"
 		/>
-		<link rel="manifest" href="/manifest.json?v=enos-20260614-flat-logo-v2" crossorigin="use-credentials" />
+		<link
+			rel="manifest"
+			href="/manifest.json?v=enos-20260614-flat-logo-v2"
+			crossorigin="use-credentials"
+		/>
 		<meta
 			name="viewport"
 			content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
@@ -32,7 +45,11 @@
 		<meta name="robots" content="noindex,nofollow" />
 
 		<script src="/static/loader.js" defer crossorigin="use-credentials"></script>
-		<script type="module" src="/static/enos-surface.mjs?v=enos-m15c15" crossorigin="use-credentials"></script>
+		<script
+			type="module"
+			src="/static/enos-surface.mjs?v=enos-m15c15"
+			crossorigin="use-credentials"
+		></script>
 		<link rel="stylesheet" href="/static/custom.css?v=enos-m15c15" crossorigin="use-credentials" />
 
 		<script>
@@ -104,7 +121,9 @@
 					'position: absolute; width: auto; height: 6rem; top: 44%; left: 50%; transform: translateX(-50%); display:block;';
 				logo.loading = 'eager';
 				logo.fetchPriority = 'high';
-				logo.src = isDarkMode ? `/static/splash-dark.png?v=${logoVersion}` : `/static/splash.png?v=${logoVersion}`;
+				logo.src = isDarkMode
+					? `/static/splash-dark.png?v=${logoVersion}`
+					: `/static/splash.png?v=${logoVersion}`;
 
 				document.addEventListener('DOMContentLoaded', function () {
 					const splash = document.getElementById('splash-screen');

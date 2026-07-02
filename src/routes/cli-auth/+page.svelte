@@ -34,9 +34,7 @@
 			failed = true;
 			status = 'Terminal sign-in failed';
 			detail =
-				error instanceof Error
-					? error.message
-					: 'Run enos login again, or use enos login --key.';
+				error instanceof Error ? error.message : 'Run enos login again, or use enos login --key.';
 		}
 	});
 </script>
@@ -48,11 +46,13 @@
 <div class="min-h-screen bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-100">
 	<div class="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6">
 		<div class="space-y-3">
-			<div class="text-sm font-medium uppercase tracking-wide text-gray-400">
-				ENOS Terminal
-			</div>
+			<div class="text-sm font-medium uppercase tracking-wide text-gray-400">ENOS Terminal</div>
 			<h1 class="text-3xl font-semibold">{status}</h1>
-			<p class="text-base leading-7 {failed ? 'text-red-600 dark:text-red-300' : 'text-gray-500 dark:text-gray-400'}">
+			<p
+				class="text-base leading-7 {failed
+					? 'text-red-600 dark:text-red-300'
+					: 'text-gray-500 dark:text-gray-400'}"
+			>
 				{detail}
 			</p>
 		</div>

@@ -95,8 +95,18 @@ describe('recentActivity', () => {
 
 	test('removeRecentActivity removes only the targeted id', () => {
 		const store = memoryStorage();
-		pushRecentActivity(store, 'folder-A', { id: 'one', kind: 'file', title: 'one.ts', timestamp: 1 }, 1);
-		pushRecentActivity(store, 'folder-A', { id: 'two', kind: 'file', title: 'two.ts', timestamp: 2 }, 2);
+		pushRecentActivity(
+			store,
+			'folder-A',
+			{ id: 'one', kind: 'file', title: 'one.ts', timestamp: 1 },
+			1
+		);
+		pushRecentActivity(
+			store,
+			'folder-A',
+			{ id: 'two', kind: 'file', title: 'two.ts', timestamp: 2 },
+			2
+		);
 
 		const list = removeRecentActivity(store, 'folder-A', 'one');
 

@@ -737,11 +737,7 @@
 						<Artifacts {history} overlay={dragged} />
 					{:else if isDeskSurface}
 						<!-- Desk: Codex-style tabbed dock -->
-						<DeskDock
-							folderId={effectiveFileFolderId}
-							{chatId}
-							onOpenFile={handleDeskOpenFile}
-						>
+						<DeskDock folderId={effectiveFileFolderId} {chatId} onOpenFile={handleDeskOpenFile}>
 							<svelte:fragment slot="files">
 								{#if showProjectFileNav}
 									<LocalFileNav

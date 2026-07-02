@@ -47,7 +47,7 @@
 			groq: 'Groq',
 			openrouter: 'OpenRouter',
 			azure: 'Azure',
-			google: 'Google',
+			google: 'Google'
 		};
 		return labels[vendorId] ?? vendorId;
 	}
@@ -102,11 +102,7 @@
 	}
 
 	function buildGroups(allModels: any[]): Array<{ vendor: string; label: string; models: any[] }> {
-		const hidden = new Set(
-			allModels
-				.filter((m) => m?.info?.meta?.hidden)
-				.map((m) => m.id)
-		);
+		const hidden = new Set(allModels.filter((m) => m?.info?.meta?.hidden).map((m) => m.id));
 		const visible = allModels.filter((m) => !hidden.has(m.id));
 
 		// Group by vendor
@@ -141,7 +137,11 @@
 		fuse = new Fuse(
 			source
 				.filter((m) => !m?.info?.meta?.hidden)
-				.map((m) => ({ ...m, modelName: m?.name, tags: m?.info?.meta?.tags?.map((t: any) => t.name).join(' ') })),
+				.map((m) => ({
+					...m,
+					modelName: m?.name,
+					tags: m?.info?.meta?.tags?.map((t: any) => t.name).join(' ')
+				})),
 			{ keys: ['value', 'tags', 'modelName'], threshold: 0.5 }
 		);
 	}
@@ -154,9 +154,10 @@
 	$: groups = searchResults === null ? buildGroups($models ?? []) : null;
 
 	// Flat list for keyboard nav (refresh + all models grouped)
-	$: flatItems = searchResults !== null
-		? searchResults
-		: [REFRESH_CMD, ...(groups ?? []).flatMap((g) => g.models)];
+	$: flatItems =
+		searchResults !== null
+			? searchResults
+			: [REFRESH_CMD, ...(groups ?? []).flatMap((g) => g.models)];
 
 	$: filteredItems = flatItems;
 
@@ -231,7 +232,9 @@
 						: ''}"
 					type="button"
 					on:click={() => onSelect({ type: 'model', data: model })}
-					on:mousemove={() => { selectedIdx = modelIdx; }}
+					on:mousemove={() => {
+						selectedIdx = modelIdx;
+					}}
 					data-selected={modelIdx === selectedIdx}
 				>
 					<div class="flex text-black dark:text-gray-100 line-clamp-1">
@@ -239,11 +242,16 @@
 							src={`${WEBUI_API_BASE_URL}/models/model/profile/image?id=${model.id}&lang=${$i18n.language}`}
 							alt={model?.name ?? model.id}
 							class="rounded-full size-5 items-center mr-2"
-							on:error={(e) => { e.currentTarget.src = '/favicon.png'; }}
+							on:error={(e) => {
+								e.currentTarget.src = '/favicon.png';
+							}}
 						/>
 						<div class="truncate">{model.name}</div>
 						{#if isFreeModel(model)}
-							<span class="ml-auto text-[9px] text-green-600 dark:text-green-400 font-medium shrink-0">free</span>
+							<span
+								class="ml-auto text-[9px] text-green-600 dark:text-green-400 font-medium shrink-0"
+								>free</span
+							>
 						{/if}
 					</div>
 				</button>
@@ -258,7 +266,9 @@
 				: 'text-gray-600 dark:text-gray-400'}"
 			type="button"
 			on:click={refreshModels}
-			on:mousemove={() => { selectedIdx = 0; }}
+			on:mousemove={() => {
+				selectedIdx = 0;
+			}}
 			data-selected={0 === selectedIdx}
 		>
 			<div class="flex items-center gap-2">
@@ -270,7 +280,9 @@
 		{#each groups ?? [] as group, gi}
 			{@const groupStart = 1 + groups.slice(0, gi).reduce((acc, g) => acc + 1 + g.models.length, 0)}
 			<!-- Group header -->
-			<div class="px-2.5 pt-2 pb-0.5 text-[10px] font-medium text-gray-400 dark:text-gray-600 uppercase tracking-wide">
+			<div
+				class="px-2.5 pt-2 pb-0.5 text-[10px] font-medium text-gray-400 dark:text-gray-600 uppercase tracking-wide"
+			>
 				{group.label}
 				{#if group.models.some((m) => isFreeModel(m))}
 					<span class="ml-1 text-green-500 normal-case font-normal">· free</span>
@@ -286,7 +298,9 @@
 							: ''}"
 						type="button"
 						on:click={() => onSelect({ type: 'model', data: model })}
-						on:mousemove={() => { selectedIdx = flatIdx; }}
+						on:mousemove={() => {
+							selectedIdx = flatIdx;
+						}}
 						data-selected={flatIdx === selectedIdx}
 					>
 						<div class="flex text-black dark:text-gray-100 line-clamp-1">
@@ -294,11 +308,16 @@
 								src={`${WEBUI_API_BASE_URL}/models/model/profile/image?id=${model.id}&lang=${$i18n.language}`}
 								alt={model?.name ?? model.id}
 								class="rounded-full size-5 items-center mr-2 shrink-0"
-								on:error={(e) => { e.currentTarget.src = '/favicon.png'; }}
+								on:error={(e) => {
+									e.currentTarget.src = '/favicon.png';
+								}}
 							/>
 							<div class="truncate">{model.name}</div>
 							{#if isFreeModel(model)}
-								<span class="ml-auto text-[9px] text-green-600 dark:text-green-400 font-medium shrink-0">free</span>
+								<span
+									class="ml-auto text-[9px] text-green-600 dark:text-green-400 font-medium shrink-0"
+									>free</span
+								>
 							{/if}
 						</div>
 					</button>

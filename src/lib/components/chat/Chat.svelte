@@ -118,10 +118,7 @@
 	import Sidebar from '../icons/Sidebar.svelte';
 	import Image from '../common/Image.svelte';
 	import { getBanners } from '$lib/apis/configs';
-	import {
-		canUseEnosLocalPi,
-		getEnosDesktopBridge
-	} from '$lib/enos/desktopBridge';
+	import { canUseEnosLocalPi, getEnosDesktopBridge } from '$lib/enos/desktopBridge';
 	import { isDeskHostname, isChatSurface } from '$lib/enos/deskRuntime';
 	import { buildProjectActionContext } from '$lib/enos/projectActions';
 	import { runDeskAgentLoop } from '$lib/enos/deskAgentLoop';
@@ -2036,7 +2033,11 @@
 		if (clearTerminal) selectedTerminalId.set(null);
 		deskLocalLaunchApplied = true;
 	};
-	$: applyDeskLocalLaunchDefault(deskLocalBridgePresent, $selectedTerminalId, deskActiveProjectKind);
+	$: applyDeskLocalLaunchDefault(
+		deskLocalBridgePresent,
+		$selectedTerminalId,
+		deskActiveProjectKind
+	);
 
 	const repairDeskLooseChatSurface = async (source = chat) => {
 		// Guard conditions still match legacy wrapper semantics:
@@ -2388,7 +2389,6 @@
 		}
 		return true;
 	};
-
 
 	const handleProjectChatAction = async (userPrompt) => {
 		try {

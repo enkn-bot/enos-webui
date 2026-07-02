@@ -13,6 +13,7 @@
 ### Task 1: Surface And Session Helpers
 
 **Files:**
+
 - Modify: `src/lib/enos/surfaceScope.ts`
 - Modify: `src/lib/enos/surfaceScope.test.ts`
 - Create: `src/lib/enos/deskSessionLabels.ts`
@@ -22,16 +23,16 @@
 
 ```ts
 // src/lib/enos/surfaceScope.test.ts
-expect(filterProjectsForDeskRuntime(projects, { surface: 'desk', hasDesktopBridge: false }).map((p) => p.id)).toEqual([
-  'cloud',
-  'github'
-]);
-expect(filterProjectsForDeskRuntime(projects, { surface: 'desk', hasDesktopBridge: true }).map((p) => p.id)).toEqual([
-  'local',
-  'cloud',
-  'github',
-  'legacy'
-]);
+expect(
+	filterProjectsForDeskRuntime(projects, { surface: 'desk', hasDesktopBridge: false }).map(
+		(p) => p.id
+	)
+).toEqual(['cloud', 'github']);
+expect(
+	filterProjectsForDeskRuntime(projects, { surface: 'desk', hasDesktopBridge: true }).map(
+		(p) => p.id
+	)
+).toEqual(['local', 'cloud', 'github', 'legacy']);
 ```
 
 ```ts
@@ -52,35 +53,32 @@ Expected: FAIL because `filterProjectsForDeskRuntime` and `deskSurfaceLabel` do 
 
 ```ts
 export const filterProjectsForDeskRuntime = <T extends SurfaceScopedItem>(
-  items: T[] | null | undefined,
-  args: { surface: EnosSurface; hasDesktopBridge: boolean }
+	items: T[] | null | undefined,
+	args: { surface: EnosSurface; hasDesktopBridge: boolean }
 ): T[] => {
-  const list = filterBySurface(items, args.surface);
-  if (args.surface !== 'desk' || args.hasDesktopBridge) return list;
-  return list.filter((item) => {
-    const kind = (item as any)?.data?.project_context_source?.kind;
-    return kind === 'cloud' || kind === 'github';
-  });
+	const list = filterBySurface(items, args.surface);
+	if (args.surface !== 'desk' || args.hasDesktopBridge) return list;
+	return list.filter((item) => {
+		const kind = (item as any)?.data?.project_context_source?.kind;
+		return kind === 'cloud' || kind === 'github';
+	});
 };
 ```
 
 ```ts
 export type DeskSurfaceLabelKind = 'new' | 'collection' | 'empty' | 'rename';
 
-export const deskSurfaceLabel = (
-  kind: DeskSurfaceLabelKind,
-  surface: 'chat' | 'desk'
-): string => {
-  if (surface === 'desk') {
-    if (kind === 'new') return 'New Session';
-    if (kind === 'collection') return 'Sessions';
-    if (kind === 'empty') return 'No sessions yet';
-    if (kind === 'rename') return 'Rename session';
-  }
-  if (kind === 'new') return 'New Chat';
-  if (kind === 'collection') return 'Chats';
-  if (kind === 'empty') return 'No chats found';
-  return 'Rename chat';
+export const deskSurfaceLabel = (kind: DeskSurfaceLabelKind, surface: 'chat' | 'desk'): string => {
+	if (surface === 'desk') {
+		if (kind === 'new') return 'New Session';
+		if (kind === 'collection') return 'Sessions';
+		if (kind === 'empty') return 'No sessions yet';
+		if (kind === 'rename') return 'Rename session';
+	}
+	if (kind === 'new') return 'New Chat';
+	if (kind === 'collection') return 'Chats';
+	if (kind === 'empty') return 'No chats found';
+	return 'Rename chat';
 };
 ```
 
@@ -91,6 +89,7 @@ Run the same Vitest command. Expected: PASS.
 ### Task 2: Wire Web Desk Cloud-Only Projects And Session Copy
 
 **Files:**
+
 - Modify: `src/lib/components/layout/Sidebar.svelte`
 - Modify: `src/lib/components/layout/Sidebar/RecursiveFolder.svelte`
 - Modify: `src/lib/components/chat/Navbar.svelte`
@@ -111,18 +110,16 @@ Expected: FAIL on missing helper wiring and old local cue assertions.
 Use:
 
 ```svelte
-import { deskSurfaceLabel } from '$lib/enos/deskSessionLabels';
-import { filterProjectsForDeskRuntime } from '$lib/enos/surfaceScope';
-
-$: newChatLabel = $i18n.t(deskSurfaceLabel('new', currentSurface));
-$: sessionsLabel = $i18n.t(deskSurfaceLabel('collection', currentSurface));
+import {deskSurfaceLabel} from '$lib/enos/deskSessionLabels'; import {filterProjectsForDeskRuntime} from
+'$lib/enos/surfaceScope'; $: newChatLabel = $i18n.t(deskSurfaceLabel('new', currentSurface)); $: sessionsLabel
+= $i18n.t(deskSurfaceLabel('collection', currentSurface));
 ```
 
 Replace:
 
 ```ts
 const folderList = filterBySurface(allFolders, currentSurface, {
-  legacyDeskItemIds: legacyDeskProjectIds
+	legacyDeskItemIds: legacyDeskProjectIds
 });
 ```
 
@@ -130,8 +127,8 @@ with:
 
 ```ts
 const folderList = filterProjectsForDeskRuntime(
-  filterBySurface(allFolders, currentSurface, { legacyDeskItemIds: legacyDeskProjectIds }),
-  { surface: currentSurface, hasDesktopBridge }
+	filterBySurface(allFolders, currentSurface, { legacyDeskItemIds: legacyDeskProjectIds }),
+	{ surface: currentSurface, hasDesktopBridge }
 );
 ```
 
@@ -144,6 +141,7 @@ Run the same Vitest command. Expected: PASS.
 ### Task 3: Cloud Files Start At Active Project Root
 
 **Files:**
+
 - Modify: `src/lib/enos/cloudFiles.ts`
 - Modify: `src/lib/enos/cloudFiles.test.ts`
 - Modify: `src/lib/components/chat/FileNav.svelte`
@@ -153,10 +151,18 @@ Run the same Vitest command. Expected: PASS.
 - [x] **Step 1: Write failing tests**
 
 ```ts
-expect(resolveCloudFilesInitialPath('/home/user/', '/home/user/Test 22/')).toBe('/home/user/Test 22/');
-expect(resolveCloudFilesInitialPath('/home/user/.local/', '/home/user/Test 22/')).toBe('/home/user/Test 22/');
-expect(resolveCloudFilesInitialPath('/home/user/Test 22/src/', '/home/user/Test 22/')).toBe('/home/user/Test 22/src/');
-expect(resolveCloudProjectRoot({ kind: 'cloud', cloudPath: '/home/user/Test 22' })).toBe('/home/user/Test 22/');
+expect(resolveCloudFilesInitialPath('/home/user/', '/home/user/Test 22/')).toBe(
+	'/home/user/Test 22/'
+);
+expect(resolveCloudFilesInitialPath('/home/user/.local/', '/home/user/Test 22/')).toBe(
+	'/home/user/Test 22/'
+);
+expect(resolveCloudFilesInitialPath('/home/user/Test 22/src/', '/home/user/Test 22/')).toBe(
+	'/home/user/Test 22/src/'
+);
+expect(resolveCloudProjectRoot({ kind: 'cloud', cloudPath: '/home/user/Test 22' })).toBe(
+	'/home/user/Test 22/'
+);
 ```
 
 - [x] **Step 2: Verify red**
@@ -170,7 +176,9 @@ Expected: FAIL because project root helpers and prop wiring do not exist.
 Add `cloudProjectRoot` prop to `FileNav.svelte`, call `resolveCloudFilesInitialPath(cwd, cloudProjectRoot)`, and pass `cloudProjectRoot={selectedCloudProjectRoot}` from `ChatControls.svelte`, where:
 
 ```ts
-$: selectedCloudProjectRoot = resolveCloudProjectRoot($selectedFolder?.data?.project_context_source);
+$: selectedCloudProjectRoot = resolveCloudProjectRoot(
+	$selectedFolder?.data?.project_context_source
+);
 ```
 
 - [x] **Step 4: Verify green**
@@ -180,6 +188,7 @@ Run the same Vitest command. Expected: PASS.
 ### Task 4: Missing Local Folder Recovery State
 
 **Files:**
+
 - Modify: `src/lib/components/chat/LocalFileNav.svelte`
 - Modify: `src/lib/enos/deskUiSource.test.ts`
 
@@ -200,11 +209,13 @@ In the `unreachable` branch, replace the passive notice with a recovery-first bl
 ```svelte
 <div class="text-sm font-medium mb-1">{$i18n.t('Project folder missing')}</div>
 <div class="text-xs text-gray-400 dark:text-gray-500">
-  {$i18n.t('This project folder was moved, renamed, or deleted outside ENOS. Sessions stay here, but local files and agent actions are paused until you recover the folder.')}
+	{$i18n.t(
+		'This project folder was moved, renamed, or deleted outside ENOS. Sessions stay here, but local files and agent actions are paused until you recover the folder.'
+	)}
 </div>
 <div class="mt-4 flex justify-center gap-2">
-  <button on:click={chooseWorkspace}>{$i18n.t('Relink Folder')}</button>
-  <button on:click={() => (unreachable = false)}>{$i18n.t('Keep Read-Only')}</button>
+	<button on:click={chooseWorkspace}>{$i18n.t('Relink Folder')}</button>
+	<button on:click={() => (unreachable = false)}>{$i18n.t('Keep Read-Only')}</button>
 </div>
 ```
 
@@ -217,6 +228,7 @@ Expected: PASS.
 ### Task 5: Full Verification And Commit
 
 **Files:**
+
 - Modify: `docs/superpowers/plans/2026-06-25-desk-project-session-ux-hardening.md`
 
 - [x] **Step 1: Run focused tests**

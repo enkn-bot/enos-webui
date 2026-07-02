@@ -22,15 +22,13 @@ describe('tool status labels', () => {
 		});
 
 		test('web search query', () => {
-			expect(
-				formatToolStartStatus('web_search', { query: 'Gemini 2.5 Flash pricing 2026' })
-			).toBe('Searching Gemini 2.5 Flash pricing 2026');
+			expect(formatToolStartStatus('web_search', { query: 'Gemini 2.5 Flash pricing 2026' })).toBe(
+				'Searching Gemini 2.5 Flash pricing 2026'
+			);
 		});
 
 		test('bash command', () => {
-			expect(formatToolStartStatus('bash', { command: 'npm run build' })).toBe(
-				'Run npm run build'
-			);
+			expect(formatToolStartStatus('bash', { command: 'npm run build' })).toBe('Run npm run build');
 		});
 
 		test('no args — bare tool name', () => {
@@ -75,9 +73,7 @@ describe('tool status labels', () => {
 		});
 
 		test('successful tool with no detail falls back to plain end label', () => {
-			expect(formatToolOutcome('edit', true, 'Edit src/parser.ts', '')).toBe(
-				'Edit src/parser.ts'
-			);
+			expect(formatToolOutcome('edit', true, 'Edit src/parser.ts', '')).toBe('Edit src/parser.ts');
 		});
 
 		test('failed tool with detail keeps failed label only', () => {
@@ -95,9 +91,7 @@ describe('tool status labels', () => {
 
 	describe('extractPiToolOutcome', () => {
 		test('returns state title when present', () => {
-			expect(extractPiToolOutcome({ title: 'Edited src/parser.ts' })).toBe(
-				'Edited src/parser.ts'
-			);
+			expect(extractPiToolOutcome({ title: 'Edited src/parser.ts' })).toBe('Edited src/parser.ts');
 		});
 
 		test('returns empty when state title absent or undefined', () => {

@@ -30,9 +30,7 @@ describe('filterBySurface', () => {
 		];
 
 		expect(
-			filterBySurface(items, 'desk', { legacyDeskItemIds: ['bound-legacy'] }).map(
-				(item) => item.id
-			)
+			filterBySurface(items, 'desk', { legacyDeskItemIds: ['bound-legacy'] }).map((item) => item.id)
 		).toEqual(['desk', 'bound-legacy']);
 	});
 
@@ -61,10 +59,7 @@ describe('filterChatsBySurface (folder-authoritative scoping)', () => {
 	const deskFolderIds = ['fDesk'];
 
 	test('loose untagged chats default to chat, not desk', () => {
-		const chats = [
-			{ id: 'loose-undefined-folder' },
-			{ id: 'loose-null-folder', folder_id: null }
-		];
+		const chats = [{ id: 'loose-undefined-folder' }, { id: 'loose-null-folder', folder_id: null }];
 
 		expect(filterChatsBySurface(chats, 'chat', deskFolderIds).map((c) => c.id)).toEqual([
 			'loose-undefined-folder',

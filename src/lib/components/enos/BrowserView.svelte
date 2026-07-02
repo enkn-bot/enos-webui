@@ -100,7 +100,9 @@
 	};
 
 	const onFindKeydown = (e: KeyboardEvent) => {
-		if (e.key === 'Enter') { e.shiftKey ? doFind(false) : doFind(true); }
+		if (e.key === 'Enter') {
+			e.shiftKey ? doFind(false) : doFind(true);
+		}
 		if (e.key === 'Escape') closeFind();
 	};
 
@@ -117,7 +119,10 @@
 			}
 		};
 		const onStart = () => (loading = true);
-		const onStop = () => { loading = false; onNav(); };
+		const onStop = () => {
+			loading = false;
+			onNav();
+		};
 		const onFound = (e: any) => {
 			findResult = { active: e.result.activeMatchOrdinal ?? 0, total: e.result.matches ?? 0 };
 		};
@@ -184,7 +189,11 @@
 			aria-label={$i18n.t('Back')}
 		>
 			<svg viewBox="0 0 20 20" fill="currentColor" class="size-4"
-				><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 0 1 0 1.06L9.06 10l3.73 3.71a.75.75 0 1 1-1.06 1.06l-4.25-4.24a.75.75 0 0 1 0-1.06l4.25-4.24a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" /></svg
+				><path
+					fill-rule="evenodd"
+					d="M12.79 5.23a.75.75 0 0 1 0 1.06L9.06 10l3.73 3.71a.75.75 0 1 1-1.06 1.06l-4.25-4.24a.75.75 0 0 1 0-1.06l4.25-4.24a.75.75 0 0 1 1.06 0Z"
+					clip-rule="evenodd"
+				/></svg
 			>
 		</button>
 		<button
@@ -195,7 +204,11 @@
 			aria-label={$i18n.t('Forward')}
 		>
 			<svg viewBox="0 0 20 20" fill="currentColor" class="size-4"
-				><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 0 1 0-1.06L10.94 10 7.21 6.29a.75.75 0 1 1 1.06-1.06l4.25 4.24a.75.75 0 0 1 0 1.06l-4.25 4.24a.75.75 0 0 1-1.06 0Z" clip-rule="evenodd" /></svg
+				><path
+					fill-rule="evenodd"
+					d="M7.21 14.77a.75.75 0 0 1 0-1.06L10.94 10 7.21 6.29a.75.75 0 1 1 1.06-1.06l4.25 4.24a.75.75 0 0 1 0 1.06l-4.25 4.24a.75.75 0 0 1-1.06 0Z"
+					clip-rule="evenodd"
+				/></svg
 			>
 		</button>
 		<button
@@ -205,7 +218,11 @@
 			aria-label={$i18n.t('Reload')}
 		>
 			<svg viewBox="0 0 20 20" fill="currentColor" class="size-4 {loading ? 'animate-spin' : ''}"
-				><path fill-rule="evenodd" d="M15.312 11.424a5.5 5.5 0 0 1-9.201 2.466l-.312-.311h2.433a.75.75 0 0 0 0-1.5H3.989a.75.75 0 0 0-.75.75v4.242a.75.75 0 0 0 1.5 0v-2.43l.31.31a7 7 0 0 0 11.712-3.138.75.75 0 0 0-1.449-.39Zm1.23-3.723a.75.75 0 0 0 .219-.53V2.929a.75.75 0 0 0-1.5 0V5.36l-.31-.31A7 7 0 0 0 3.239 8.188a.75.75 0 1 0 1.448.389A5.5 5.5 0 0 1 13.89 6.11l.311.31h-2.432a.75.75 0 0 0 0 1.5h4.243a.75.75 0 0 0 .53-.219Z" clip-rule="evenodd" /></svg
+				><path
+					fill-rule="evenodd"
+					d="M15.312 11.424a5.5 5.5 0 0 1-9.201 2.466l-.312-.311h2.433a.75.75 0 0 0 0-1.5H3.989a.75.75 0 0 0-.75.75v4.242a.75.75 0 0 0 1.5 0v-2.43l.31.31a7 7 0 0 0 11.712-3.138.75.75 0 0 0-1.449-.39Zm1.23-3.723a.75.75 0 0 0 .219-.53V2.929a.75.75 0 0 0-1.5 0V5.36l-.31-.31A7 7 0 0 0 3.239 8.188a.75.75 0 1 0 1.448.389A5.5 5.5 0 0 1 13.89 6.11l.311.31h-2.432a.75.75 0 0 0 0 1.5h4.243a.75.75 0 0 0 .53-.219Z"
+					clip-rule="evenodd"
+				/></svg
 			>
 		</button>
 		<input
@@ -239,7 +256,9 @@
 				aria-label="More options"
 			>
 				<svg viewBox="0 0 20 20" fill="currentColor" class="size-4">
-					<path d="M10 3a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM10 8.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM11.5 15.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0Z" />
+					<path
+						d="M10 3a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM10 8.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM11.5 15.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0Z"
+					/>
 				</svg>
 			</button>
 
@@ -256,18 +275,18 @@
 							<button
 								type="button"
 								class="p-1 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm font-medium w-6 h-6 flex items-center justify-center"
-								on:click={() => adjustZoom(-0.1)}
-							>−</button>
+								on:click={() => adjustZoom(-0.1)}>−</button
+							>
 							<button
 								type="button"
 								class="px-1.5 py-0.5 rounded-md text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 min-w-10 text-center"
-								on:click={resetZoom}
-							>{Math.round(zoomFactor * 100)}%</button>
+								on:click={resetZoom}>{Math.round(zoomFactor * 100)}%</button
+							>
 							<button
 								type="button"
 								class="p-1 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm font-medium w-6 h-6 flex items-center justify-center"
-								on:click={() => adjustZoom(0.1)}
-							>+</button>
+								on:click={() => adjustZoom(0.1)}>+</button
+							>
 						</div>
 					</div>
 
@@ -275,14 +294,22 @@
 
 					<button type="button" class={menuBtnClass} on:click={openFind}>
 						<svg viewBox="0 0 20 20" fill="currentColor" class="size-4 shrink-0 text-gray-400">
-							<path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd" />
+							<path
+								fill-rule="evenodd"
+								d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z"
+								clip-rule="evenodd"
+							/>
 						</svg>
 						Find in page
 					</button>
 
 					<button type="button" class={menuBtnClass} on:click={forceReload}>
 						<svg viewBox="0 0 20 20" fill="currentColor" class="size-4 shrink-0 text-gray-400">
-							<path fill-rule="evenodd" d="M15.312 11.424a5.5 5.5 0 0 1-9.201 2.466l-.312-.311h2.433a.75.75 0 0 0 0-1.5H3.989a.75.75 0 0 0-.75.75v4.242a.75.75 0 0 0 1.5 0v-2.43l.31.31a7 7 0 0 0 11.712-3.138.75.75 0 0 0-1.449-.39Zm1.23-3.723a.75.75 0 0 0 .219-.53V2.929a.75.75 0 0 0-1.5 0V5.36l-.31-.31A7 7 0 0 0 3.239 8.188a.75.75 0 1 0 1.448.389A5.5 5.5 0 0 1 13.89 6.11l.311.31h-2.432a.75.75 0 0 0 0 1.5h4.243a.75.75 0 0 0 .53-.219Z" clip-rule="evenodd" />
+							<path
+								fill-rule="evenodd"
+								d="M15.312 11.424a5.5 5.5 0 0 1-9.201 2.466l-.312-.311h2.433a.75.75 0 0 0 0-1.5H3.989a.75.75 0 0 0-.75.75v4.242a.75.75 0 0 0 1.5 0v-2.43l.31.31a7 7 0 0 0 11.712-3.138.75.75 0 0 0-1.449-.39Zm1.23-3.723a.75.75 0 0 0 .219-.53V2.929a.75.75 0 0 0-1.5 0V5.36l-.31-.31A7 7 0 0 0 3.239 8.188a.75.75 0 1 0 1.448.389A5.5 5.5 0 0 1 13.89 6.11l.311.31h-2.432a.75.75 0 0 0 0 1.5h4.243a.75.75 0 0 0 .53-.219Z"
+								clip-rule="evenodd"
+							/>
 						</svg>
 						Force reload
 					</button>
@@ -291,7 +318,11 @@
 
 					<button type="button" class={menuBtnClass} on:click={clearData}>
 						<svg viewBox="0 0 20 20" fill="currentColor" class="size-4 shrink-0 text-gray-400">
-							<path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clip-rule="evenodd" />
+							<path
+								fill-rule="evenodd"
+								d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z"
+								clip-rule="evenodd"
+							/>
 						</svg>
 						Clear browser data
 					</button>
@@ -302,7 +333,9 @@
 
 	<!-- find bar -->
 	{#if finding}
-		<div class="flex items-center gap-1.5 px-2 py-1 shrink-0 bg-gray-50 dark:bg-gray-850 border-b border-gray-100 dark:border-gray-700">
+		<div
+			class="flex items-center gap-1.5 px-2 py-1 shrink-0 bg-gray-50 dark:bg-gray-850 border-b border-gray-100 dark:border-gray-700"
+		>
 			<input
 				bind:this={findEl}
 				bind:value={findQuery}
@@ -327,7 +360,11 @@
 				aria-label="Previous"
 			>
 				<svg viewBox="0 0 20 20" fill="currentColor" class="size-3.5">
-					<path fill-rule="evenodd" d="M9.47 6.47a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 1 1-1.06 1.06L10 8.06l-3.72 3.72a.75.75 0 0 1-1.06-1.06l4.25-4.25Z" clip-rule="evenodd" />
+					<path
+						fill-rule="evenodd"
+						d="M9.47 6.47a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 1 1-1.06 1.06L10 8.06l-3.72 3.72a.75.75 0 0 1-1.06-1.06l4.25-4.25Z"
+						clip-rule="evenodd"
+					/>
 				</svg>
 			</button>
 			<button
@@ -338,7 +375,11 @@
 				aria-label="Next"
 			>
 				<svg viewBox="0 0 20 20" fill="currentColor" class="size-3.5">
-					<path fill-rule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+					<path
+						fill-rule="evenodd"
+						d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
+						clip-rule="evenodd"
+					/>
 				</svg>
 			</button>
 			<button
@@ -348,7 +389,9 @@
 				aria-label="Close"
 			>
 				<svg viewBox="0 0 20 20" fill="currentColor" class="size-3.5">
-					<path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+					<path
+						d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"
+					/>
 				</svg>
 			</button>
 		</div>

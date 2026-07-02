@@ -36,5 +36,5 @@ ssh soraia-a1 'cd ~/open-webui && docker compose pull && docker compose up -d'
 ## 3 ENOS mind model IDs
 
 - `enos.subconscious` — fast tier
-- `enos.mind` — default, balanced tier  
+- `enos.mind` — default, balanced tier
 - `enos.deepmind` — deep reasoning tier

@@ -31,7 +31,11 @@ export const deskLocationState = (args: {
 	return {
 		location,
 		projectKind: badge.kind,
-		badgeKind: deskBadgeKind({ location, projectKind: badge.kind, bridgePresent: args.bridgePresent }),
+		badgeKind: deskBadgeKind({
+			location,
+			projectKind: badge.kind,
+			bridgePresent: args.bridgePresent
+		}),
 		readOnly,
 		name: badge.name
 	};
@@ -46,7 +50,11 @@ export const localLocationDefaultIntent = (args: {
 	selectedTerminalId: string | null;
 	lastDefaultedFolderId: string | null;
 	hasEnabledTerminalServers: boolean;
-}): { clearTerminal: boolean; disableTerminalServers: boolean; defaultedFolderId: string | null } => {
+}): {
+	clearTerminal: boolean;
+	disableTerminalServers: boolean;
+	defaultedFolderId: string | null;
+} => {
 	const noop = {
 		clearTerminal: false,
 		disableTerminalServers: false,

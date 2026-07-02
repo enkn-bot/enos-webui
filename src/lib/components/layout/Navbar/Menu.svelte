@@ -281,7 +281,7 @@
 			onClose();
 		}
 	}}
-	align={align}
+	{align}
 	sideOffset={8}
 >
 	<slot />

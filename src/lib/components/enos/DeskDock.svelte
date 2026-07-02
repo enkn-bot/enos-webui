@@ -67,8 +67,7 @@
 
 	// Local projects get a real local shell (LocalTerminal); cloud/configured
 	// projects keep the WebSocket-based XTerminal.
-	$: isLocalProject =
-		hasBrowser && $selectedFolder?.data?.project_context_source?.kind === 'local';
+	$: isLocalProject = hasBrowser && $selectedFolder?.data?.project_context_source?.kind === 'local';
 
 	// Load persisted state when the active project changes. Loose chats
 	// (folderId null) keep an in-memory dock that is never persisted.
@@ -284,19 +283,39 @@
 				<button
 					type="button"
 					class="p-1 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-					on:click={() => { showDropdown = !showDropdown; }}
+					on:click={() => {
+						showDropdown = !showDropdown;
+					}}
 					aria-label={$i18n.t('New tab')}
 				>
 					<Plus className="size-4" />
 				</button>
 				{#if showDropdown}
-					<div class="fixed inset-0 z-10" on:click={() => (showDropdown = false)} role="presentation" />
-					<div class="absolute right-0 top-full mt-1 z-20 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden py-1 min-w-[9rem]">
+					<div
+						class="fixed inset-0 z-10"
+						on:click={() => (showDropdown = false)}
+						role="presentation"
+					/>
+					<div
+						class="absolute right-0 top-full mt-1 z-20 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden py-1 min-w-[9rem]"
+					>
 						{#if hasBrowser}
-							<button type="button" class="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" on:click={() => open('browser')}>{$i18n.t('Browser')}</button>
+							<button
+								type="button"
+								class="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+								on:click={() => open('browser')}>{$i18n.t('Browser')}</button
+							>
 						{/if}
-						<button type="button" class="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" on:click={() => open('files')}>{$i18n.t('Files')}</button>
-						<button type="button" class="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" on:click={() => open('terminal')}>{$i18n.t('Terminal')}</button>
+						<button
+							type="button"
+							class="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+							on:click={() => open('files')}>{$i18n.t('Files')}</button
+						>
+						<button
+							type="button"
+							class="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+							on:click={() => open('terminal')}>{$i18n.t('Terminal')}</button
+						>
 					</div>
 				{/if}
 			</div>
@@ -338,7 +357,9 @@
 										class="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
 										on:click={() => open('browser')}
 									>
-										<span class="size-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+										<span
+											class="size-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0"
+										>
 											<GlobeAlt className="size-4" />
 										</span>
 										<span class="flex flex-col min-w-0">
@@ -347,7 +368,9 @@
 												{$i18n.t('Web access for research, docs, and live data.')}
 											</span>
 										</span>
-										<ChevronRight className="size-4 text-gray-300 dark:text-gray-600 shrink-0 ml-auto" />
+										<ChevronRight
+											className="size-4 text-gray-300 dark:text-gray-600 shrink-0 ml-auto"
+										/>
 									</button>
 								{/if}
 								<button
@@ -355,7 +378,9 @@
 									class="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
 									on:click={() => open('files')}
 								>
-									<span class="size-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+									<span
+										class="size-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0"
+									>
 										<Document className="size-4" />
 									</span>
 									<span class="flex flex-col min-w-0">
@@ -364,14 +389,18 @@
 											{$i18n.t('Search, preview, and reference files in your workspace.')}
 										</span>
 									</span>
-									<ChevronRight className="size-4 text-gray-300 dark:text-gray-600 shrink-0 ml-auto" />
+									<ChevronRight
+										className="size-4 text-gray-300 dark:text-gray-600 shrink-0 ml-auto"
+									/>
 								</button>
 								<button
 									type="button"
 									class="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
 									on:click={() => open('terminal')}
 								>
-									<span class="size-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+									<span
+										class="size-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0"
+									>
 										<Terminal className="size-4" />
 									</span>
 									<span class="flex flex-col min-w-0">
@@ -380,7 +409,9 @@
 											{$i18n.t('Run commands, scripts, and manage your environment.')}
 										</span>
 									</span>
-									<ChevronRight className="size-4 text-gray-300 dark:text-gray-600 shrink-0 ml-auto" />
+									<ChevronRight
+										className="size-4 text-gray-300 dark:text-gray-600 shrink-0 ml-auto"
+									/>
 								</button>
 							</div>
 						{/if}
@@ -389,7 +420,9 @@
 					{#if recentItems.length > 0}
 						<div class="flex flex-col gap-1">
 							<div class="flex items-center justify-between px-1">
-								<p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+								<p
+									class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest"
+								>
 									{$i18n.t('Recent')}
 								</p>
 								<button
@@ -402,8 +435,12 @@
 							</div>
 							<div class="flex flex-col gap-1">
 								{#each recentItems as item (item.id)}
-									<div class="relative flex items-center gap-2 rounded-xl px-2 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-										<span class="size-7 rounded-full bg-gray-50 dark:bg-gray-800/60 flex items-center justify-center shrink-0 text-gray-500 dark:text-gray-400">
+									<div
+										class="relative flex items-center gap-2 rounded-xl px-2 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+									>
+										<span
+											class="size-7 rounded-full bg-gray-50 dark:bg-gray-800/60 flex items-center justify-center shrink-0 text-gray-500 dark:text-gray-400"
+										>
 											<Document className="size-4" />
 										</span>
 										<button
@@ -411,7 +448,9 @@
 											class="flex-1 flex flex-col min-w-0 text-left"
 											on:click={() => onRecentItemClick(item)}
 										>
-											<span class="text-sm truncate text-gray-700 dark:text-gray-300">{item.title}</span>
+											<span class="text-sm truncate text-gray-700 dark:text-gray-300"
+												>{item.title}</span
+											>
 											<span class="text-xs text-gray-400">
 												{formatRelativeTime(item.timestamp, Date.now())}
 											</span>
@@ -431,7 +470,9 @@
 												on:click={() => (openMenuItemId = null)}
 												role="presentation"
 											></div>
-											<div class="absolute right-0 top-full mt-1 z-20 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden py-1 min-w-[7rem]">
+											<div
+												class="absolute right-0 top-full mt-1 z-20 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden py-1 min-w-[7rem]"
+											>
 												<button
 													type="button"
 													class="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -453,9 +494,7 @@
 		<!-- Keep each opened tab body mounted so terminal/browser state survives
 		     tab switches; toggle visibility rather than destroying. -->
 		{#each state.tabs as tab (tab.id)}
-			<div
-				class="absolute inset-0 {tab.id === state.activeId && !showPicker ? '' : 'hidden'}"
-			>
+			<div class="absolute inset-0 {tab.id === state.activeId && !showPicker ? '' : 'hidden'}">
 				{#if tab.type === 'terminal'}
 					{#if isLocalProject}
 						<LocalTerminal folderId={$selectedFolder?.id ?? null} />
@@ -466,7 +505,9 @@
 					{#if hasBrowser}
 						<BrowserView url={tab.url ?? null} onUrlChange={(u) => onBrowserUrl(tab.id, u)} />
 					{:else}
-						<div class="h-full flex items-center justify-center px-6 text-center text-sm text-gray-500 dark:text-gray-400">
+						<div
+							class="h-full flex items-center justify-center px-6 text-center text-sm text-gray-500 dark:text-gray-400"
+						>
 							{$i18n.t('The browser is only available in the ENOS desktop app.')}
 						</div>
 					{/if}

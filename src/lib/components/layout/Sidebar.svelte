@@ -582,8 +582,9 @@
 		if (isDeskSurface && (parent_id ?? null) === null) {
 			const existing = allKnownFolders.find(
 				(f) =>
-					String(f.name ?? '').trim().toLowerCase() === name.toLowerCase() &&
-					(f.parent_id ?? null) === null
+					String(f.name ?? '')
+						.trim()
+						.toLowerCase() === name.toLowerCase() && (f.parent_id ?? null) === null
 			);
 			if (existing) {
 				await handleDeskProjectChat(existing);

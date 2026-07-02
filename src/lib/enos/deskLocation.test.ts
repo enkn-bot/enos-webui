@@ -13,20 +13,50 @@ const cloudFolder = { data: { project_context_source: { kind: 'cloud', rootName:
 describe('deskLocationState (single source for desk location facts)', () => {
 	test('local folder + bridge, no cloud terminal → location & badge local, not read-only', () => {
 		expect(
-			deskLocationState({ cloudWorkspaceActive: false, bridgePresent: true, activeFolder: localFolder })
-		).toEqual({ location: 'local', projectKind: 'local', badgeKind: 'local', readOnly: false, name: 'repo-a' });
+			deskLocationState({
+				cloudWorkspaceActive: false,
+				bridgePresent: true,
+				activeFolder: localFolder
+			})
+		).toEqual({
+			location: 'local',
+			projectKind: 'local',
+			badgeKind: 'local',
+			readOnly: false,
+			name: 'repo-a'
+		});
 	});
 
 	test('cloud terminal active wins → location & badge cloud', () => {
 		expect(
-			deskLocationState({ cloudWorkspaceActive: true, bridgePresent: true, activeFolder: cloudFolder })
-		).toEqual({ location: 'cloud', projectKind: 'cloud', badgeKind: 'cloud', readOnly: false, name: 'proj-b' });
+			deskLocationState({
+				cloudWorkspaceActive: true,
+				bridgePresent: true,
+				activeFolder: cloudFolder
+			})
+		).toEqual({
+			location: 'cloud',
+			projectKind: 'cloud',
+			badgeKind: 'cloud',
+			readOnly: false,
+			name: 'proj-b'
+		});
 	});
 
 	test('local folder on web (no bridge, no cloud) → location null but read-only badge local', () => {
 		expect(
-			deskLocationState({ cloudWorkspaceActive: false, bridgePresent: false, activeFolder: localFolder })
-		).toEqual({ location: null, projectKind: 'local', badgeKind: 'local', readOnly: true, name: 'repo-a' });
+			deskLocationState({
+				cloudWorkspaceActive: false,
+				bridgePresent: false,
+				activeFolder: localFolder
+			})
+		).toEqual({
+			location: null,
+			projectKind: 'local',
+			badgeKind: 'local',
+			readOnly: true,
+			name: 'repo-a'
+		});
 	});
 
 	test('desktop (bridge), no folder, no cloud → local-first badge default', () => {
@@ -42,7 +72,10 @@ describe('deskLocationState (single source for desk location facts)', () => {
 	});
 });
 
-const localFolderA = { id: 'fa', data: { project_context_source: { kind: 'local', rootName: 'a' } } };
+const localFolderA = {
+	id: 'fa',
+	data: { project_context_source: { kind: 'local', rootName: 'a' } }
+};
 
 describe('localLocationDefaultIntent', () => {
 	test('first time on a local folder with a cloud terminal → clear it + disable enabled servers', () => {

@@ -252,13 +252,18 @@
 								class="text-left rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm p-3.5 transition-all duration-150"
 								on:click={() => selectedFolder.set(folder)}
 							>
-								<div class="size-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-2.5">
+								<div
+									class="size-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-2.5"
+								>
 									<Folder className="size-3.5 text-gray-500 dark:text-gray-400" />
 								</div>
-								<div class="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{folder.name}</div>
+								<div class="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">
+									{folder.name}
+								</div>
 								<div class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 truncate">
 									{#if chatCountByFolder[folder.id]}
-										{chatCountByFolder[folder.id]} {chatCountByFolder[folder.id] === 1 ? $i18n.t('chat') : $i18n.t('chats')}
+										{chatCountByFolder[folder.id]}
+										{chatCountByFolder[folder.id] === 1 ? $i18n.t('chat') : $i18n.t('chats')}
 										{#if folder.updated_at}· {relativeTime(folder.updated_at)}{/if}
 									{:else if folder.updated_at}
 										{relativeTime(folder.updated_at)}
@@ -273,11 +278,17 @@
 							class="text-left rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm p-3.5 transition-all duration-150"
 							on:click={() => window.dispatchEvent(new CustomEvent('enos:new-project'))}
 						>
-							<div class="size-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-2.5">
+							<div
+								class="size-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-2.5"
+							>
 								<Plus className="size-3.5 text-gray-400 dark:text-gray-500" />
 							</div>
-							<div class="text-sm font-medium text-gray-500 dark:text-gray-400">{$i18n.t('New project')}</div>
-							<div class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{$i18n.t('Start fresh')}</div>
+							<div class="text-sm font-medium text-gray-500 dark:text-gray-400">
+								{$i18n.t('New project')}
+							</div>
+							<div class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+								{$i18n.t('Start fresh')}
+							</div>
 						</button>
 					</div>
 				</div>

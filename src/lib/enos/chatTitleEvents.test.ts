@@ -4,9 +4,7 @@ import { normalizeChatTitleEventData } from './chatTitleEvents';
 
 describe('chat title event handling', () => {
 	test('accepts string title event payloads', () => {
-		expect(normalizeChatTitleEventData('FIFA World Cup matches')).toBe(
-			'FIFA World Cup matches'
-		);
+		expect(normalizeChatTitleEventData('FIFA World Cup matches')).toBe('FIFA World Cup matches');
 	});
 
 	test('accepts object title event payloads', () => {

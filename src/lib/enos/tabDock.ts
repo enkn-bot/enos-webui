@@ -49,11 +49,7 @@ export const closeTab = (state: DeskDockState, id: string): DeskDockState => {
 	return { tabs, activeId };
 };
 
-export const reorderTabs = (
-	state: DeskDockState,
-	fromId: string,
-	toId: string
-): DeskDockState => {
+export const reorderTabs = (state: DeskDockState, fromId: string, toId: string): DeskDockState => {
 	if (fromId === toId) return state;
 	const tabs = [...state.tabs];
 	const fromIdx = tabs.findIndex((t) => t.id === fromId);
@@ -78,9 +74,7 @@ export const loadDockState = (storage: DockStorage, folderId: string): DeskDockS
 		const parsed = JSON.parse(raw) as DeskDockState;
 		if (!parsed || !Array.isArray(parsed.tabs)) return emptyDockState();
 		const valid: DeskDockTabType[] = ['terminal', 'browser', 'files'];
-		const tabs = parsed.tabs.filter(
-			(t) => t && typeof t.id === 'string' && valid.includes(t.type)
-		);
+		const tabs = parsed.tabs.filter((t) => t && typeof t.id === 'string' && valid.includes(t.type));
 		const activeId = tabs.some((t) => t.id === parsed.activeId)
 			? parsed.activeId
 			: (tabs[tabs.length - 1]?.id ?? null);

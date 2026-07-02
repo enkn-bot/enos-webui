@@ -11,12 +11,14 @@ describe('ENOS research intent frontend contract', () => {
 			"const RESEARCH_OFFER_MARKER = '<!--enos-research-offer-->';"
 		);
 		expect(responseMessage).toContain(
-			"$: displayContent = (message.content ?? '').replaceAll(RESEARCH_OFFER_MARKER, '');"
+			"let c = (message.content ?? '').replaceAll(RESEARCH_OFFER_MARKER, '');"
 		);
 		expect(responseMessage).toContain(
 			"$: hasOffer = (message.content ?? '').includes(RESEARCH_OFFER_MARKER) && message.done === true;"
 		);
-		expect(responseMessage).toContain("import ResearchOffer from './ResponseMessage/ResearchOffer.svelte';");
+		expect(responseMessage).toContain(
+			"import ResearchOffer from './ResponseMessage/ResearchOffer.svelte';"
+		);
 		expect(responseMessage).toContain('content={displayContent}');
 		expect(responseMessage).toContain("on:confirm={() => dispatch('researchConfirm')}");
 	});

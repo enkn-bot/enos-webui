@@ -66,7 +66,7 @@ export const DESK_FILE_TOOLS: DeskToolSpec[] = [
 		function: {
 			name: 'list_files',
 			description:
-				'List files and folders at a project-relative path, an absolute path, or a ~/... home path (for example ~/Desktop). Reads may reach elsewhere on the user\'s machine subject to the active permission mode; secrets such as .ssh, .env, and credentials are off-limits unless Full Access is active.',
+				"List files and folders at a project-relative path, an absolute path, or a ~/... home path (for example ~/Desktop). Reads may reach elsewhere on the user's machine subject to the active permission mode; secrets such as .ssh, .env, and credentials are off-limits unless Full Access is active.",
 			parameters: {
 				type: 'object',
 				properties: {
@@ -83,7 +83,7 @@ export const DESK_FILE_TOOLS: DeskToolSpec[] = [
 		function: {
 			name: 'read_file',
 			description:
-				'Read the UTF-8 contents of a file at a project-relative path, an absolute path, or a ~/... home path (for example ~/Desktop/notes.txt). Reads may reach elsewhere on the user\'s machine subject to the active permission mode; secrets such as .ssh, .env, and credentials are off-limits unless Full Access is active.',
+				"Read the UTF-8 contents of a file at a project-relative path, an absolute path, or a ~/... home path (for example ~/Desktop/notes.txt). Reads may reach elsewhere on the user's machine subject to the active permission mode; secrets such as .ssh, .env, and credentials are off-limits unless Full Access is active.",
 			parameters: {
 				type: 'object',
 				properties: {
@@ -213,7 +213,7 @@ export const DESK_FILE_TOOLS: DeskToolSpec[] = [
 		function: {
 			name: 'git_status',
 			description:
-				'Report the project\'s git state: current branch and changed/untracked files (read-only, no network). Use to orient before suggesting or making changes.',
+				"Report the project's git state: current branch and changed/untracked files (read-only, no network). Use to orient before suggesting or making changes.",
 			parameters: { type: 'object', properties: {}, required: [] }
 		}
 	},
@@ -321,16 +321,24 @@ export const describeDeskTool = (
 	const branch = typeof args.branch_name === 'string' ? args.branch_name : '';
 	const targetPath = typeof args.target_path === 'string' ? args.target_path : '';
 	const verb = (running: string, done: string, failed?: string) =>
-		phase === 'start' ? running : !ok ? failed ?? `Failed: ${running.toLowerCase()}` : done;
+		phase === 'start' ? running : !ok ? (failed ?? `Failed: ${running.toLowerCase()}`) : done;
 	switch (name) {
-		case 'list_files': return verb(`Listing ${p || 'files'}`, `Listed ${p || 'files'}`);
-		case 'read_file': return verb(`Reading ${p}`, `Read ${p}`);
-		case 'write_file': return verb(`Writing ${p}`, `Wrote ${p}`, `Couldn't write ${p}`);
-		case 'edit_file': return verb(`Editing ${p}`, `Edited ${p}`, `Couldn't edit ${p}`);
-		case 'create_folder': return verb(`Creating folder ${p}`, `Created folder ${p}`, `Couldn't create folder ${p}`);
-		case 'rename_entry': return verb(`Renaming ${p} → ${to}`, `Renamed ${p} → ${to}`, `Couldn't rename ${p}`);
-		case 'delete_entry': return verb(`Deleting ${p}`, `Deleted ${p}`, `Couldn't delete ${p}`);
-		case 'reveal_entry': return verb(`Revealing ${p}`, `Revealed ${p}`);
+		case 'list_files':
+			return verb(`Listing ${p || 'files'}`, `Listed ${p || 'files'}`);
+		case 'read_file':
+			return verb(`Reading ${p}`, `Read ${p}`);
+		case 'write_file':
+			return verb(`Writing ${p}`, `Wrote ${p}`, `Couldn't write ${p}`);
+		case 'edit_file':
+			return verb(`Editing ${p}`, `Edited ${p}`, `Couldn't edit ${p}`);
+		case 'create_folder':
+			return verb(`Creating folder ${p}`, `Created folder ${p}`, `Couldn't create folder ${p}`);
+		case 'rename_entry':
+			return verb(`Renaming ${p} → ${to}`, `Renamed ${p} → ${to}`, `Couldn't rename ${p}`);
+		case 'delete_entry':
+			return verb(`Deleting ${p}`, `Deleted ${p}`, `Couldn't delete ${p}`);
+		case 'reveal_entry':
+			return verb(`Revealing ${p}`, `Revealed ${p}`);
 		case 'web_search': {
 			// Context-focused narration: surface what we're actually looking for
 			// (e.g. "Searching the web for 'latest scores'") instead of a rigid,
@@ -340,14 +348,33 @@ export const describeDeskTool = (
 				? verb(`Searching the web for “${q}”`, `Searched the web for “${q}”`)
 				: verb('Searching the web', 'Searched the web');
 		}
-		case 'git_status': return verb('Checking git status', 'Checked git status');
-		case 'git_log': return verb('Reading git log', 'Read git log');
-		case 'git_diff': return verb(`Reading git diff${p ? ` for ${p}` : ''}`, `Read git diff${p ? ` for ${p}` : ''}`);
-		case 'git_stage': return verb(`Staging ${gitPaths}`, `Staged ${gitPaths}`, `Couldn't stage ${gitPaths}`);
-		case 'git_commit': return verb('Committing staged changes', 'Committed staged changes', "Couldn't commit");
-		case 'git_create_branch': return verb(`Creating branch ${branch}`, `Created branch ${branch}`, `Couldn't create branch ${branch}`);
-		case 'git_clone': return verb(`Cloning into ${targetPath}`, `Cloned into ${targetPath}`, `Couldn't clone into ${targetPath}`);
-		default: return verb('Working', 'Done');
+		case 'git_status':
+			return verb('Checking git status', 'Checked git status');
+		case 'git_log':
+			return verb('Reading git log', 'Read git log');
+		case 'git_diff':
+			return verb(
+				`Reading git diff${p ? ` for ${p}` : ''}`,
+				`Read git diff${p ? ` for ${p}` : ''}`
+			);
+		case 'git_stage':
+			return verb(`Staging ${gitPaths}`, `Staged ${gitPaths}`, `Couldn't stage ${gitPaths}`);
+		case 'git_commit':
+			return verb('Committing staged changes', 'Committed staged changes', "Couldn't commit");
+		case 'git_create_branch':
+			return verb(
+				`Creating branch ${branch}`,
+				`Created branch ${branch}`,
+				`Couldn't create branch ${branch}`
+			);
+		case 'git_clone':
+			return verb(
+				`Cloning into ${targetPath}`,
+				`Cloned into ${targetPath}`,
+				`Couldn't clone into ${targetPath}`
+			);
+		default:
+			return verb('Working', 'Done');
 	}
 };
 
@@ -379,7 +406,10 @@ const normalizeMutation = (
 ): DeskToolResult =>
 	isConfirmationRequest(value)
 		? { status: 'requires_confirmation', summary: `${value.action} ${value.path}`, request: value }
-		: { status: 'ok', summary: `${value.status} ${value.path}${value.toPath ? ` → ${value.toPath}` : ''}` };
+		: {
+				status: 'ok',
+				summary: `${value.status} ${value.path}${value.toPath ? ` → ${value.toPath}` : ''}`
+			};
 
 const requireString = (args: Record<string, unknown>, key: string): string => {
 	const value = args[key];
@@ -499,7 +529,9 @@ export const executeDeskFileTool = async ({
 				const path = typeof args.path === 'string' && args.path ? args.path : '.';
 				const listing = await bridge.listProjectFiles(folderId, path);
 				const lines = listing.entries.map((e) =>
-					e.type === 'directory' ? `${e.path}/` : `${e.path}${e.size != null ? ` (${e.size}b)` : ''}`
+					e.type === 'directory'
+						? `${e.path}/`
+						: `${e.path}${e.size != null ? ` (${e.size}b)` : ''}`
 				);
 				return {
 					status: 'ok',
@@ -578,8 +610,7 @@ export const executeDeskFileTool = async ({
 					} else {
 						// Embedding mode: a collection was created. `collection_names`
 						// is the current (plural) field; tolerate the legacy singular.
-						const collection =
-							search?.collection_names?.[0] ?? search?.collection_name ?? null;
+						const collection = search?.collection_names?.[0] ?? search?.collection_name ?? null;
 						if (!collection) {
 							return {
 								status: 'ok',
@@ -664,7 +695,10 @@ export const executeDeskFileTool = async ({
 			}
 			case 'git_stage': {
 				if (!bridge.gitStage) {
-					return { status: 'error', message: 'git staging is unavailable in this ENOS Desk build.' };
+					return {
+						status: 'error',
+						message: 'git staging is unavailable in this ENOS Desk build.'
+					};
 				}
 				const paths = requireStringArray(args, 'paths');
 				return normalizeMutation(await bridge.gitStage(folderId, paths, options));
@@ -695,7 +729,9 @@ export const executeDeskFileTool = async ({
 				}
 				const repositoryUrl = requireString(args, 'url');
 				const targetPath = requireString(args, 'target_path');
-				return normalizeMutation(await bridge.gitClone(folderId, repositoryUrl, targetPath, options));
+				return normalizeMutation(
+					await bridge.gitClone(folderId, repositoryUrl, targetPath, options)
+				);
 			}
 			default:
 				if (name.startsWith('git_')) {

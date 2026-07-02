@@ -356,12 +356,7 @@
 		if (cloudWorkspace && cloudProjectRoot) {
 			const root = resolveCloudFilesInitialPath(null, cloudProjectRoot);
 			if (path.startsWith(root)) {
-				const rootLabel =
-					root
-						.replace(/\/+$/, '')
-						.split('/')
-						.filter(Boolean)
-						.at(-1) ?? 'Project';
+				const rootLabel = root.replace(/\/+$/, '').split('/').filter(Boolean).at(-1) ?? 'Project';
 				const relativeParts = path.slice(root.length).split('/').filter(Boolean);
 				return relativeParts.reduce(
 					(acc, part) => {

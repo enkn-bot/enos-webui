@@ -54,9 +54,7 @@ export const pushRecentActivity = (
 	try {
 		const nextItem: RecentActivityItem = {
 			...item,
-			id:
-				item.id ??
-				`recent-${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+			id: item.id ?? `recent-${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 		};
 		const next = [
 			nextItem,
@@ -133,7 +131,10 @@ export const removeRecentActivityShared = (
 	return next;
 };
 
-export const clearRecentActivityShared = (storage: RecentActivityStorage, folderId: string): void => {
+export const clearRecentActivityShared = (
+	storage: RecentActivityStorage,
+	folderId: string
+): void => {
 	clearRecentActivity(storage, folderId);
 	recentActivityStore(storage, folderId).set([]);
 };

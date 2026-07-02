@@ -50,8 +50,12 @@ export const buildEnosCitations = (
 		documents.forEach((document, index) => {
 			if (typeof document !== 'string') return;
 
-			const metadata = Array.isArray(sourceRecord.metadata) ? sourceRecord.metadata[index] : undefined;
-			const distance = Array.isArray(sourceRecord.distances) ? sourceRecord.distances[index] : undefined;
+			const metadata = Array.isArray(sourceRecord.metadata)
+				? sourceRecord.metadata[index]
+				: undefined;
+			const distance = Array.isArray(sourceRecord.distances)
+				? sourceRecord.distances[index]
+				: undefined;
 			const source = isRecord(sourceRecord.source) ? sourceRecord.source : null;
 			const citationMetadata = isRecord(metadata) ? metadata : null;
 			const id = getEnosCitationId(source, citationMetadata);

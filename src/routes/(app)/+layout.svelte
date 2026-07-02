@@ -368,7 +368,11 @@
 			};
 		});
 
-		if (version && compareVersion(version.latest, version.current) && ($settings?.showUpdateToast ?? true)) {
+		if (
+			version &&
+			compareVersion(version.latest, version.current) &&
+			($settings?.showUpdateToast ?? true)
+		) {
 			const dismissVersionUpdateToast = () => {
 				localStorage.setItem('dismissedUpdateToast', Date.now().toString());
 				version = null;

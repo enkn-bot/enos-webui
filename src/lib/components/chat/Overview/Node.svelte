@@ -23,10 +23,7 @@
 	>
 		{#if data.message.role === 'user'}
 			<div class="flex w-full">
-				<UserAvatar
-					name={data?.user?.name}
-					className={'size-5 -translate-y-[1px] flex-shrink-0'}
-				/>
+				<UserAvatar name={data?.user?.name} className={'size-5 -translate-y-[1px] flex-shrink-0'} />
 				<div class="ml-2">
 					<div class=" flex justify-between items-center">
 						<div class="text-xs text-black dark:text-white font-medium line-clamp-1">

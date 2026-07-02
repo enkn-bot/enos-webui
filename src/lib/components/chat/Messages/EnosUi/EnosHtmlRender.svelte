@@ -51,7 +51,9 @@
 		overflow: hidden;
 		margin: 14px 0;
 		max-width: 680px;
-		transition: background 0.25s, border-color 0.25s;
+		transition:
+			background 0.25s,
+			border-color 0.25s;
 	}
 	:global(.dark) .enos-html {
 		--eh-fg: #f4f4f5;

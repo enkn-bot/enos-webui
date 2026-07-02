@@ -25,105 +25,105 @@ Important scope note: the repo diff contains only one changed tracked backend bi
 
 ## Modified Files Summary (table: file | change type | nerf risk | update lock-in risk)
 
-| file | change type | nerf risk | update lock-in risk |
-|---|---:|---|---|
-| `.gitignore` | ADDITIVE (+3/-0) | No | LOW |
-| `AGENTS.md` | ADDITIVE docs (+108/-0) | No | LOW |
-| `Dockerfile.enos` | ADDITIVE build image (+211/-0) | No | MEDIUM |
-| `ENOS.md` | ADDITIVE docs (+40/-0) | No | LOW |
-| `backend/open_webui/config.py` | BEHAVIOR-CHANGING prompt customization (+8/-4) | No direct nerf found | MEDIUM |
-| `backend/open_webui/static/custom.css` | SUBTRACTIVE/BEHAVIOR-CHANGING runtime CSS override (+107/-0) | YES: hides stock controls | HIGH |
-| `src/anthropic-fonts.css` | ADDITIVE typography (+104/-0) | No | LOW |
-| `src/app.css` | CUSTOMIZATION typography (+17/-2) | No | LOW |
-| `src/app.html` | BEHAVIOR-CHANGING shell/custom asset injection (+16/-14) | Possible via full frontend override surface | HIGH |
-| `src/lib/components/AddTerminalServerModal.svelte` | ADDITIVE preset handling (+20/-0) | No | LOW |
-| `src/lib/components/admin/Evaluations/Feedbacks.svelte` | CUSTOMIZATION copy only (+1/-1) | No | LOW |
-| `src/lib/components/admin/Functions.svelte` | SUBTRACTIVE link target change (+3/-3) | YES: disables Discover function link | MEDIUM |
-| `src/lib/components/admin/Settings/General.svelte` | SUBTRACTIVE/BRANDING (+3/-39) | YES: removes docs/social/update links | MEDIUM |
-| `src/lib/components/admin/Users/UserList/UserChatsModal.svelte` | ADDITIVE return URL (+1/-0) | No | LOW |
-| `src/lib/components/channel/Channel.svelte` | CUSTOMIZATION title brand (+4/-3) | No | LOW |
-| `src/lib/components/chat/Chat.svelte` | BEHAVIOR-CHANGING Desk/project integration (+533/-26) | YES: suppresses top model selector | HIGH |
-| `src/lib/components/chat/ChatControls.svelte` | BEHAVIOR-CHANGING side pane/local files (+114/-73) | Possible: files/overview behavior changes | HIGH |
-| `src/lib/components/chat/ChatPlaceholder.svelte` | SUBTRACTIVE link removal (+3/-7) | YES: removes community author link | LOW |
-| `src/lib/components/chat/FileNav/FileNavToolbar.svelte` | CUSTOMIZATION icon refactor (+19/-97) | No functional nerf found | MEDIUM |
-| `src/lib/components/chat/LocalFileNav.svelte` | ADDITIVE Desk files (+634/-0) | No | LOW |
-| `src/lib/components/chat/MessageInput.svelte` | SUBTRACTIVE/BEHAVIOR-CHANGING composer changes (+191/-8) | YES: hides TerminalMenu; narrows model selection | HIGH |
-| `src/lib/components/chat/Messages/CaveatNotice.svelte` | ADDITIVE UI (+17/-0) | No | LOW |
-| `src/lib/components/chat/Messages/ContentRenderer.svelte` | ADDITIVE caveat rendering (+36/-9) | No direct nerf found | MEDIUM |
-| `src/lib/components/chat/Messages/RateComment.svelte` | SUBTRACTIVE link target change (+2/-1) | YES: disables public review link | MEDIUM |
-| `src/lib/components/chat/Messages/ResponseMessage.svelte` | BEHAVIOR-CHANGING response display (+25/-17) | Possible: replaces skeleton/status empty state | MEDIUM |
-| `src/lib/components/chat/Messages/UserMessage.svelte` | ADDITIVE pasted-text card (+33/-21) | No direct nerf found | MEDIUM |
-| `src/lib/components/chat/ModelSelector/ModelItemMenu.svelte` | SUBTRACTIVE (+0/-22) | YES: removes Community Reviews action | MEDIUM |
-| `src/lib/components/chat/Navbar.svelte` | BEHAVIOR-CHANGING navbar/title menu (+46/-10) | YES when paired with `Chat.svelte` selector suppression | HIGH |
-| `src/lib/components/chat/PastedTextCard.svelte` | ADDITIVE UI (+85/-0) | No | LOW |
-| `src/lib/components/chat/Placeholder.svelte` | SUBTRACTIVE link removal/binding (+4/-8) | YES: removes community author link | LOW |
-| `src/lib/components/chat/Placeholder/FolderPlaceholder.svelte` | CUSTOMIZATION copy (+1/-1) | No | LOW |
-| `src/lib/components/chat/Placeholder/FolderTitle.svelte` | BEHAVIOR-CHANGING project metadata (+25/-13) | No direct nerf found | MEDIUM |
-| `src/lib/components/chat/Settings/About.svelte` | SUBTRACTIVE/BRANDING (+2/-44) | YES: disables/removes update/social/license/creator links | MEDIUM |
-| `src/lib/components/chat/Settings/Integrations/Terminals.svelte` | ADDITIVE UI wrapper (+21/-11) | No direct nerf found | LOW |
-| `src/lib/components/chat/ShareChatModal.svelte` | CUSTOMIZATION copy (+2/-2) | No: upload still targets `openwebui.com` | LOW |
-| `src/lib/components/common/EnosOrb.svelte` | ADDITIVE UI (+18/-0) | No | LOW |
-| `src/lib/components/common/Folder.svelte` | CUSTOMIZATION typography (+1/-1) | No | LOW |
-| `src/lib/components/enos/.gitkeep` | ADDITIVE (+0/-0) | No | LOW |
-| `src/lib/components/enos/ModelPicker.svelte` | ADDITIVE ENOS picker (+55/-0) | No by itself; risk comes from replacing stock picker | LOW |
-| `src/lib/components/icons/Sidebar.svelte` | ADDITIVE prop (+2/-0) | No | LOW |
-| `src/lib/components/layout/ChatsModal.svelte` | ADDITIVE return URL (+14/-1) | No | LOW |
-| `src/lib/components/layout/Navbar/Menu.svelte` | ADDITIVE alignment prop (+2/-1) | No | LOW |
-| `src/lib/components/layout/Sidebar.svelte` | SUBTRACTIVE/BEHAVIOR-CHANGING surface filtering (+407/-234) | YES: hides/filter Chats on Desk | HIGH |
-| `src/lib/components/layout/Sidebar/ChatItem.svelte` | BEHAVIOR-CHANGING project context (+14/-4) | No direct nerf found | MEDIUM |
-| `src/lib/components/layout/Sidebar/Folders/FolderMenu.svelte` | BEHAVIOR-CHANGING project menu (+23/-12) | No direct nerf found | MEDIUM |
-| `src/lib/components/layout/Sidebar/Folders/FolderModal.svelte` | BEHAVIOR-CHANGING local folder action (+24/-5) | No direct nerf found | MEDIUM |
-| `src/lib/components/layout/Sidebar/RecursiveFolder.svelte` | BEHAVIOR-CHANGING project/sidebar behavior (+92/-48) | Possible: changes folder expand/click semantics | HIGH |
-| `src/lib/components/layout/Sidebar/UserMenu.svelte` | SUBTRACTIVE link removal (+1/-17) | YES: removes Documentation and disables Releases link | MEDIUM |
-| `src/lib/components/layout/UpdateInfoToast.svelte` | SUBTRACTIVE link removal (+1/-3) | YES: removes release link from update toast | LOW |
-| `src/lib/components/workspace/Models.svelte` | SUBTRACTIVE/BEHAVIOR-CHANGING routing panel (+171/-6) | YES: disables Discover model link; hides `enos.desk` model | HIGH |
-| `src/lib/components/workspace/Models/Knowledge.svelte` | ADDITIVE optional props (+14/-1) | No | LOW |
-| `src/lib/components/workspace/Prompts.svelte` | SUBTRACTIVE link target change (+3/-3) | YES: disables Discover prompt link | MEDIUM |
-| `src/lib/components/workspace/Tools.svelte` | SUBTRACTIVE link target change (+3/-3) | YES: disables Discover tool link | MEDIUM |
-| `src/lib/constants.ts` | CUSTOMIZATION app name (+1/-1) | No functional nerf | LOW |
-| `src/lib/enos/deskAgentLoop.test.ts` | ADDITIVE test (+147/-0) | No | LOW |
-| `src/lib/enos/deskAgentLoop.ts` | ADDITIVE Desk agent loop (+145/-0) | No | LOW |
-| `src/lib/enos/deskFileTools.test.ts` | ADDITIVE test (+437/-0) | No | LOW |
-| `src/lib/enos/deskFileTools.ts` | ADDITIVE Desk tools (+516/-0) | No | LOW |
-| `src/lib/enos/desktopBridge.ts` | ADDITIVE bridge (+307/-0) | No | LOW |
-| `src/lib/enos/grounding.test.ts` | ADDITIVE test (+21/-0) | No | LOW |
-| `src/lib/enos/grounding.ts` | ADDITIVE grounding (+33/-0) | No | LOW |
-| `src/lib/enos/pastedText.test.ts` | ADDITIVE test (+45/-0) | No | LOW |
-| `src/lib/enos/pastedText.ts` | ADDITIVE helper (+48/-0) | No | LOW |
-| `src/lib/enos/projectActions.ts` | ADDITIVE helper (+145/-0) | No | LOW |
-| `src/lib/enos/projectChatActions.test.ts` | ADDITIVE test (+249/-0) | No | LOW |
-| `src/lib/enos/projectChatActions.ts` | ADDITIVE helper (+286/-0) | No direct nerf; possible dead/orphaned path | LOW |
-| `src/lib/enos/surfaceScope.test.ts` | ADDITIVE test (+50/-0) | No | LOW |
-| `src/lib/enos/surfaceScope.ts` | ADDITIVE helper used for filtering (+47/-0) | YES when used to hide Desk/Chat items | MEDIUM |
-| `src/lib/stores/enos/.gitkeep` | ADDITIVE (+0/-0) | No | LOW |
-| `src/lib/stores/enos/surface.ts` | ADDITIVE store (+5/-0) | No | LOW |
-| `src/lib/stores/index.ts` | ADDITIVE stores (+2/-0) | No | LOW |
-| `src/routes/+layout.svelte` | ADDITIVE/CUSTOMIZATION surface/brand hooks (+17/-3) | No direct nerf found | MEDIUM |
-| `src/routes/s/[id]/+page.svelte` | ADDITIVE admin return affordance (+27/-6) | No | LOW |
-| `src/tailwind.css` | CUSTOMIZATION font variables (+3/-6) | No | LOW |
-| `static/assets/fonts/AnthropicMono-Italic-Web.woff2` | ADDITIVE binary | No | LOW |
-| `static/assets/fonts/AnthropicMono-Roman-Web.woff2` | ADDITIVE binary | No | LOW |
-| `static/assets/fonts/AnthropicSans-Italic-Web.woff2` | ADDITIVE binary | No | LOW |
-| `static/assets/fonts/AnthropicSans-Roman-Web.woff2` | ADDITIVE binary | No | LOW |
-| `static/assets/fonts/AnthropicSerif-Italic-Web.woff2` | ADDITIVE binary | No | LOW |
-| `static/assets/fonts/AnthropicSerif-Roman-Web.woff2` | ADDITIVE binary | No | LOW |
-| `static/enos-loader.svg` | ADDITIVE asset (+20/-0) | No | LOW |
-| `static/fonts/enos/AnthropicMono-Italic-Variable.woff2` | ADDITIVE binary | No | LOW |
-| `static/fonts/enos/AnthropicMono-Variable.woff2` | ADDITIVE binary | No | LOW |
-| `static/fonts/enos/AnthropicSans-Italic-Variable.woff2` | ADDITIVE binary | No | LOW |
-| `static/fonts/enos/AnthropicSans-Variable.woff2` | ADDITIVE binary | No | LOW |
-| `static/fonts/enos/AnthropicSerif-Italic-Variable.woff2` | ADDITIVE binary | No | LOW |
-| `static/fonts/enos/AnthropicSerif-Variable.woff2` | ADDITIVE binary | No | LOW |
-| `static/static/custom.css` | SUBTRACTIVE/BEHAVIOR-CHANGING runtime CSS override (+107/-0) | YES: hides stock controls | HIGH |
-| `static/static/enos-surface.mjs` | SUBTRACTIVE/BEHAVIOR-CHANGING runtime DOM override (+1410/-0) | YES: hides terminal/model/right-panel UI | HIGH |
-| `test/enos-admin-chat-return.test.mjs` | ADDITIVE test (+70/-0) | No | LOW |
-| `test/enos-chat-navbar.test.mjs` | ADDITIVE test (+91/-0) | No | LOW |
-| `test/enos-desk-sidebar.test.mjs` | ADDITIVE test (+1025/-0) | No | LOW |
-| `test/enos-local-terminal.test.mjs` | ADDITIVE test (+44/-0) | No | LOW |
-| `test/enos-model-selection.test.mjs` | ADDITIVE test (+65/-0) | No | LOW |
-| `test/enos-pasted-text-card.test.mjs` | ADDITIVE test (+66/-0) | No | LOW |
-| `test/enos-response-loading.test.mjs` | ADDITIVE test (+46/-0) | No | LOW |
-| `test/enos-search-query-quality.test.mjs` | ADDITIVE test (+18/-0) | No | LOW |
+| file                                                             |                                                   change type | nerf risk                                                  | update lock-in risk |
+| ---------------------------------------------------------------- | ------------------------------------------------------------: | ---------------------------------------------------------- | ------------------- |
+| `.gitignore`                                                     |                                              ADDITIVE (+3/-0) | No                                                         | LOW                 |
+| `AGENTS.md`                                                      |                                       ADDITIVE docs (+108/-0) | No                                                         | LOW                 |
+| `Dockerfile.enos`                                                |                                ADDITIVE build image (+211/-0) | No                                                         | MEDIUM              |
+| `ENOS.md`                                                        |                                        ADDITIVE docs (+40/-0) | No                                                         | LOW                 |
+| `backend/open_webui/config.py`                                   |                BEHAVIOR-CHANGING prompt customization (+8/-4) | No direct nerf found                                       | MEDIUM              |
+| `backend/open_webui/static/custom.css`                           |  SUBTRACTIVE/BEHAVIOR-CHANGING runtime CSS override (+107/-0) | YES: hides stock controls                                  | HIGH                |
+| `src/anthropic-fonts.css`                                        |                                 ADDITIVE typography (+104/-0) | No                                                         | LOW                 |
+| `src/app.css`                                                    |                             CUSTOMIZATION typography (+17/-2) | No                                                         | LOW                 |
+| `src/app.html`                                                   |      BEHAVIOR-CHANGING shell/custom asset injection (+16/-14) | Possible via full frontend override surface                | HIGH                |
+| `src/lib/components/AddTerminalServerModal.svelte`               |                             ADDITIVE preset handling (+20/-0) | No                                                         | LOW                 |
+| `src/lib/components/admin/Evaluations/Feedbacks.svelte`          |                               CUSTOMIZATION copy only (+1/-1) | No                                                         | LOW                 |
+| `src/lib/components/admin/Functions.svelte`                      |                        SUBTRACTIVE link target change (+3/-3) | YES: disables Discover function link                       | MEDIUM              |
+| `src/lib/components/admin/Settings/General.svelte`               |                                 SUBTRACTIVE/BRANDING (+3/-39) | YES: removes docs/social/update links                      | MEDIUM              |
+| `src/lib/components/admin/Users/UserList/UserChatsModal.svelte`  |                                   ADDITIVE return URL (+1/-0) | No                                                         | LOW                 |
+| `src/lib/components/channel/Channel.svelte`                      |                             CUSTOMIZATION title brand (+4/-3) | No                                                         | LOW                 |
+| `src/lib/components/chat/Chat.svelte`                            |         BEHAVIOR-CHANGING Desk/project integration (+533/-26) | YES: suppresses top model selector                         | HIGH                |
+| `src/lib/components/chat/ChatControls.svelte`                    |            BEHAVIOR-CHANGING side pane/local files (+114/-73) | Possible: files/overview behavior changes                  | HIGH                |
+| `src/lib/components/chat/ChatPlaceholder.svelte`                 |                              SUBTRACTIVE link removal (+3/-7) | YES: removes community author link                         | LOW                 |
+| `src/lib/components/chat/FileNav/FileNavToolbar.svelte`          |                         CUSTOMIZATION icon refactor (+19/-97) | No functional nerf found                                   | MEDIUM              |
+| `src/lib/components/chat/LocalFileNav.svelte`                    |                                 ADDITIVE Desk files (+634/-0) | No                                                         | LOW                 |
+| `src/lib/components/chat/MessageInput.svelte`                    |      SUBTRACTIVE/BEHAVIOR-CHANGING composer changes (+191/-8) | YES: hides TerminalMenu; narrows model selection           | HIGH                |
+| `src/lib/components/chat/Messages/CaveatNotice.svelte`           |                                          ADDITIVE UI (+17/-0) | No                                                         | LOW                 |
+| `src/lib/components/chat/Messages/ContentRenderer.svelte`        |                            ADDITIVE caveat rendering (+36/-9) | No direct nerf found                                       | MEDIUM              |
+| `src/lib/components/chat/Messages/RateComment.svelte`            |                        SUBTRACTIVE link target change (+2/-1) | YES: disables public review link                           | MEDIUM              |
+| `src/lib/components/chat/Messages/ResponseMessage.svelte`        |                  BEHAVIOR-CHANGING response display (+25/-17) | Possible: replaces skeleton/status empty state             | MEDIUM              |
+| `src/lib/components/chat/Messages/UserMessage.svelte`            |                           ADDITIVE pasted-text card (+33/-21) | No direct nerf found                                       | MEDIUM              |
+| `src/lib/components/chat/ModelSelector/ModelItemMenu.svelte`     |                                          SUBTRACTIVE (+0/-22) | YES: removes Community Reviews action                      | MEDIUM              |
+| `src/lib/components/chat/Navbar.svelte`                          |                 BEHAVIOR-CHANGING navbar/title menu (+46/-10) | YES when paired with `Chat.svelte` selector suppression    | HIGH                |
+| `src/lib/components/chat/PastedTextCard.svelte`                  |                                          ADDITIVE UI (+85/-0) | No                                                         | LOW                 |
+| `src/lib/components/chat/Placeholder.svelte`                     |                      SUBTRACTIVE link removal/binding (+4/-8) | YES: removes community author link                         | LOW                 |
+| `src/lib/components/chat/Placeholder/FolderPlaceholder.svelte`   |                                    CUSTOMIZATION copy (+1/-1) | No                                                         | LOW                 |
+| `src/lib/components/chat/Placeholder/FolderTitle.svelte`         |                  BEHAVIOR-CHANGING project metadata (+25/-13) | No direct nerf found                                       | MEDIUM              |
+| `src/lib/components/chat/Settings/About.svelte`                  |                                 SUBTRACTIVE/BRANDING (+2/-44) | YES: disables/removes update/social/license/creator links  | MEDIUM              |
+| `src/lib/components/chat/Settings/Integrations/Terminals.svelte` |                                 ADDITIVE UI wrapper (+21/-11) | No direct nerf found                                       | LOW                 |
+| `src/lib/components/chat/ShareChatModal.svelte`                  |                                    CUSTOMIZATION copy (+2/-2) | No: upload still targets `openwebui.com`                   | LOW                 |
+| `src/lib/components/common/EnosOrb.svelte`                       |                                          ADDITIVE UI (+18/-0) | No                                                         | LOW                 |
+| `src/lib/components/common/Folder.svelte`                        |                              CUSTOMIZATION typography (+1/-1) | No                                                         | LOW                 |
+| `src/lib/components/enos/.gitkeep`                               |                                              ADDITIVE (+0/-0) | No                                                         | LOW                 |
+| `src/lib/components/enos/ModelPicker.svelte`                     |                                 ADDITIVE ENOS picker (+55/-0) | No by itself; risk comes from replacing stock picker       | LOW                 |
+| `src/lib/components/icons/Sidebar.svelte`                        |                                         ADDITIVE prop (+2/-0) | No                                                         | LOW                 |
+| `src/lib/components/layout/ChatsModal.svelte`                    |                                  ADDITIVE return URL (+14/-1) | No                                                         | LOW                 |
+| `src/lib/components/layout/Navbar/Menu.svelte`                   |                               ADDITIVE alignment prop (+2/-1) | No                                                         | LOW                 |
+| `src/lib/components/layout/Sidebar.svelte`                       |   SUBTRACTIVE/BEHAVIOR-CHANGING surface filtering (+407/-234) | YES: hides/filter Chats on Desk                            | HIGH                |
+| `src/lib/components/layout/Sidebar/ChatItem.svelte`              |                    BEHAVIOR-CHANGING project context (+14/-4) | No direct nerf found                                       | MEDIUM              |
+| `src/lib/components/layout/Sidebar/Folders/FolderMenu.svelte`    |                      BEHAVIOR-CHANGING project menu (+23/-12) | No direct nerf found                                       | MEDIUM              |
+| `src/lib/components/layout/Sidebar/Folders/FolderModal.svelte`   |                BEHAVIOR-CHANGING local folder action (+24/-5) | No direct nerf found                                       | MEDIUM              |
+| `src/lib/components/layout/Sidebar/RecursiveFolder.svelte`       |          BEHAVIOR-CHANGING project/sidebar behavior (+92/-48) | Possible: changes folder expand/click semantics            | HIGH                |
+| `src/lib/components/layout/Sidebar/UserMenu.svelte`              |                             SUBTRACTIVE link removal (+1/-17) | YES: removes Documentation and disables Releases link      | MEDIUM              |
+| `src/lib/components/layout/UpdateInfoToast.svelte`               |                              SUBTRACTIVE link removal (+1/-3) | YES: removes release link from update toast                | LOW                 |
+| `src/lib/components/workspace/Models.svelte`                     |         SUBTRACTIVE/BEHAVIOR-CHANGING routing panel (+171/-6) | YES: disables Discover model link; hides `enos.desk` model | HIGH                |
+| `src/lib/components/workspace/Models/Knowledge.svelte`           |                              ADDITIVE optional props (+14/-1) | No                                                         | LOW                 |
+| `src/lib/components/workspace/Prompts.svelte`                    |                        SUBTRACTIVE link target change (+3/-3) | YES: disables Discover prompt link                         | MEDIUM              |
+| `src/lib/components/workspace/Tools.svelte`                      |                        SUBTRACTIVE link target change (+3/-3) | YES: disables Discover tool link                           | MEDIUM              |
+| `src/lib/constants.ts`                                           |                                CUSTOMIZATION app name (+1/-1) | No functional nerf                                         | LOW                 |
+| `src/lib/enos/deskAgentLoop.test.ts`                             |                                       ADDITIVE test (+147/-0) | No                                                         | LOW                 |
+| `src/lib/enos/deskAgentLoop.ts`                                  |                            ADDITIVE Desk agent loop (+145/-0) | No                                                         | LOW                 |
+| `src/lib/enos/deskFileTools.test.ts`                             |                                       ADDITIVE test (+437/-0) | No                                                         | LOW                 |
+| `src/lib/enos/deskFileTools.ts`                                  |                                 ADDITIVE Desk tools (+516/-0) | No                                                         | LOW                 |
+| `src/lib/enos/desktopBridge.ts`                                  |                                     ADDITIVE bridge (+307/-0) | No                                                         | LOW                 |
+| `src/lib/enos/grounding.test.ts`                                 |                                        ADDITIVE test (+21/-0) | No                                                         | LOW                 |
+| `src/lib/enos/grounding.ts`                                      |                                   ADDITIVE grounding (+33/-0) | No                                                         | LOW                 |
+| `src/lib/enos/pastedText.test.ts`                                |                                        ADDITIVE test (+45/-0) | No                                                         | LOW                 |
+| `src/lib/enos/pastedText.ts`                                     |                                      ADDITIVE helper (+48/-0) | No                                                         | LOW                 |
+| `src/lib/enos/projectActions.ts`                                 |                                     ADDITIVE helper (+145/-0) | No                                                         | LOW                 |
+| `src/lib/enos/projectChatActions.test.ts`                        |                                       ADDITIVE test (+249/-0) | No                                                         | LOW                 |
+| `src/lib/enos/projectChatActions.ts`                             |                                     ADDITIVE helper (+286/-0) | No direct nerf; possible dead/orphaned path                | LOW                 |
+| `src/lib/enos/surfaceScope.test.ts`                              |                                        ADDITIVE test (+50/-0) | No                                                         | LOW                 |
+| `src/lib/enos/surfaceScope.ts`                                   |                   ADDITIVE helper used for filtering (+47/-0) | YES when used to hide Desk/Chat items                      | MEDIUM              |
+| `src/lib/stores/enos/.gitkeep`                                   |                                              ADDITIVE (+0/-0) | No                                                         | LOW                 |
+| `src/lib/stores/enos/surface.ts`                                 |                                        ADDITIVE store (+5/-0) | No                                                         | LOW                 |
+| `src/lib/stores/index.ts`                                        |                                       ADDITIVE stores (+2/-0) | No                                                         | LOW                 |
+| `src/routes/+layout.svelte`                                      |           ADDITIVE/CUSTOMIZATION surface/brand hooks (+17/-3) | No direct nerf found                                       | MEDIUM              |
+| `src/routes/s/[id]/+page.svelte`                                 |                     ADDITIVE admin return affordance (+27/-6) | No                                                         | LOW                 |
+| `src/tailwind.css`                                               |                          CUSTOMIZATION font variables (+3/-6) | No                                                         | LOW                 |
+| `static/assets/fonts/AnthropicMono-Italic-Web.woff2`             |                                               ADDITIVE binary | No                                                         | LOW                 |
+| `static/assets/fonts/AnthropicMono-Roman-Web.woff2`              |                                               ADDITIVE binary | No                                                         | LOW                 |
+| `static/assets/fonts/AnthropicSans-Italic-Web.woff2`             |                                               ADDITIVE binary | No                                                         | LOW                 |
+| `static/assets/fonts/AnthropicSans-Roman-Web.woff2`              |                                               ADDITIVE binary | No                                                         | LOW                 |
+| `static/assets/fonts/AnthropicSerif-Italic-Web.woff2`            |                                               ADDITIVE binary | No                                                         | LOW                 |
+| `static/assets/fonts/AnthropicSerif-Roman-Web.woff2`             |                                               ADDITIVE binary | No                                                         | LOW                 |
+| `static/enos-loader.svg`                                         |                                       ADDITIVE asset (+20/-0) | No                                                         | LOW                 |
+| `static/fonts/enos/AnthropicMono-Italic-Variable.woff2`          |                                               ADDITIVE binary | No                                                         | LOW                 |
+| `static/fonts/enos/AnthropicMono-Variable.woff2`                 |                                               ADDITIVE binary | No                                                         | LOW                 |
+| `static/fonts/enos/AnthropicSans-Italic-Variable.woff2`          |                                               ADDITIVE binary | No                                                         | LOW                 |
+| `static/fonts/enos/AnthropicSans-Variable.woff2`                 |                                               ADDITIVE binary | No                                                         | LOW                 |
+| `static/fonts/enos/AnthropicSerif-Italic-Variable.woff2`         |                                               ADDITIVE binary | No                                                         | LOW                 |
+| `static/fonts/enos/AnthropicSerif-Variable.woff2`                |                                               ADDITIVE binary | No                                                         | LOW                 |
+| `static/static/custom.css`                                       |  SUBTRACTIVE/BEHAVIOR-CHANGING runtime CSS override (+107/-0) | YES: hides stock controls                                  | HIGH                |
+| `static/static/enos-surface.mjs`                                 | SUBTRACTIVE/BEHAVIOR-CHANGING runtime DOM override (+1410/-0) | YES: hides terminal/model/right-panel UI                   | HIGH                |
+| `test/enos-admin-chat-return.test.mjs`                           |                                        ADDITIVE test (+70/-0) | No                                                         | LOW                 |
+| `test/enos-chat-navbar.test.mjs`                                 |                                        ADDITIVE test (+91/-0) | No                                                         | LOW                 |
+| `test/enos-desk-sidebar.test.mjs`                                |                                      ADDITIVE test (+1025/-0) | No                                                         | LOW                 |
+| `test/enos-local-terminal.test.mjs`                              |                                        ADDITIVE test (+44/-0) | No                                                         | LOW                 |
+| `test/enos-model-selection.test.mjs`                             |                                        ADDITIVE test (+65/-0) | No                                                         | LOW                 |
+| `test/enos-pasted-text-card.test.mjs`                            |                                        ADDITIVE test (+66/-0) | No                                                         | LOW                 |
+| `test/enos-response-loading.test.mjs`                            |                                        ADDITIVE test (+46/-0) | No                                                         | LOW                 |
+| `test/enos-search-query-quality.test.mjs`                        |                                        ADDITIVE test (+18/-0) | No                                                         | LOW                 |
 
 ## Bind-Mount Override Deep Dive (one subsection per file, file:line evidence)
 

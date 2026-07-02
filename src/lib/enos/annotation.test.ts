@@ -38,9 +38,7 @@ describe('annotationRef', () => {
 	});
 
 	it('combines selector, source, and note', () => {
-		expect(annotationRef(mk({ note: 'bigger' }))).toBe(
-			'↳ h1.team-name (src/Squad.tsx:42): bigger'
-		);
+		expect(annotationRef(mk({ note: 'bigger' }))).toBe('↳ h1.team-name (src/Squad.tsx:42): bigger');
 	});
 });
 

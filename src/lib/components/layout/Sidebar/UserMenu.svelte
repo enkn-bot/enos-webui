@@ -128,7 +128,7 @@
 			{#if profile}
 				<div class=" flex gap-3.5 w-full p-2.5 items-center">
 					<div class=" items-center flex shrink-0">
-							<UserAvatar name={$user?.name} className="size-10" />
+						<UserAvatar name={$user?.name} className="size-10" />
 					</div>
 
 					<div class=" flex flex-col w-full flex-1">

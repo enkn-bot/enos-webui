@@ -28,9 +28,7 @@ export const resolveTerminalFont = (): string => {
 		return "'JetBrainsMono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
 	}
 	try {
-		const value = getComputedStyle(document.documentElement)
-			.getPropertyValue('--font-mono')
-			.trim();
+		const value = getComputedStyle(document.documentElement).getPropertyValue('--font-mono').trim();
 		return value || "'JetBrainsMono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
 	} catch {
 		return "'JetBrainsMono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";

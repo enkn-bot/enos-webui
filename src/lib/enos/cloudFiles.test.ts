@@ -45,9 +45,7 @@ describe('ENOS cloud files presentation', () => {
 
 	test('formats a calm cloud workspace status line', () => {
 		expect(formatCloudFilesStatus('Cloud Workspace')).toBe('Working in ENOS Cloud · ENOS Cloud');
-		expect(formatCloudFilesStatus('ENOS Workspace')).toBe(
-			'Working in ENOS Cloud · ENOS Workspace'
-		);
+		expect(formatCloudFilesStatus('ENOS Workspace')).toBe('Working in ENOS Cloud · ENOS Workspace');
 		expect(formatCloudFilesStatus('')).toBe('Working in ENOS Cloud');
 	});
 });

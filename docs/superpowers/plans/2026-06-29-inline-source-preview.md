@@ -36,6 +36,7 @@
 ## Task 1: Extract Normalized Citation Helper
 
 **Files:**
+
 - Create: `src/lib/enos/sourceCitations.ts`
 - Create: `src/lib/enos/sourceCitations.test.ts`
 
@@ -151,7 +152,9 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 	Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 
 const documentsFor = (source: any): string[] =>
-	Array.isArray(source?.document) ? source.document.filter((item: unknown) => typeof item === 'string') : [];
+	Array.isArray(source?.document)
+		? source.document.filter((item: unknown) => typeof item === 'string')
+		: [];
 
 export const getPreviewSnippet = (content: unknown, maxLength = 180): string => {
 	if (typeof content !== 'string') return '';
@@ -232,6 +235,7 @@ git commit -m "feat: normalize source citations"
 ## Task 2: Reuse Helper In Existing Citation Modal Path
 
 **Files:**
+
 - Modify: `src/lib/components/chat/Messages/Citations.svelte`
 - Modify: `src/lib/enos/deskUiSource.test.ts`
 
@@ -306,6 +310,7 @@ git commit -m "refactor: reuse normalized citations"
 ## Task 3: Pass Preview Records Through Markdown Rendering
 
 **Files:**
+
 - Modify: `src/lib/components/chat/Messages/ContentRenderer.svelte`
 - Modify: `src/lib/components/chat/Messages/Markdown.svelte`
 - Modify: `src/lib/components/chat/Messages/Markdown/MarkdownTokens.svelte`
@@ -321,7 +326,9 @@ test('inline source previews pass normalized citations through markdown renderer
 	const contentRenderer = read('src/lib/components/chat/Messages/ContentRenderer.svelte');
 	const markdown = read('src/lib/components/chat/Messages/Markdown.svelte');
 	const markdownTokens = read('src/lib/components/chat/Messages/Markdown/MarkdownTokens.svelte');
-	const inlineTokens = read('src/lib/components/chat/Messages/Markdown/MarkdownInlineTokens.svelte');
+	const inlineTokens = read(
+		'src/lib/components/chat/Messages/Markdown/MarkdownInlineTokens.svelte'
+	);
 
 	expect(contentRenderer).toContain(
 		"import { buildEnosCitations } from '$lib/enos/sourceCitations';"
@@ -500,6 +507,7 @@ git commit -m "feat: pass inline source preview data"
 ## Task 4: Render Anchored Inline Source Preview
 
 **Files:**
+
 - Modify: `src/lib/components/chat/Messages/Markdown/Source.svelte`
 - Modify: `src/lib/components/chat/Messages/Markdown/SourceToken.svelte`
 - Modify: `src/lib/enos/deskUiSource.test.ts`
@@ -723,7 +731,9 @@ Update `src/lib/components/chat/Messages/Markdown/Source.svelte`:
 										}}
 									/>
 									<span class="min-w-0">
-										<span class="block truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
+										<span
+											class="block truncate text-sm font-semibold text-gray-900 dark:text-gray-100"
+										>
 											{decodeString(preview?.source?.name ?? title)}
 										</span>
 										{#if sourceDomain(preview)}
@@ -733,7 +743,9 @@ Update `src/lib/components/chat/Messages/Markdown/Source.svelte`:
 										{/if}
 										{@const snippet = getPreviewSnippet(preview?.document?.[0])}
 										{#if snippet}
-											<span class="mt-2 line-clamp-3 block text-xs leading-5 text-gray-500 dark:text-gray-400">
+											<span
+												class="mt-2 line-clamp-3 block text-xs leading-5 text-gray-500 dark:text-gray-400"
+											>
 												{snippet}
 											</span>
 										{/if}
@@ -808,6 +820,7 @@ git commit -m "feat: preview inline sources"
 ## Task 5: Verify Build And Reversibility
 
 **Files:**
+
 - Modify only if tests expose a compile issue: files changed in Tasks 1-4.
 
 - [ ] **Step 1: Run full focused frontend tests**
@@ -863,11 +876,13 @@ Add a short implementation note to the task handoff or PR body:
 
 ```md
 Verification:
+
 - npm run test:frontend -- src/lib/enos/sourceCitations.test.ts src/lib/enos/sourceLabels.test.ts src/lib/enos/deskUiSource.test.ts
 - npm run check
 - npm run build
 
 Reversibility:
+
 - New preview is isolated to inline Markdown citation components.
 - Existing CitationModal and showSourceModal path are still present.
 - No backend or persisted chat schema changes.

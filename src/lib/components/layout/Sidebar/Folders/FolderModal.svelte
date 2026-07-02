@@ -251,9 +251,7 @@
 				     hover/focus highlight and pencil hint signal it is editable — no
 				     underline (which read as a raw input). -->
 				<div class="group min-w-0 flex-1">
-					<div
-						class="-ml-2 flex items-center gap-2 rounded-lg px-2 py-1"
-					>
+					<div class="-ml-2 flex items-center gap-2 rounded-lg px-2 py-1">
 						<input
 							id="folder-name"
 							class="w-full min-w-0 bg-transparent text-xl font-semibold tracking-normal outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
@@ -292,7 +290,10 @@
 
 		{#if !isDeskSurface}
 			<div class="mt-5">
-				<label for="folder-name" class="mb-2 block text-sm font-medium text-gray-600 dark:text-gray-300">
+				<label
+					for="folder-name"
+					class="mb-2 block text-sm font-medium text-gray-600 dark:text-gray-300"
+				>
 					{$i18n.t('Project name')}
 				</label>
 				<input
@@ -326,8 +327,12 @@
 						{/each}
 					</select>
 				{:else}
-					<div class="flex items-center gap-3 rounded-2xl border border-gray-200 px-4 py-3 text-sm dark:border-gray-800">
-						<div class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100">
+					<div
+						class="flex items-center gap-3 rounded-2xl border border-gray-200 px-4 py-3 text-sm dark:border-gray-800"
+					>
+						<div
+							class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100"
+						>
 							<Cloud className="size-5" strokeWidth="2" />
 						</div>
 						<div class="min-w-0">
@@ -358,11 +363,15 @@
 					>
 						<Computer className="size-5 text-gray-500 dark:text-gray-400" strokeWidth="2" />
 						{#if projectEnvironment === 'local'}
-							<div class="absolute right-4 top-4 flex size-5 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black">
+							<div
+								class="absolute right-4 top-4 flex size-5 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black"
+							>
 								<Check className="size-3.5" strokeWidth="3" />
 							</div>
 						{:else}
-							<div class="absolute right-4 top-4 size-5 rounded-full border-2 border-gray-300 dark:border-gray-600"></div>
+							<div
+								class="absolute right-4 top-4 size-5 rounded-full border-2 border-gray-300 dark:border-gray-600"
+							></div>
 						{/if}
 						<div>
 							<div class="text-sm font-semibold">{$i18n.t('Local project')}</div>
@@ -384,11 +393,15 @@
 					>
 						<Cloud className="size-5 text-gray-500 dark:text-gray-400" strokeWidth="2" />
 						{#if projectEnvironment === 'cloud'}
-							<div class="absolute right-4 top-4 flex size-5 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black">
+							<div
+								class="absolute right-4 top-4 flex size-5 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black"
+							>
 								<Check className="size-3.5" strokeWidth="3" />
 							</div>
 						{:else}
-							<div class="absolute right-4 top-4 size-5 rounded-full border-2 border-gray-300 dark:border-gray-600"></div>
+							<div
+								class="absolute right-4 top-4 size-5 rounded-full border-2 border-gray-300 dark:border-gray-600"
+							></div>
 						{/if}
 						<div>
 							<div class="text-sm font-semibold">{$i18n.t('ENOS Cloud project')}</div>
@@ -407,100 +420,98 @@
 		{/if}
 
 		{#if showLegacyFolderOptions}
-					<input
-						id="folder-background-image-input"
-						type="file"
-						hidden
-						accept="image/*"
-						on:change={(e) => {
-							const inputFiles = e.target.files;
+			<input
+				id="folder-background-image-input"
+				type="file"
+				hidden
+				accept="image/*"
+				on:change={(e) => {
+					const inputFiles = e.target.files;
 
-							let reader = new FileReader();
-							reader.onload = (event) => {
-								let originalImageUrl = `${event.target.result}`;
-								meta.background_image_url = originalImageUrl;
-							};
+					let reader = new FileReader();
+					reader.onload = (event) => {
+						let originalImageUrl = `${event.target.result}`;
+						meta.background_image_url = originalImageUrl;
+					};
 
-							if (
-								inputFiles &&
-								inputFiles.length > 0 &&
-								['image/gif', 'image/webp', 'image/jpeg', 'image/png'].includes(
-									inputFiles[0]['type']
-								)
-							) {
-								reader.readAsDataURL(inputFiles[0]);
+					if (
+						inputFiles &&
+						inputFiles.length > 0 &&
+						['image/gif', 'image/webp', 'image/jpeg', 'image/png'].includes(inputFiles[0]['type'])
+					) {
+						reader.readAsDataURL(inputFiles[0]);
+					} else {
+						console.log(`Unsupported File Type '${inputFiles[0]['type']}'.`);
+
+						// clear the input
+						e.target.value = '';
+					}
+				}}
+			/>
+
+			<div class="flex justify-between w-full mt-1 items-center">
+				<div class="text-xs text-gray-500">{$i18n.t('Folder Background Image')}</div>
+
+				<div class="">
+					<button
+						aria-labelledby="chat-background-label background-image-url-state"
+						class="p-1 px-3 text-xs flex rounded-sm transition"
+						on:click={() => {
+							if (meta?.background_image_url !== null) {
+								meta.background_image_url = null;
 							} else {
-								console.log(`Unsupported File Type '${inputFiles[0]['type']}'.`);
-
-								// clear the input
-								e.target.value = '';
+								const input = document.getElementById('folder-background-image-input');
+								if (input) {
+									input.click();
+								}
 							}
 						}}
-					/>
-
-					<div class="flex justify-between w-full mt-1 items-center">
-						<div class="text-xs text-gray-500">{$i18n.t('Folder Background Image')}</div>
-
-						<div class="">
-							<button
-								aria-labelledby="chat-background-label background-image-url-state"
-								class="p-1 px-3 text-xs flex rounded-sm transition"
-								on:click={() => {
-									if (meta?.background_image_url !== null) {
-										meta.background_image_url = null;
-									} else {
-										const input = document.getElementById('folder-background-image-input');
-										if (input) {
-											input.click();
-										}
-									}
-								}}
-								type="button"
-							>
-								<span class="ml-2 self-center" id="background-image-url-state"
-									>{(meta?.background_image_url ?? null) === null
-										? $i18n.t('Upload')
-										: $i18n.t('Reset')}</span
-								>
-							</button>
-						</div>
-					</div>
-
-					<hr class=" border-gray-50 dark:border-gray-850/30 my-2.5 w-full" />
-				{/if}
-
-				{#if edit}
-					{#if $user?.role === 'admin' || ($user?.permissions.chat?.system_prompt ?? true)}
-						<div class="my-1">
-							<div class="mb-2 text-xs text-gray-500">{$i18n.t('Instructions')}</div>
-							<div>
-								<Textarea
-									className=" text-sm w-full bg-transparent outline-hidden "
-									placeholder={$i18n.t("Add instructions to tailor ENOS's responses")}
-									maxSize={200}
-									bind:value={data.system_prompt}
-								/>
-							</div>
-						</div>
-					{/if}
-
-					<div class="my-2">
-						<Knowledge
-							bind:selectedItems={data.files}
-							leadingActionLabel={showLocalFolderAction && !edit ? 'Select Folder' : ''}
-							onLeadingAction={selectLocalFolder}
-							hideUploadFiles={showLocalFolderAction && !edit}
+						type="button"
+					>
+						<span class="ml-2 self-center" id="background-image-url-state"
+							>{(meta?.background_image_url ?? null) === null
+								? $i18n.t('Upload')
+								: $i18n.t('Reset')}</span
 						>
-							<div slot="label">
-								<div class="flex w-full justify-between">
-									<div class=" mb-2 text-xs text-gray-500">
-										{$i18n.t('Context')}
-									</div>
-								</div>
-							</div>
-						</Knowledge>
+					</button>
+				</div>
+			</div>
+
+			<hr class=" border-gray-50 dark:border-gray-850/30 my-2.5 w-full" />
+		{/if}
+
+		{#if edit}
+			{#if $user?.role === 'admin' || ($user?.permissions.chat?.system_prompt ?? true)}
+				<div class="my-1">
+					<div class="mb-2 text-xs text-gray-500">{$i18n.t('Instructions')}</div>
+					<div>
+						<Textarea
+							className=" text-sm w-full bg-transparent outline-hidden "
+							placeholder={$i18n.t("Add instructions to tailor ENOS's responses")}
+							maxSize={200}
+							bind:value={data.system_prompt}
+						/>
 					</div>
-				{/if}
+				</div>
+			{/if}
+
+			<div class="my-2">
+				<Knowledge
+					bind:selectedItems={data.files}
+					leadingActionLabel={showLocalFolderAction && !edit ? 'Select Folder' : ''}
+					onLeadingAction={selectLocalFolder}
+					hideUploadFiles={showLocalFolderAction && !edit}
+				>
+					<div slot="label">
+						<div class="flex w-full justify-between">
+							<div class=" mb-2 text-xs text-gray-500">
+								{$i18n.t('Context')}
+							</div>
+						</div>
+					</div>
+				</Knowledge>
+			</div>
+		{/if}
 
 		<div class="mt-6 flex items-center justify-end gap-2 text-sm font-medium">
 			{#if showProjectSetupOptions && projectEnvironment === 'local' && canUseLocalProject}

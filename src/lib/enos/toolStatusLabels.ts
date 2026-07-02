@@ -7,8 +7,20 @@
 export type ToolInfo = { tool: string; input?: Record<string, unknown> };
 
 const FILE_TOOLS = new Set([
-	'read', 'read_file', 'write', 'write_file', 'edit', 'edit_file',
-	'patch', 'create_folder', 'mkdir', 'delete', 'remove', 'rename', 'move', 'reveal'
+	'read',
+	'read_file',
+	'write',
+	'write_file',
+	'edit',
+	'edit_file',
+	'patch',
+	'create_folder',
+	'mkdir',
+	'delete',
+	'remove',
+	'rename',
+	'move',
+	'reveal'
 ]);
 
 /** Extract the most meaningful snippet from tool args for status context. */
@@ -22,7 +34,13 @@ const toolContext = (input?: Record<string, unknown>): string => {
 
 	// Fallback: first string value that looks meaningful
 	for (const v of Object.values(input)) {
-		if (typeof v === 'string' && v.length > 2 && v.length < 100 && !v.startsWith('{') && !v.startsWith('[')) {
+		if (
+			typeof v === 'string' &&
+			v.length > 2 &&
+			v.length < 100 &&
+			!v.startsWith('{') &&
+			!v.startsWith('[')
+		) {
 			return v;
 		}
 	}
@@ -32,18 +50,30 @@ const toolContext = (input?: Record<string, unknown>): string => {
 /** Human-readable tool name for status labels. */
 const toolName = (tool: string): string => {
 	const map: Record<string, string> = {
-		read: 'Read', read_file: 'Read',
-		write: 'Write', write_file: 'Write',
-		edit: 'Edit', edit_file: 'Edit', patch: 'Edit',
-		create_folder: 'Create folder', mkdir: 'Create folder',
-		delete: 'Delete', remove: 'Delete',
-		rename: 'Rename', move: 'Move',
+		read: 'Read',
+		read_file: 'Read',
+		write: 'Write',
+		write_file: 'Write',
+		edit: 'Edit',
+		edit_file: 'Edit',
+		patch: 'Edit',
+		create_folder: 'Create folder',
+		mkdir: 'Create folder',
+		delete: 'Delete',
+		remove: 'Delete',
+		rename: 'Rename',
+		move: 'Move',
 		reveal: 'Reveal',
-		list: 'List', ls: 'List',
-		web_search: 'Search', web_search_queries_generated: 'Search',
-		bash: 'Run', execute: 'Run', run: 'Run',
+		list: 'List',
+		ls: 'List',
+		web_search: 'Search',
+		web_search_queries_generated: 'Search',
+		bash: 'Run',
+		execute: 'Run',
+		run: 'Run',
 		code_interpreter: 'Code',
-		git_status: 'Git status', git_diff: 'Git diff',
+		git_status: 'Git status',
+		git_diff: 'Git diff'
 	};
 	return map[tool] ?? tool.charAt(0).toUpperCase() + tool.slice(1);
 };

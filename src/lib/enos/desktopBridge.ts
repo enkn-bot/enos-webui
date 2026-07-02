@@ -180,11 +180,7 @@ export type EnosDesktopPiEvent =
 
 export type EnosDesktopPiBridge = {
 	start: (folderId: string) => Promise<{ port: number; sessionId: string }>;
-	prompt: (
-		folderId: string,
-		prompt: string,
-		agent?: string
-	) => Promise<{ streamId: string }>;
+	prompt: (folderId: string, prompt: string, agent?: string) => Promise<{ streamId: string }>;
 	events: (onEvent: (event: EnosDesktopPiEvent) => void) => () => void;
 	stop: (folderId: string) => Promise<void>;
 };
@@ -205,7 +201,10 @@ export type EnosDesktopBridge = {
 	listDir: (path?: string, folderId?: string | null) => Promise<EnosDesktopDirectoryListing>;
 	readFile: (path: string, folderId?: string | null) => Promise<EnosDesktopFilePreview>;
 	buildProjectDigest: (folderId: string) => Promise<EnosDesktopProjectDigest>;
-	listProjectFiles: (folderId: string, path?: string) => Promise<EnosDesktopProjectDirectoryListing>;
+	listProjectFiles: (
+		folderId: string,
+		path?: string
+	) => Promise<EnosDesktopProjectDirectoryListing>;
 	readProjectFile: (folderId: string, path: string) => Promise<EnosDesktopProjectFilePreview>;
 	exportProjectArchive?: (folderId: string) => Promise<EnosDesktopProjectArchive>;
 	requestProjectFileWrite: (
@@ -247,16 +246,10 @@ export type EnosDesktopBridge = {
 		path: string,
 		options?: EnosDesktopProjectActionOptions
 	) => Promise<EnosDesktopProjectActionRequest | EnosDesktopProjectActionResult>;
-	revealProjectEntry: (
-		folderId: string,
-		path: string
-	) => Promise<EnosDesktopProjectActionResult>;
+	revealProjectEntry: (folderId: string, path: string) => Promise<EnosDesktopProjectActionResult>;
 	getProjectGitStatus: (folderId: string) => Promise<EnosDesktopProjectGitStatus>;
 	getProjectGitLog?: (folderId: string) => Promise<EnosDesktopProjectGitLog>;
-	getProjectGitDiff?: (
-		folderId: string,
-		path?: string
-	) => Promise<EnosDesktopProjectGitDiff>;
+	getProjectGitDiff?: (folderId: string, path?: string) => Promise<EnosDesktopProjectGitDiff>;
 	gitStage: (
 		folderId: string,
 		paths: string[],
@@ -279,10 +272,7 @@ export type EnosDesktopBridge = {
 		options?: EnosDesktopProjectActionOptions
 	) => Promise<EnosDesktopProjectActionRequest | EnosDesktopProjectActionResult>;
 	/** Desk-local model call — available only in newer Electron builds. */
-	agentComplete?: (
-		messages: DeskChatMessage[],
-		tools: DeskToolSpec[]
-	) => Promise<DeskCompletion>;
+	agentComplete?: (messages: DeskChatMessage[], tools: DeskToolSpec[]) => Promise<DeskCompletion>;
 	/**
 	 * Streaming Desk-local model call. Emits content deltas to `onChunk` for live
 	 * prose animation and resolves with the same shape as agentComplete. Present
@@ -300,12 +290,19 @@ export type EnosDesktopBridge = {
 	 * must feature-detect. Renderer owns the sessionId.
 	 */
 	localTerminal?: {
-		start: (sessionId: string, folderId: string | null, cols: number, rows: number) => Promise<string>;
+		start: (
+			sessionId: string,
+			folderId: string | null,
+			cols: number,
+			rows: number
+		) => Promise<string>;
 		write: (sessionId: string, data: string) => Promise<void>;
 		resize: (sessionId: string, cols: number, rows: number) => Promise<void>;
 		kill: (sessionId: string) => Promise<void>;
 		onData: (cb: (payload: { sessionId: string; data: string }) => void) => () => void;
-		onExit: (cb: (payload: { sessionId: string; code?: number; error?: string }) => void) => () => void;
+		onExit: (
+			cb: (payload: { sessionId: string; code?: number; error?: string }) => void
+		) => () => void;
 	};
 };
 
@@ -336,29 +333,23 @@ export const getEnosDesktopBridgeCapabilities =
 export const canUseEnosLocalProjectFiles = (capabilities?: EnosDesktopCapabilities | null) =>
 	Boolean(capabilities?.desktopBridge && capabilities.localProjectFiles);
 
-export const canUseEnosLocalProjectMutations = (
-	capabilities?: EnosDesktopCapabilities | null
-) => Boolean(canUseEnosLocalProjectFiles(capabilities) && capabilities?.localProjectMutations);
+export const canUseEnosLocalProjectMutations = (capabilities?: EnosDesktopCapabilities | null) =>
+	Boolean(canUseEnosLocalProjectFiles(capabilities) && capabilities?.localProjectMutations);
 
-export const canUseEnosLocalProjectGitWrite = (
-	capabilities?: EnosDesktopCapabilities | null
-) => Boolean(canUseEnosLocalProjectFiles(capabilities) && capabilities?.localProjectGitWrite);
+export const canUseEnosLocalProjectGitWrite = (capabilities?: EnosDesktopCapabilities | null) =>
+	Boolean(canUseEnosLocalProjectFiles(capabilities) && capabilities?.localProjectGitWrite);
 
-export const canUseEnosLocalProjectGitRead = (
-	capabilities?: EnosDesktopCapabilities | null
-) =>
+export const canUseEnosLocalProjectGitRead = (capabilities?: EnosDesktopCapabilities | null) =>
 	Boolean(
 		canUseEnosLocalProjectFiles(capabilities) &&
-			(capabilities?.localProjectGitRead ?? capabilities?.localProjectGitStatus)
+		(capabilities?.localProjectGitRead ?? capabilities?.localProjectGitStatus)
 	);
 
-export const canUseEnosLocalProjectGitClone = (
-	capabilities?: EnosDesktopCapabilities | null
-) => Boolean(canUseEnosLocalProjectFiles(capabilities) && capabilities?.localProjectGitClone);
+export const canUseEnosLocalProjectGitClone = (capabilities?: EnosDesktopCapabilities | null) =>
+	Boolean(canUseEnosLocalProjectFiles(capabilities) && capabilities?.localProjectGitClone);
 
-export const canUseEnosLocalProjectCloudUpload = (
-	capabilities?: EnosDesktopCapabilities | null
-) => Boolean(canUseEnosLocalProjectFiles(capabilities) && capabilities?.localProjectCloudUpload);
+export const canUseEnosLocalProjectCloudUpload = (capabilities?: EnosDesktopCapabilities | null) =>
+	Boolean(canUseEnosLocalProjectFiles(capabilities) && capabilities?.localProjectCloudUpload);
 
 export const canUseEnosLocalPi = (capabilities?: EnosDesktopCapabilities | null) =>
 	Boolean(capabilities?.piRpc);

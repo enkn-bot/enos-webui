@@ -6,7 +6,11 @@
 	import ChevronDown from '$lib/components/icons/ChevronDown.svelte';
 	import equal from 'fast-deep-equal';
 	import { enosOrbColorForModel } from '$lib/enos/modelTier';
-	import { selectDisplayStatus, normalizeAction, isStepSettled } from '$lib/enos/cognitionVocabulary';
+	import {
+		selectDisplayStatus,
+		normalizeAction,
+		isStepSettled
+	} from '$lib/enos/cognitionVocabulary';
 	import { formatDeskStatusLabel } from '$lib/enos/deskStatus';
 	export let statusHistory = [];
 	export let expand = false;
@@ -113,36 +117,36 @@
 	{#if status?.hidden !== true || hasReasoning}
 		{#if compactDesk}
 			{#if !answerPresent}
-			<!-- Desk, live: always-visible operational feed WHILE the turn streams, so a
+				<!-- Desk, live: always-visible operational feed WHILE the turn streams, so a
 			     coding sequence (Read → Edited → Ran) shows progress as it happens. -->
-			<div class="text-sm flex flex-col w-full">
-				{#each feedHistory as historyItem, idx}
-					{@const isLast = idx === feedHistory.length - 1}
-					{@const settled = stepSettled[idx]}
-					{@const isActiveDot = !settled && !!mindColor}
-					<div class="flex items-stretch gap-2">
-						<div class=" ">
-							<div class="pt-2 px-1 mb-1">
-								<span class="relative flex size-1.5 rounded-full justify-center items-center">
-									<span
-										class="relative inline-flex size-1.5 rounded-full {isActiveDot
-											? 'enos-mind-dot'
-											: 'bg-gray-400 dark:bg-gray-600'}"
-										style={isActiveDot ? `background-color: ${mindColor}` : ''}
-									></span>
-								</span>
+				<div class="text-sm flex flex-col w-full">
+					{#each feedHistory as historyItem, idx}
+						{@const isLast = idx === feedHistory.length - 1}
+						{@const settled = stepSettled[idx]}
+						{@const isActiveDot = !settled && !!mindColor}
+						<div class="flex items-stretch gap-2">
+							<div class=" ">
+								<div class="pt-2 px-1 mb-1">
+									<span class="relative flex size-1.5 rounded-full justify-center items-center">
+										<span
+											class="relative inline-flex size-1.5 rounded-full {isActiveDot
+												? 'enos-mind-dot'
+												: 'bg-gray-400 dark:bg-gray-600'}"
+											style={isActiveDot ? `background-color: ${mindColor}` : ''}
+										></span>
+									</span>
+								</div>
+								{#if !isLast}
+									<div
+										class="w-[0.5px] ml-[6.5px] h-[calc(100%-12px)] bg-gray-200 dark:bg-gray-800"
+									></div>
+								{/if}
 							</div>
-							{#if !isLast}
-								<div
-									class="w-[0.5px] ml-[6.5px] h-[calc(100%-12px)] bg-gray-200 dark:bg-gray-800"
-								></div>
-							{/if}
-						</div>
 
-						<StatusItem status={historyItem} done={settled} {compactDesk} />
-					</div>
-				{/each}
-			</div>
+							<StatusItem status={historyItem} done={settled} {compactDesk} />
+						</div>
+					{/each}
+				</div>
 			{:else if feedHistory.length > 0}
 				<!-- Desk, settled: collapse to ONE clean header (matches the reasoning gist
 				     collapsible) — expandable to the full sequence. A finished turn no longer
@@ -172,11 +176,15 @@
 									<div class=" ">
 										<div class="pt-2 px-1 mb-1">
 											<span class="relative flex size-1.5 rounded-full justify-center items-center">
-												<span class="relative inline-flex size-1.5 rounded-full bg-gray-400 dark:bg-gray-600"></span>
+												<span
+													class="relative inline-flex size-1.5 rounded-full bg-gray-400 dark:bg-gray-600"
+												></span>
 											</span>
 										</div>
 										{#if !isLast}
-											<div class="w-[0.5px] ml-[6.5px] h-[calc(100%-12px)] bg-gray-200 dark:bg-gray-800"></div>
+											<div
+												class="w-[0.5px] ml-[6.5px] h-[calc(100%-12px)] bg-gray-200 dark:bg-gray-800"
+											></div>
 										{/if}
 									</div>
 									<StatusItem status={historyItem} done={true} {compactDesk} />
@@ -203,7 +211,9 @@
 					{#if status}
 						<StatusItem {status} done={headerDone} />
 					{:else}
-						<span class="text-gray-500 dark:text-gray-500 text-base">{$i18n.t('Thought process')}</span>
+						<span class="text-gray-500 dark:text-gray-500 text-base"
+							>{$i18n.t('Thought process')}</span
+						>
 					{/if}
 					{#if expandable}
 						<ChevronDown
@@ -226,9 +236,13 @@
 									<div class="flex items-stretch gap-2 mb-1">
 										<div class=" ">
 											<div class="pt-3 px-1 mb-1.5">
-												<span class="relative flex size-1.5 rounded-full justify-center items-center">
+												<span
+													class="relative flex size-1.5 rounded-full justify-center items-center"
+												>
 													<span
-														class="relative inline-flex size-1.5 rounded-full {isActiveDot ? 'enos-mind-dot' : 'bg-gray-500 dark:bg-gray-400'}"
+														class="relative inline-flex size-1.5 rounded-full {isActiveDot
+															? 'enos-mind-dot'
+															: 'bg-gray-500 dark:bg-gray-400'}"
 														style={isActiveDot ? `background-color: ${mindColor}` : ''}
 													></span>
 												</span>
